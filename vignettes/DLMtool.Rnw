@@ -1,0 +1,561 @@
+% DLMtool.Rnw --
+%
+% Author: Tom Carruthers <t.carruthers@ubc.ca>
+%\VignetteIndexEntry{Data Limited Methods toolkit}
+%\VignetteEngine{knitr::knitr}
+%\VignetteDepends{MASS, snowfall}
+%\VignettePackage{DLMtool}
+
+\documentclass{article}
+\usepackage[a4paper, total={6.75in, 9.25in}]{geometry}
+\setlength{\parskip}{\medskipamount}
+\setlength{\parindent}{0.5cm}
+
+
+\begin{document}
+
+%------ Frontmatter ------
+\title{DLMtool: Data-Limited Methods Toolkit (v1.34)}
+\author{Tom Carruthers\footnote{t.carruthers@fisheries.ubc.ca}}
+\date{September 2014}
+\maketitle
+
+\tableofcontents
+
+
+
+\section{Introduction}
+
+As many as 90 per cent of the world's fish populations have insufficient data to conduct a conventional stock assessment (Costello et al. 2012). Although a wide range of data-limited approaches have been described in the primary and gray literature these are not readily available, easily tested or compared. Critically, the path forward is not clear: what methods should we be using for a given stock/fishery/data quality? What is the value of collecting additional data? What is an appropriate stop-gap method?
+
+DLMtool is a collaboration between the University of British Columbia and the Natural Resources Defense Council aimed at addressing these issues by offering a powerful, transparent approach to selecting and applying various data-limited stock assessment methods. The DLMtool takes a similar approach to Carruthers et al. (2014) and uses Management Stratey Evaluation (MSE) and parallel computing to make powerful diagnostics accessible. A streamlined command structure and operating model builder allow for rapid simulation testing and graphing of results.
+
+DLMtool is specifically designed to be extensible in order to encourage the development and testing of new approaches for informing the management of data-limited fish stocks. The package is designed such that the very same methods that are tested by MSE can be applied to provide real management recommendations from real data. Easy incorporation of real data is central advantage of the software and a set of related functions automatically detect what method can be applied given the available data and what additional data are required to get other methods working.
+
+
+
+\section{A note on version 1.34}
+The package is still in a beta-testing phase but is now available on CRAN-R. If you find a bug or a problem please send a report to t.carruthers@fisheries.ubc.ca so that I can fix it!  
+
+Fundamentally the package is stochastic so if you run into problems with the code, please report it and in the mean time simply try running it again: it might just have been a rare combination of sampled parameters that caused the problem.
+
+I highly recommend that you use parallel-processing. If however you abort a parallel process (e.g. runMSE()) half-way through you are in the lap of the gods! It will often be necessary to quit R and restart the code. 
+
+-- New to 1.34 --
+
+(1) Temporal autocorrelation in recruitment deviations. This is a simple AR1 type process controlled by a fraction A which controls the weighed mean according to previous recruitment deviation and new recruitment deviation (sigma) in which dev(1)=sigma(1), dev(t)=A*dev(t-1)+(1-A)*sigma(t)
+
+(2) Ricker stock recruitment relationship. Similarly to the Beverton Holt model this is parameterized according to steepness. This is now a slot in every stock object Stock@SRrel. SRrel=1 is BH stock-recruitment. SRrel=2 is Ricker stock-recruitment. 
+
+(3) SPMSY is no longer bugged. When it can't find a pair of r and K pairs that allow current depletion (inferred from catch trajectory) it widens the search to a larger range. Type in SPMSY at the R prompt to see what this new version looks like. 
+
+(4) DynF, Gcontrol, Rcontrol and Rcontrol2 management proceedures now infer the gradient in Surplus production with biomass according to smoothed trends in catch and biomass. These are 1-degree loess smoothers applied to log(catch) and log(biomass). These approaches now seem to work a bit better, particularly DynF. Again type these in at the R prompt to see whats new. 
+
+(5) One of the requirements of submission to CRAN-R is that parallel processing be limited to a maximum of two processors. Build time must also be relatively quick. These two restrictions make sense but they limit the full range of funcitonality that can be demonstrated in these vignettes. If you have a quad-core computer you should specify cpus=8 when calling sfInit()
+
+(6) Deterministic methods. If the user specifies reps=1, any DLM quota method will produce a single quota recommendation that is calculated from the mean values of all the inputs. In some cases this provides very similar outcomes to sampling stochastic quotas and choosing some intermediate percentile (although rarely exactly the same). The central advantage is that the closed loop calculations are many fewer and it takes much less time to get comparable results. 
+
+
+\section{Prerequisites}
+
+At the start of every session there are a few things to do: load the DLMtool library, make data available and set up cluster computing. 
+
+\subsection{Loading the library}
+<<Prerequisites_library,echo=TRUE,eval=TRUE>>=
+library(DLMtool)
+@
+
+\subsection{Unpacking data and objects}
+<<Prerequisites_sendall,echo=TRUE>>=
+for(i in 1:length(DLMdat))assign(DLMdat[[i]]@Name,DLMdat[[i]])
+@
+
+\subsection{Initiating the cluster}
+
+Set up the cluster (note that most computers make use of hyperthreading technology so a quad-core PC has 8 threads, this is set to 2 here to meet CRAN-R package submission requirements). 
+
+<<Prerequisites_sfinit,echo=TRUE,warning=F>>=
+sfInit(parallel=T,cpus=2) 
+@
+
+\noindent Export all the data and functions to the cluster
+
+<<Prerequisites_exportall,echo=TRUE>>=
+sfExportAll()            
+@
+
+\noindent Set a random seed in order make results reproducible
+
+<<Prerequisites_setseed,echo=TRUE>>=
+set.seed(1)            
+@
+
+
+\section{Quick start}
+
+Here is a quick demonstration of core DLMtool functionality.
+
+\subsection{Define an operating model}
+
+The operating model is the 'simulated reality': a series of known simulations against which to test various data-limited methods. Operating models can either be specified in detail according to each variable in turn (e.g. sample natural mortality rate between 0.2 and 0.3, trajectory in fishing effort of between 0.5 and 1 per cent per annum) or alternatively the user can rapidly construct an operating model based on a set of default Stock, Fleet and Observation models. In this case we take the latter approach and pick the Rockfish Stock type, a Generic fleet type and an observation model that generates data that can be both imprecise and biased.
+
+<<Demo_operating_model_1,echo=TRUE>>=
+OM<-new('OM',                                        
+        Rockfish,                                    
+        Generic_fleet,                              
+        Imprecise_Biased)                            
+@
+
+\noindent The operating model class 'OM' has many different slots which control the ranges of population and fleet parameters that may be sampled in addition to parameters that control the quality of the data simulated. You can list these using slotNames() or can look up the help file entry:
+
+<<Demo_operating_model_2,echo=TRUE>>=
+slotNames(OM)
+class?OM
+@
+
+\subsection{Define a subset of data-limited methods}
+
+There are three different types of assessment method / management procedure currently included in DLMtool: DLM quota (output controls), DLM size (size/age controls) and DLM space (spatial controls). In this example we use a generic class finder 'avail' to list all available methods of class 'DLM quota' and select some for simulation testing.
+
+<<Demo_methods_1,echo=TRUE>>=
+avail('DLM quota')
+methods<-c("Fratio",                                  
+           "DCAC",                          
+           "Fdem",    
+           "DD")                                      
+@
+
+\noindent To find out more about these methods you can use the built-in R help functions. E.g:
+
+<<Demo_methods_2,echo=TRUE>>=
+?Fratio
+?DBSRA
+@
+
+\noindent Or simply view the code. E.g:
+
+<<Demo_methods_3,echo=TRUE>>=
+Fratio
+@
+
+\subsection{Run an MSE and plot results}
+
+The methods can now be tested using the operating model. NOTE that this is just a demonstration, in a real MSE you should use many more simulations (>200), reps (samples per method >100) and perhaps a more frequent assessment interval (e.g. 2 or 3 years). Note that when reps is set to 1, all stochastic methods use the mean value of an input and do not sample from the distribution according to the specified CV (the methods become deterministic and no longer produce a distribution of the quota recommendation). 
+
+<<Demo_MSE_1,echo=TRUE>>=
+RockMSE<-runMSE(OM,methods,nsim=20,reps=1,proyears=30,interval=5)
+@
+
+\noindent A trade-off function provides a visualization of the expected (mean) performance of the methods in terms of stock status, overfishing and yield. 
+
+<<Demo_MSE_Tplot_1,echo=TRUE,out.width='0.5\\linewidth',out.height='0.5\\linewidth'>>=
+Tplot(RockMSE)
+@
+
+\noindent Much more detailed plots are also available that include stock and overfishing trajectories, kobe plots and sensitivity analyses:
+
+<<Demo_MSE_plot_2,echo=TRUE,fig.width=9,fig.height=4,out.width='0.9\\linewidth',out.height='0.45\\linewidth'>>=
+plot(RockMSE)
+@
+
+\noindent The final plot you see here illustrates how different simulated parameters (x axis) affect yield (top row) and the probability of overfishing (bottom row). The plots are organised in terms of most important (left, high correlation) to least important (right, lower correlation). 
+
+This particular plot is for DD, a delay-difference model. It is clear from the lower left hand plot that probability of overfishing is most strongly determined by the beta parameter that controls hyperstability in the relative abundance index. We can see that below a value of 1 (hyperstable, eg. relative abundance index declines more slowly than 'true' simulated biomass) the propensity for overfishing is greatly increased. This is a predictable result but these plots demonstrate that this is a dominant effect relative to other aspects of the simulation. 
+
+\subsection{Applying methods to real data}
+
+A number of real DLM data-objects were loaded into the workspace when we ran SendAll() at the start. In this section we examine a real data object and apply data-limited methods to it. Just like the operating model we can find all the objects of real data class 'DLM', we can list the slots of a DLM data object and also look up this class in the help file:
+
+<<Demo_real_data_slots,echo=TRUE>>=
+avail('DLM')
+slotNames(Canary_Rockfish)
+class?DLM
+@
+
+\noindent DLMtool includes functions to interrogate a real data object to see what methods can be applied, those that cannot and also what data are needed to get those methods working:
+
+<<Demo_real_data_Can_Cant_Needed,echo=TRUE>>=
+Can(Canary_Rockfish)
+Cant(Canary_Rockfish)
+Needed(Canary_Rockfish)
+@
+
+\noindent The function getQuota() automatically detects which methods can be applied and calculates an OFL distribution for each method which can then be plotted:
+
+<<Demo_real_getQuota,echo=TRUE>>=
+RockReal<-getQuota(Canary_Rockfish)
+@
+
+<<Demo_real_pq,echo=TRUE,fig.height=10,fig.width=3,out.width='0.3\\linewidth',out.height='1\\linewidth'>>=
+plot(RockReal)
+@
+
+\subsection{Conduct a sensitivity analysis}
+<<Demo_real_sense,echo=TRUE,out.width='0.5\\linewidth',out.height='0.5\\linewidth'>>=
+RockReal<-Sense(RockReal,"DCAC")
+@
+
+\noindent The sensitivity plot reveals which inputs to a method most strongly affect the quota recommendation. The idea is to focus discussion on those inputs and their credibility.
+
+
+\section{From MSE to management recommendations}
+
+In this section we take a more thorough systematic approach to MSE and data implementation. This is an example of how DLMtool may be used to select methods and then apply them to real data. This is intended to be a straw-man demonstration and in no way is a recommendation about appropriate management objectives! 
+
+In this example our real-life stock is a moderately long-lived reef-fish of moderately high recruitment compensation that has been subject to fairly consistent fishing pressure over recent years. We suspect that fishing activities do not effectively operate on older age classes since the fish exhibit ontogenetic offshore movements where there is less fishing. In general the stock is thought to be a relatively low stock levels going by catch rate observations but frankly, we don't have a precise handle on stock depletion. Since fishing activities have changed spatial distribution and the stock is targetted there is the potential for hyperstability in our observations of catch rates over time. 
+
+This section assumes that you have completed the four prerequisites already: library(DLMtool), SendAll(), sfInit(parallel=T,cpus=8) and sfExportAll(). 
+
+\subsection{Building an appropriate operating model}
+
+\noindent We start by specifying an operating model. Looking at the prebuilt stock objects we decide that the 'Snapper' stock object is the closest fit.
+
+<<Full_MSE_define_stock,echo=TRUE>>=
+avail('Stock')
+ourstock<-Snapper
+@
+
+\noindent We make some modifications to better suite our particular case study such as stock depletion between 5 and 30 per cent of unfished levels and a candidate MPA (between 5 - 15 percent of unfished biomass) with retention (probability of staying in the MPA) of 80 - 99 percent. Remember to get help on the OM objects and their slots type class?OM at the command line. 
+
+<<Full_MSE_setup_bio,echo=TRUE>>=
+ourstock@D<-c(0.05,0.3)
+ourstock@Frac_area_1<-c(0.05,0.15)
+ourstock@Prob_staying<-c(0.4,0.99)
+@
+
+\noindent We now choose a fleet type for our operating model and choose to modify a generic fleet of flat recent effort, adding dome-shaped vulnerability as a possibility for older age classes and some spatial targetting: 
+
+<<Full_MSE_setup_fleet,echo=T>>=
+ourfleet<-Generic_FlatE
+ourfleet@Vmaxage<-c(0.5,1)
+ourfleet@Spat_targ<-c(1,1.5)
+@
+
+\noindent Finally, Using our fleet and stock objects we construct an operating model object assuming that the data we have are likely to be imprecise and potentially biased. Type avail('Observation') at the command line to see the various pre-defined observation model objects.
+
+<<Full_MSE_create_OM,echo=T>>=
+ourOM<-new('OM',ourstock,ourfleet,Imprecise_Biased)
+@
+
+\subsection{MSE evaluation of methods}
+
+Now that we have our operating model we run a trial MSE. In this case we use a very small number of simulations (20, which is very low to meet CRAN-R package building requirments) but change the length of the projection and the length of the interval between updates to reflect our stock and management system. 
+
+Since we do not specify a vector of particular methods, the MSE will run for all possible methods. Note that this could take a few minutes depending on how monstrous you computer is. Note that in a real setting it might be advisable to increase the number of simulations to at least 192 and, if stochastic methods are to be used, increase the samples per method (reps) to at least 100 for this first stage to obtain stable aggregate results. 
+
+<<Full_MSE_runMSE,our_MSE_1,echo=TRUE>>=
+ourMSE<-runMSE(ourOM,proyears=20,interval=5,nsim=20,reps=1)
+@
+
+\noindent A summary trade-off plot reveals a wide range of performance:
+
+<<Full_MSE_Tplot,echo=TRUE,out.width='0.5\\linewidth',out.height='0.5\\linewidth'>>=
+Tplot(ourMSE)
+@
+
+\noindent In this example process, we decide that we would like to select a targetted subset of these methods that have greater than 20 percent of long-term yield (given ideal fixed fishing mortality rate), less than a 50 percent rate of overfishing and less than a 10 percent chance of dropping below a low stock level, in this case 10 percent of BMSY. To do this we calculate the summary table and subset it:
+
+<<Full_MSE_subset_targ,echo=TRUE>>==
+Results<-summary(ourMSE) 
+Results
+Targetted<-subset(Results, Results$Yield>20 & Results$POF<50 & Results$P10<10)
+Targetted
+@
+
+\noindent Our new subsetted methods can be used to run a more focused MSE that includes a greater number of simulations for a detailed assessment of performance. Again note that in a real setting it would be advisable to increase the number of simulations further to at least 400.You might also want to increase the number of stochastic samples per method (reps) to a higher number.
+
+<<Full_MSE_runMSE_2,echo=T>>=
+ourMSE2<-runMSE(ourOM,Targetted$Method,proyears=20,interval=5,nsim=40,reps=1)
+@
+
+\noindent Several detailed plots can provide greater information about exactly how each method performed over the projected time period including Projection and Kobe plots:
+
+<<Full_MSE_Pplot,echo=T,fig.width=12,fig.height=11,out.width='0.9\\linewidth',out.height='0.85\\linewidth'>>=
+Pplot(ourMSE2)
+@
+
+<<Full_MSE_Kplot,echo=T,out.width='0.6\\linewidth',out.height='0.6\\linewidth'>>=
+Kplot(ourMSE2)
+@
+
+<<Full_MSE_Tplot2,echo=T,out.width='0.5\\linewidth',out.height='0.5\\linewidth'>>=
+Tplot(ourMSE2)
+@
+
+\noindent These plots indicate that methods based on a stable F strategy (DynF and Fratio) and the Yield per recruit (YPR) analysis are at the upper limit of the trade-off space (ie all other methods provide worse performance in one or more dimensions). In this case the three methods offer a contrasting trade-off between probability of overfishing and long-term yield. It remains to be seen whether any of these approaches can be applied to the real data for our reef fish... 
+
+\subsection{Applying methods to our real data}
+
+A real DLM data object 'ourReefFish', was loaded into the current R session when we ran the SendAll() function. We can summarise some of the data in this DLM data object using the generic function summary():
+
+<<Full_MSE_realdata_summary,echo=T,fig.width=7,fig.height=3.5,out.width='0.8\\linewidth',out.height='0.4\\linewidth'>>=
+summary(ourReefFish)
+@
+
+\noindent The Can() function reveals that a range of methods are available but not the three best performing methods identified by the MSE (DynF, Fratio, YPR). Nonetheless we can calculate and plot the OFLs for the available methods:
+
+<<Full_MSE_realdata_getQuota,echo=T>>=
+ourReefFish<-getQuota(ourReefFish)
+@
+
+<<Full_MSE_realdata_plot_quota,echo=T,fig.width=3,fig.height=8,out.width='0.3\\linewidth',out.height='0.80\\linewidth'>>=
+plot(ourReefFish)
+@
+
+\noindent The Needed() function shows that there is only one remaining data requirement to make each of these methods work, a current estimate of abundance (Abun, a slot in the DLM data object. see ?DLM). While this may seem like rather a demanding data requirement it is worth remembering that DynF, Fratio and YPR outperformed the remaining methods on average despite fairly bad current abundance information that could have observation error with a CV of up to 100 per cent and a bias sampled from a distribution with CV of 75 percent:
+
+<<Full_MSE_realdata_Bt_bias,echo=T>>=
+ourOM@Btcv
+ourOM@Btbiascv
+@
+
+\noindent In other words our MSE generated observations of current biomass that could easily be double or half the true level  across the whole time series and were very noisy. The question now is whether gathering such data would be worthwhile (e.g. a systematic fishery independent survey). To refresh our memory we can re-plot he tradeoffs of the targetted MSE:
+
+<<Full_MSE_realdata_Tplot_2_refresh,echo=T,out.width='0.5\\linewidth',out.height='0.5\\linewidth'>>=
+Tplot(ourMSE2)
+@
+
+\noindent If we focus on output controls there are a cluster of methods that offer comparable performance that are available for our real data such as the delay-difference stock assessment (DD). We can use sensitivity testing to better understand how fragile quota recommendations are to changes in our data inputs:
+
+<<Full_MSE_realdata_sense_DD,echo=T,out.width='0.5\\linewidth',out.height='0.7\\linewidth'>>=
+ourReefFish<-Sense(ourReefFish,'DD')
+@
+
+\noindent In this case it is a toss-up between them. Both show primary sensitivity to bias in reported catches (fairly obviously) and little sensitivity to the remaining inputs. In this case it might be necessary to try an alternative run of the operating model given other credible parameters to see if we can distinguish between these methods.
+
+\subsection{What have we learned?}
+In this simple walkthrough we have established what methods work best for our stock, fishery and observation type. It was possible to establish the frailties of these methods by examining what simulated parameters drive yield and probability of overfishing (using the plot() function). Our application to real data produced actual OFL recommendations for methods that were available. At least three methods could not be applied that the MSE indicated could provide benefits in terms of both yield and limiting overfishing. We know what data are necessary to make these work but have yet to decide whether collecting these data is worthwhile. Above all, the approach is transparent and reproducible. 
+
+Depending on how utility is characterised, it may be possible to establish the cost-efficacy of future data-collection based on the long-term yield differential of the methods that are available and those that need additional data. 
+
+
+\section{Designing new methods}
+
+DLMtool was designed to be extensible in order to promote the development of new methods. In this section we design a series of new methods that include spatial controls and input controls in the form of age-restrictions. The central requirement of any method is that it can be applied to a DLM data object using the function sapply (sfSapply() in parallel processing). DLM data object have a single position x for each data entry, e.g. one value for natural mortality rate (DLM@M[x]), a single vector of historical catches (DLM@Cat[x,]) etc. In the MSE analysis this is extended to nsim positions. It follows that any method arranged to function sapply(x,Method,DLM) will work. For example we can get 5 stochastic samples of the OFL for the demographic FMSY method paired to catch-curve analysis FdemCC applied to a real data-limited data object for red snapper using:
+
+<<New_methods_basic_run,echo=T>>=
+sapply(1,Fdem_CC,Red_snapper,reps=5)
+@
+
+The MSE just populates a DLM data object with many simulations and uses sapply() (or sfSapply() in cluster computing mode) to calculate an management recommendation for each simulation. By making methods compatible with this standard the very same equations are used in both the MSE and the real management advice. 
+
+\noindent The following new methods illustrate this.
+
+\subsection{Average historical catch method}
+
+The average historical catch has been suggested as a starting point for setting OFLs in the most data-limited situations (following Restrepo et al. 1998). Here we design such an approach:
+
+<<New_methods_AvC,echo=T>>=
+AvC<-function(x,DLM,reps)rlnorm(reps,log(mean(DLM@Cat[x,],na.rm=T)),0.1) 
+@
+
+\noindent Note that all methods have to be stochastic in this framework which is why we sample from a log-normal distribution with a CV of roughly 10 per cent. 
+
+\noindent Before the method can be 'seen' by the rest of the DLM package we have to do three more things. The method must be assigned a class based on what outputs it provides. Since this is an output control (quota) based method we assign it class 'DLM quota'. The method must also be assigned to the DLMtool namespace and -if we are using parallel computing- exported to the cluster:
+
+<<New_methods_AvC_export,echo=T>>=
+class(AvC)<-"DLM quota"
+environment(AvC) <- asNamespace('DLMtool')
+sfExport("AvC")
+@
+
+\subsection{Third-highest catch}
+
+In some data-limited settings third highest historical catch has been suggested as a possible catch-limit. Here we use a similar approach to the average catch method above (AvC) and take draws from a log-normal distribution with CV of 10 per cent:
+
+<<New_methods_THC,echo=T>>=
+THC<-function(x,DLM,reps){
+  rlnorm(reps,log(DLM@Cat[x,order(DLM@Cat[x,],decreasing=T)[3]]),0.1)
+}
+class(THC)<-"DLM quota"
+environment(THC) <- asNamespace('DLMtool')
+sfExport("THC")
+@
+
+\subsection{Fishing starting at age 5}
+
+To simulate input controls that aim to alter the age-vulnerability to fishing it is possible to design a method of class 'DLM size'. These simply describe a vector of fractional vulnerability (0-1) across ages. In this example we freeze fishing on age-classes 1-4 and maintain fishing for ages 5+:
+
+<<New_methods_agelim5,echo=T>>=
+agelim5<-function(x,DLM)c(rep(0,4),rep(1,DLM@MaxAge-4)) 
+class(agelim5)<-"DLM size"
+environment(agelim5) <- asNamespace('DLMtool')
+sfExport("agelim5")
+@
+
+\noindent Note that these approaches still require an 'x' argument even if they don't make use of it (ie they are the same regardless of the data or simulated data).
+
+\subsection{Reducing fishing rate in area 1 by 50 per cent}
+
+Spatial controls operate similarly to the age/size based controls: a vector of length 2 (the spatial simulator is a 2-box model) that indicates the fraction of current spatial catches. This is an early version of spatial control in the DLMtool so it only deals with reductions in catch and does not simulate reallocation of fishing effort. In this example we reduce catches in area 1 by 50 percent and assign the method class 'DLM space'. 
+
+<<New_methods_area1_50,echo=T>>=
+area1_50<-function(x,DLM)c(0.5,1) 
+class(area1_50)<-"DLM space"
+environment(area1_50) <- asNamespace('DLMtool')
+sfExport("area1_50")
+@
+
+\subsection{Applying the new methods}
+
+Our methods are now compatible with all of the DLMtool functionality. Lets run a quick MSE and see how they fare:
+
+<<New_methods_MSE,echo=T>>=
+new_methods<-c("AvC","THC","agelim5","area1_50")
+OM<-new('OM',Porgy, Generic_IncE, Imprecise_Unbiased)
+PorgMSE<-runMSE(OM,new_methods,maxF=1,nsim=20,reps=1,proyears=20,interval=5)     
+@
+
+<<New_methods_MSE_Tplot,echo=T,out.width='0.5\\linewidth',out.height='0.5\\linewidth'>>=
+Tplot(PorgMSE)                                        
+@
+
+\noindent What if starting depletion were different, e.g. likely to be under BMSY?
+
+<<New_methods_MSE_alt_dep,echo=T>>=
+OM@D
+OM@D<-c(0.05,0.3)
+PorgMSE2<-runMSE(OM,new_methods,maxF=1,nsim=20,reps=1,proyears=20,interval=5)     
+@
+
+<<New_methods_MSE_alt_dep_Tplot,echo=T,out.width='0.5\\linewidth',out.height='0.5\\linewidth'>>=
+Tplot(PorgMSE2)
+@
+
+\noindent Putting aside the likelihood of implementing a perfect knife-edge vulnerability to fishing at age 5, it appears that we have a clear winner in agelim5 even under different starting depletion levels. Third highest catch on the other hand appears risky to say the least. You could try some other starting depletion levels to see under what circumstances the trade-off space changes dramatically.  
+
+
+\section{Managing real data}
+
+DLMtool has a series of functions to make importing data and applying data-limited methods relatively straightforward. There are two approaches: (1) fill out a .csv data file in excel or a text editor and automatically create a DLM data object (class DLM) or (2) create a blank DLM data object in R and populate it in R. 
+
+\subsection{Importing data}
+
+Probably the easiest way to get your data into the DLMtool is to populate a .csv datafile. These files have a line for each slot of the DLMdata object e.g:
+
+<<Real_data_slotNames,echo=T>>=
+slotNames('DLM')
+@
+
+\noindent You do not have to enter data for every line of the data file, if data are not available simply put an 'NA' next to any given field. 
+
+\noindent A number of example .csv files can be found in the directory where the DLMtool package was installed:
+
+<<Real_data_DLMDataDir,echo=T>>=
+DLMDataDir()
+@
+
+\noindent To get data from a .csv file you need only specify its location e.g new('DLM',"I:/Mackerel.csv"):
+
+\subsection{Populating a DLM data object in R}
+
+Alternatively you can create a blank DLM data object and fill the slots directly in R. E.g:
+
+<<Real_data_Madeup,echo=T>>=
+Madeup<-new('DLM')                                  #  Create a blank DLM object
+Madeup@Name<-'Test'                                 #  Name it
+Madeup@Cat<-matrix(20:11*rlnorm(10,0,0.2),nrow=1)   #  Generate fake catch data
+Madeup@Units<-"Million metric tonnes"               #  State units of catch
+Madeup@AvC<-mean(Madeup@Cat)                        #  Average catches for time t (DCAC)
+Madeup@t<-ncol(Madeup@Cat)                          #  No. yrs for Av. catch (DCAC)
+Madeup@Dt<-0.5                                      #  Depletion over time t (DCAC)
+Madeup@Dep<-0.5                                     #  Depletion relative to unfished 
+Madeup@Mort<-0.1                                    #  Natural mortality rate
+Madeup@Abun<-200                                    #  Current abundance
+Madeup@FMSY_M<-0.75                                 #  Ratio of FMSY/M
+Madeup@AM<-3.5                                      #  Age at maturity
+Madeup@BMSY_B0<-0.35                                #  BMSY relative to unfished
+@
+
+\subsection{Working with DLM data objects}
+
+A generic summary function is available to visualize the data in a DLMdata object:
+
+<<Real_data_summary,echo=T,fig.width=7,fig.height=3.5,out.width='0.8\\linewidth',out.height='0.4\\linewidth'>>=
+summary(Atlantic_mackerel)
+@
+
+You can see what methods can and can't be applied given your data and also what data are needed to get methods working: 
+
+<<Real_data_CCNR,echo=T>>=
+Can(Atlantic_mackerel)
+Cant(Atlantic_mackerel)
+Needed(Atlantic_mackerel)
+@
+
+\noindent Spatial methods and age-vulnerability methods can be MSE tested but are a management recommendation in themselves. DLM quota methods however can be calculated and plotted using getQuota() function:
+
+<<Real_data_getQuota,echo=T>>=
+Atlantic_mackerel<-getQuota(Atlantic_mackerel,reps=48)
+@
+
+<<Real_data_plot_Quota,echo=T,fig.width=3,fig.height=8,out.width='0.3\\linewidth',out.height='0.80\\linewidth'>>=
+plot(Atlantic_mackerel)
+@
+
+
+\section{Efficacy test of an hypothetical Marine Protected Area}
+
+Marine Protected Areas (MPAs) have been suggested as a management tool for limiting the impact of overfishing. In this section we create a Marine Reserve (no fishing) and examine performance given different reserve size and exchange rates.
+
+\subsection{Adapting an existing Stock object}
+
+We use the Snapper stock object as a template and modify two variables, the probability of individuals staying in area 1 (the MPA) and the size of area 1 (the MPA):
+
+<<MPA_spec,echo=T>>=
+Rock<-Rockfish
+Rock@Prob_staying<-c(0.9,0.999)
+Rock@Frac_area_1<-c(0.05,0.5)
+@
+
+We now run the MSE for the area1MPA method (catches maintained at current levels in area 2 and set to zero in area 1). 
+
+<<MPA_run,echo=T>>=
+RockMPA<-runMSE(new('OM',Rock,Generic_fleet,Generic_obs),"area1MPA",nsim=20)
+summary(RockMPA)
+@
+
+<<MPA_plot,echo=TRUE,fig.width=9,fig.height=5,out.width='0.9\\linewidth',out.height='0.45\\linewidth'>>=
+plot(RockMPA)
+@
+
+The sensitivity plots reveal that the fraction of the stock in area1 is critical to determining the effect of the MPA in terms of probability of overfishing but has much less impact on the long-term yield, despite reducing catches by an increasingly large amount as fraction in area 1 increases. In terms of yield, recruitment compensation (steepness, h) is a stronger determinant of yield than the size of the MPA. Interestingly the probability of individuals staying in area 1 does not feature in the top six most correlated variables for either yield or probability of overfishing. 
+
+
+\section{Limitations}
+
+\subsection{Idealised observation models for catch composition data}
+Currently DLMtool simulates catch-composition data from the true simulated catch composition data via a multinomial distribution and some effective sample size. This observation model may be unrealistically well behaved and favour those approaches that use these data.
+
+\subsection{Harvest control rules must be integrated into data-limited methods}
+In this version of DLMtool harvest control rules (e.g. the 40-10 rule) must be written into a data-limited method. There is currently no functionality whereby a given HCR can be applied to a given class of method. The reason for this is that it would require further subclasses. For example the 40-10 rule may be appropriate for the output of DBSRA but it would not be appropriate for some of the algorithmic management procedures such as DynF that already incorporate throttling of quota recommendations according to stock depletion.
+
+\subsection{Natural mortality rate at age}
+The current simulation assumes constant M with age. Age-specific M will be added soon. 
+
+\subsection{Ontogenetic habitat shifts}
+Since the operating model simulated two areas, it is possible to prescribe a log-linear model that moves fish from one are to the other as they grow older simulating, for example, the ontogenetic shift of groupers from near shore waters to offshore reefs. Currently this feature is in development. 
+
+\subsection{Implementation error}
+In this edition of DLMtool there is no implementation  error. The only imperfection between a management recommendation and the simulated quota comes in the form of the MaxF argument that limits the maximum fishing mortality rate on any given age-class in the operating model. The default is 0.8 which is high for all but the shortest living fish species.  
+
+
+\section{References}
+Carruthers, T.R., Punt, A.E., Walters, C.J., MacCall, A., McAllister, M.K., Dick, E.J., Cope, J. 2014. Evaluating methods for setting catch-limits in data-limited fisheries. Fisheries Research. 153, 48-68.
+
+\noindent Costello, C., Ovando, D., Hilborn, R., Gains, S.D., Deschenes, O., Lester, S.E., 2012. Status and solutions for the world???s unassessed fisheries. Science. 338, 517-520. Deriso, R. B., 1980. Harvesting Strategies and Parameter Estimation for an Age-Structured Model. Can. J. Fish. Aquat. Sci. 37, 268-282.
+
+\noindent Dick, E.J., MacCall, A.D., 2011. Depletion-Based Stock Reduction Analysis: A catch-based method for determining sustainable yields for data-poor fish stocks. Fish. Res. 110, 331-341.
+
+\noindent Geromont, H.F. and Butterworth, D.S. 2014. Complex assessment or simple management procedures for efficient fisheries management: a comparative study. ICES J. Mar. Sci. doi:10.1093/icesjms/fsu017
+
+\noindent MacCall, A.D., 2009. Depletion-corrected average catch: a simple formula for estimating sustainable yields in data-poor situations. ICES J. Mar. Sci. 66, 2267-2271.
+
+\noindent Restrepo, V.R., Thompson, G.G., Mace, P.M., Gabriel, W.L., Low, L.L., MacCall, A.D., Methot, R.D., Powers, J.E., Taylor, B.L., Wade, P.R., Witzig, J.F.,1998. Technical Guidance On the Use of Precautionary Approaches to Implementing National Standard 1 of the Magnuson-Stevens Fishery Conservation and Management Act. NOAA Technical Memorandum NMFS-F/SPO-31. 54 pp.
+
+<<sfstop,echo=TRUE,include=FALSE,cache=FALSE>>=
+sfStop()                            
+@
+
+
+\end{document}
