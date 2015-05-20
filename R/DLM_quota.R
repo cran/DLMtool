@@ -46,7 +46,7 @@ DynF<-function(x,DLM,yrsmth=10,gg=2,reps=100){
   SP_hist<-B_hist[ind]-B_hist[ind1]+C_hist[ind1]
   
   Frat<-trlnorm(reps,DLM@Mort[x],DLM@CV_Mort[x])*trlnorm(reps,DLM@FMSY_M[x],DLM@CV_FMSY_M[x])
-  Flim<-quantile(Frat,c(0.1,0.9))
+  Flim<-Frat*c(0.5,2)
   
   yind<-1:length(SP_hist)
   SP_mu<-predict(lm(SP_hist~yind),newdat=list(yind=length(SP_hist)+1))
@@ -61,11 +61,52 @@ DynF<-function(x,DLM,yrsmth=10,gg=2,reps=100){
   newF[newF<Flim[1]]<-Flim[1]
   newF[newF>Flim[2]]<-Flim[2]
   
-  OFL<-newF*DLM@Abun[x]
+  OFL<-newF*B_hist[yrsmth]
   OFLfilter(OFL)
   
 }
 class(DynF)<-"DLM quota"
+
+
+Fadapt<-function(x,DLM,reps=100,yrsmth=7,gg=1){
+  
+  dependencies="DLM@Year, DLM@Cat, DLM@Ind, DLM@Abun, DLM@Mort, DLM@FMSY_M"
+  ind<-(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)
+  
+  C_dat<-log(DLM@Cat[x,ind])
+  B_dat<-log(DLM@Ind[x,ind]/DLM@Ind[x,ind[yrsmth]]*DLM@Abun[x])
+  C_hist<-exp(predict(loess(C_dat~ind,degree=1)))
+  B_hist<-exp(predict(loess(B_dat~ind,degree=1)))
+  
+  ind<-2:yrsmth
+  ind1<-1:(yrsmth-1)
+  SP_hist<-B_hist[ind]-B_hist[ind1]+C_hist[ind1]
+  
+  Frat<-DLM@Mort[x]*DLM@FMSY_M[x]
+  Flim<-Frat*c(0.5,2)
+  Flimr<-Flim[2]-Flim[1]
+  
+  yind<-1:length(SP_hist)
+  SP_mu<-predict(lm(SP_hist~yind),newdat=list(yind=length(SP_hist)+1))
+  SP_se<-predict(lm(SP_hist~yind),newdat=list(yind=length(SP_hist)+1),se=T)$se.fit
+  SP_new<-rnorm(reps,SP_mu,SP_se/2)
+  Glm<-summary(lm(SP_hist~B_hist[ind1]))$coefficients[2,1:2] # plot(B_hist[ind1],SP_hist) # points(B_hist[ind1],SP_hist,col='green')
+  G_new<-rnorm(reps,Glm[1],Glm[2])
+  
+  Fold<-mean(C_hist/B_hist)
+  
+  if(Fold<Flim[1])Fmod1<-(-2)
+  if(Fold>Flim[2])Fmod1<-2
+  if(Fold>Flim[1]&Fold<Flim[2]){
+    Ffrac<-(Fold-Flim[1])/Flimr
+    Fmod1<-log(Ffrac/(1-Ffrac))
+  }
+  Fmod2<-Fmod1+gg*-G_new
+  newF<-Flim[1]+(exp(Fmod2)/(1+exp(Fmod2)))*Flimr
+  OFL<-newF*B_hist[yrsmth]
+  OFLfilter(OFL)
+}
+class(Fadapt)<-"DLM quota"
 
 DepF<-function(x,DLM,reps=100){
   dependencies="DLM@Year, DLM@Dep, DLM@Mort, DLM@FMSY_M, DLM@BMSY_B0"
@@ -190,7 +231,7 @@ class(Rcontrol2)<-"DLM quota"
 
 
 GB_CC<-function(x,DLM,reps=100){
-  dependencies="DLM@Cref"
+  dependencies="DLM@Cref,DLM@Cat"
   Catrec<-DLM@Cat[x,length(DLM@Cat[x,])]
   OFL<-trlnorm(reps,DLM@Cref[x],DLM@CV_Cref)
   OFL[OFL>(1.2*Catrec)]<-1.2*Catrec
@@ -198,7 +239,6 @@ GB_CC<-function(x,DLM,reps=100){
   OFLfilter(OFL)
 }
 class(GB_CC)<-"DLM quota"
-
 
 GB_slope<-function(x,DLM,reps=100,yrsmth=5,lambda=1){
   dependencies="DLM@Year, DLM@Cat, DLM@CV_Cat, DLM@Ind"
@@ -216,7 +256,6 @@ GB_slope<-function(x,DLM,reps=100,yrsmth=5,lambda=1){
   OFLfilter(OFL)
 }
 class(GB_slope)<-"DLM quota"
-
 
 GB_target<-function(x,DLM,reps=100,w=0.5){
   dependencies="DLM@Cat, DLM@Cref, DLM@Iref, DLM@Ind"
@@ -236,7 +275,168 @@ GB_target<-function(x,DLM,reps=100,w=0.5){
 class(GB_target)<-"DLM quota"
 
 
-MMHCR<-function(x,DLM,reps=100,alp=c(0.8,1.2),bet=c(0.8,1.2)){
+CC1<-function(x,DLM,reps=100,yrsmth=5,xx=0){
+  dependencies="DLM@Cat, DLM@CV_Cat"
+  C_dat<-DLM@Cat[x,(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)]
+  OFL<-(1-xx)*trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5)) # mean catches over the interval
+  OFLfilter(OFL)
+}  
+class(CC1)<-"DLM quota"
+
+CC4<-function(x,DLM,reps=100,yrsmth=5,xx=0.3){
+  dependencies="DLM@Cat, DLM@CV_Cat"
+  C_dat<-DLM@Cat[x,(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)]
+  OFL<-(1-xx)*trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5)) # mean catches over the interval
+  OFLfilter(OFL)
+}  
+class(CC4)<-"DLM quota"
+
+
+LstepCC1<-function(x,DLM,reps=100,yrsmth=5,xx=0,stepsz=0.05,llim=c(0.96,0.98,1.05)){
+  dependencies="DLM@Cat, DLM@CV_Cat, DLM@CAL, DLM@CAL_bins"
+  ind<-(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)
+  C_dat<-DLM@Cat[x,ind]
+  if(is.na(DLM@MPrec[x])){TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5))
+  }else{TACstar<-rep(DLM@MPrec[x],reps)}
+  step<-stepsz*TACstar
+  binval<-DLM@CAL_bins[1:(length(DLM@CAL_bins)-1)]+(DLM@CAL_bins[2]-DLM@CAL_bins[1])/2
+  CALdat<-DLM@CAL[x,,]*rep(binval,each=dim(DLM@CAL)[2]) 
+  avCAL<-apply(CALdat,1,sum)/apply(DLM@CAL,1,sum)
+  Lrecent<-mean(avCAL[ind])
+  Lave<-mean(avCAL[(length(DLM@Year)-(yrsmth*2-1)):length(DLM@Year)])
+  rat<-Lrecent/Lave
+  if(rat<llim[1]){OFL<-TACstar-2*step
+  }else if(rat<llim[2]){OFL<-TACstar-step
+  }else if(rat>llim[3]){OFL<-TACstar+step
+  }else{OFL<-TACstar
+  }
+  OFLfilter(OFL)
+}  
+class(LstepCC1)<-"DLM quota"
+
+LstepCC4<-function(x,DLM,reps=100,yrsmth=5,xx=0.3,stepsz=0.05,llim=c(0.96,0.98,1.05)){
+  dependencies="DLM@Cat, DLM@CV_Cat, DLM@CAL, DLM@CAL_bins"
+  ind<-(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)
+  C_dat<-DLM@Cat[x,ind]
+  if(is.na(DLM@MPrec[x])){TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5))
+  }else{TACstar<-rep(DLM@MPrec[x],reps)}
+  step<-stepsz*TACstar
+  binval<-DLM@CAL_bins[1:(length(DLM@CAL_bins)-1)]+(DLM@CAL_bins[2]-DLM@CAL_bins[1])/2
+  CALdat<-DLM@CAL[x,,]*rep(binval,each=dim(DLM@CAL)[2]) 
+  avCAL<-apply(CALdat,1,sum)/apply(DLM@CAL,1,sum)
+  Lrecent<-mean(avCAL[ind])
+  Lave<-mean(avCAL[(length(DLM@Year)-(yrsmth*2-1)):length(DLM@Year)])
+  rat<-Lrecent/Lave
+  if(rat<llim[1]){OFL<-TACstar-2*step
+  }else if(rat<llim[2]){OFL<-TACstar-step
+  }else if(rat>llim[3]){OFL<-TACstar+step
+  }else{OFL<-TACstar
+  }
+  OFLfilter(OFL)
+}  
+class(LstepCC4)<-"DLM quota"
+
+Ltarget1<-function(x,DLM,reps=100,yrsmth=5,xx=0,xL=1.05){
+  dependencies="DLM@Cat, DLM@CV_Cat, DLM@CAL, DLM@CAL_bins"
+  ind<-(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)
+  C_dat<-DLM@Cat[x,ind]
+  TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5))
+  #step<-stepsz*TACstar
+  binval<-DLM@CAL_bins[1:(length(DLM@CAL_bins)-1)]+(DLM@CAL_bins[2]-DLM@CAL_bins[1])/2
+  CALdat<-DLM@CAL[x,,]*rep(binval,each=dim(DLM@CAL)[2]) 
+  avCAL<-apply(CALdat,1,sum)/apply(DLM@CAL[x,,],1,sum)
+  Lrecent<-mean(avCAL[ind])
+  Lave<-mean(avCAL[(length(DLM@Year)-(yrsmth*2-1)):length(DLM@Year)])
+  L0<-0.9*Lave
+  Ltarget<-xL*Lave
+  if(Lrecent>L0){OFL<-0.5*TACstar*(1+((Lrecent-L0)/(Ltarget-L0)))
+  }else{OFL<-0.5*TACstar*(Lrecent/L0)^2                  
+  }
+  OFLfilter(OFL)
+}  
+class(Ltarget1)<-"DLM quota"
+
+Ltarget4<-function(x,DLM,reps=100,yrsmth=5,xx=0.2,xL=1.15){
+  dependencies="DLM@Cat, DLM@CV_Cat, DLM@CAL, DLM@CAL_bins"
+  ind<-(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)
+  C_dat<-DLM@Cat[x,ind]
+  TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5))
+  #step<-stepsz*TACstar
+  binval<-DLM@CAL_bins[1:(length(DLM@CAL_bins)-1)]+(DLM@CAL_bins[2]-DLM@CAL_bins[1])/2
+  CALdat<-DLM@CAL[x,,]*rep(binval,each=dim(DLM@CAL)[2]) 
+  avCAL<-apply(CALdat,1,sum)/apply(DLM@CAL[x,,],1,sum)
+  Lrecent<-mean(avCAL[ind])
+  Lave<-mean(avCAL[(length(DLM@Year)-(yrsmth*2-1)):length(DLM@Year)])
+  L0<-0.9*Lave
+  Ltarget<-xL*Lave
+  if(Lrecent>L0){OFL<-0.5*TACstar*(1+((Lrecent-L0)/(Ltarget-L0)))
+  }else{OFL<-0.5*TACstar*(Lrecent/L0)^2                  
+  }
+  OFLfilter(OFL)
+}  
+class(Ltarget4)<-"DLM quota"
+
+Islope1<-function(x,DLM,reps=100,yrsmth=5,lambda=0.4,xx=0.2){
+  dependencies="DLM@Year, DLM@Cat, DLM@CV_Cat, DLM@Ind"
+  ind<-(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)
+  C_dat<-DLM@Cat[x,ind]
+  if(is.na(DLM@MPrec[x])){TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5))
+  }else{TACstar<-rep(DLM@MPrec[x],reps)}
+  I_hist<-DLM@Ind[x,ind]
+  yind<-1:yrsmth
+  slppar<-summary(lm(I_hist~yind))$coefficients[2,1:2]
+  Islp <-rnorm(reps,slppar[1],slppar[2])
+  OFL<-TACstar*(1+lambda*Islp)
+  OFLfilter(OFL)
+}
+class(Islope1)<-"DLM quota"
+
+Islope4<-function(x,DLM,reps=100,yrsmth=5,lambda=0.2,xx=0.4){
+  dependencies="DLM@Year, DLM@Cat, DLM@CV_Cat, DLM@Ind"
+  ind<-(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)
+  C_dat<-DLM@Cat[x,ind]
+  if(is.na(DLM@MPrec[x])){TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5))
+  }else{TACstar<-rep(DLM@MPrec[x],reps)}
+  I_hist<-DLM@Ind[x,ind]
+  yind<-1:yrsmth
+  slppar<-summary(lm(I_hist~yind))$coefficients[2,1:2]
+  Islp <-rnorm(reps,slppar[1],slppar[2])
+  OFL<-TACstar*(1+lambda*Islp)
+  OFLfilter(OFL)
+}
+class(Islope4)<-"DLM quota"
+
+Itarget1<-function(x,DLM,reps=100,yrsmth=5,xx=0,Imulti=1.5){
+  dependencies="DLM@Cat, DLM@CV_Cat, DLM@CAL, DLM@CAL_bins"
+  ind<-(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)
+  C_dat<-DLM@Cat[x,ind]
+  TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5))
+  Irecent<-mean(DLM@Ind[x,ind])
+  Iave<-mean(DLM@Ind[x,(length(DLM@Year)-(yrsmth*2-1)):length(DLM@Year)])
+  Itarget<-Iave*Imulti
+  I0<-0.8*Iave
+  if(Irecent>I0){OFL<-0.5*TACstar*(1+((Irecent-I0)/(Itarget-I0)))
+  }else{OFL<-0.5*TACstar*(Irecent/I0)^2}
+  OFLfilter(OFL)  
+}  
+class(Itarget1)<-"DLM quota"
+
+Itarget4<-function(x,DLM,reps=100,yrsmth=5,xx=0.3,Imulti=2.5){
+  dependencies="DLM@Cat, DLM@CV_Cat, DLM@CAL, DLM@CAL_bins"
+  ind<-(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)
+  C_dat<-DLM@Cat[x,ind]
+  TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5))
+  Irecent<-mean(DLM@Ind[x,ind])
+  Iave<-mean(DLM@Ind[x,(length(DLM@Year)-(yrsmth*2-1)):length(DLM@Year)])
+  Itarget<-Iave*Imulti
+  I0<-0.8*Iave
+  if(Irecent>I0){OFL<-0.5*TACstar*(1+((Irecent-I0)/(Itarget-I0)))
+  }else{OFL<-0.5*TACstar*(Irecent/I0)^2}
+  OFLfilter(OFL)  
+}  
+class(Itarget4)<-"DLM quota"
+
+SPmod<-function(x,DLM,reps=100,alp=c(0.8,1.2),bet=c(0.8,1.2)){
   dependencies="DLM@Cat, DLM@Ind, DLM@Abun"
   Ir<-length(DLM@Ind[x,])
   Cr<-length(DLM@Cat[x,])
@@ -255,15 +455,34 @@ MMHCR<-function(x,DLM,reps=100,alp=c(0.8,1.2),bet=c(0.8,1.2)){
     bio2<-DLM@Ind[x,Ir]/qq1
     cct1<-trlnorm(reps2,DLM@Cat[x,Cr-1],DLM@CV_Cat)
     PP<-bio2-bio1+cct1
-    OFL[cond]<-cct1*bet[2]*PP
+    OFL[cond]<-bet[2]*PP
   }
-  # Carr<-cbind(array(rep(DLM@Cat[x,],each=reps),c(reps,length(DLM@Cat[x,]))),OFL)
-  #  Warr<-(DLM@Mort[x]*exp(-DLM@Mort[x]*(1:ncol(Carr))))[ncol(Carr):1]
-  # Warr<-Warr/sum(Warr)
-  #OFL<-apply(t(matrix(Warr,nrow=ncol(Carr),ncol=reps))*Carr,1,sum)
   OFLfilter(OFL)
 }
-class(MMHCR)<-"DLM quota"
+class(SPmod)<-"DLM quota"
+
+SPslope<-function(x,DLM,reps=100,yrsmth=4,alp=c(0.9,1.1),bet=c(1.5,0.9)){
+  
+  dependencies="DLM@Year, DLM@Cat, DLM@Ind, DLM@Abun"
+  ind<-(length(DLM@Year)-(yrsmth-1)):length(DLM@Year)
+  yind<-1:yrsmth
+  C_dat<-DLM@Cat[x,ind]
+  B_dat<-DLM@Ind[x,ind]/DLM@Ind[x,ind[yrsmth]]*DLM@Abun[x]
+  Pt_mu<-B_dat[yrsmth]-B_dat[yrsmth-1]+C_dat[yrsmth-1]
+  Pt_1<-trlnorm(reps,Pt_mu,DLM@CV_Cat)
+  It<-exp(predict(lm(log(B_dat)~yind),newdat=list(yind=yrsmth+1)))
+  Ilast<-B_dat[1]
+  Ct_1<-trlnorm(reps,mean(C_dat),DLM@CV_Cat/(yrsmth^0.5)) # mean catches over the interval
+  
+  rat<-It/Ilast
+  if(rat<alp[1])OFL<-(1-bet[1]*(Ilast-It)/Ilast)*Ct_1
+  if(rat>alp[1]&rat<alp[2])OFL<-Ct_1
+  if(rat>alp[2])OFL<-bet[2]*Pt_1
+  
+   OFLfilter(OFL)
+}
+class(SPslope)<-"DLM quota"
+
 
 SBT1<-function(x,DLM,reps=100,yrsmth=10,k1=1.5,k2=3,gamma=1){
   dependencies="DLM@Cat, DLM@Year, DLM@Ind"
@@ -326,7 +545,7 @@ DD<-function(x,DLM,reps=100){
   Alpha_DD<-Winf*(1-Rho_DD)
   So_DD<-exp(-DLM@Mort[x]) # get So survival rate
   wa_DD<-wa[k_DD]
-  UMSYprior<-c(1-exp(-DLM@Mort*0.5),0.3)
+  UMSYprior<-c(1-exp(-DLM@Mort[x]*0.5),0.3)
   opt<-optim(params,DD_R,opty=1,So_DD=So_DD,Alpha_DD=Alpha_DD,Rho_DD=Rho_DD,
                     ny_DD=ny_DD,k_DD=k_DD,wa_DD=wa_DD,E_hist=E_hist,
                     C_hist=C_hist,UMSYprior=UMSYprior,

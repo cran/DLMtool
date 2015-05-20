@@ -1,14 +1,14 @@
-\name{MMHCR}
-\alias{MMHCR}
+\name{SPmod}
+\alias{SPmod}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Mark Maunder's Harvest Control Rule
+Surplus production based catch-limit modifier
 }
 \description{
-A harvest control rule that makes incremental adjustments to quota recommendations based on the apparent trend in surplus production
+A harvest control rule that makes incremental adjustments to quota recommendations based on the apparent trend in surplus production. Based on the theory of Mark Maunder (IATTC)
 }
 \usage{
-MMHCR(x, DLM, reps = 100, alp = c(0.8, 1.2), bet = c(0.8, 1.2))
+SPmod(x, DLM, reps = 100, alp = c(0.8, 1.2), bet = c(0.8, 1.2))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -29,7 +29,7 @@ Limits for how much the quota can change among years
 }
 }
 \details{
-Note that this isn't exactly what Mark has previous suggested and is stochastic in this implementation. 
+Note that this isn't exactly what Mark has previously suggested and is stochastic in this implementation. 
 }
 \value{
 A numeric vector of quota recommendations

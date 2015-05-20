@@ -77,6 +77,7 @@ Objects can be created by calls of the form \code{new("DLM", stock)}.
     \item{\code{CV_Bref}:}{CV for reference or target biomass level}
     \item{\code{CV_Rec}:}{CV for recent recruitment strength}
     \item{\code{Rec}:}{Recent recruitment strength}
+    \item{\code{MPrec}:}{The previous recommendation of a management proceedure}
   }
 }
 \section{Methods}{

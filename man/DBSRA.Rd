@@ -41,8 +41,4 @@ You may  have noticed that you -the user- specify three of the factors that make
 
 Also the DB-SRA method of this package isn't exactly the same as the original method of Dick and MacCall (2011) because it has to work for simulated depletions above BMSY/B0 and even on occasion over B0. Also it doesn't have the modification for flatfish life histories that has previously been applied by Dick and MacCall.
 }
-\examples{
-for(i in 1:length(DLMdat))assign(DLMdat[[i]]@Name,DLMdat[[i]]) # get data
-avail('DLM')
-sapply(1,DBSRA,China_rockfish,reps=42) # Draw 42 samples of the OFL (quota) for DB-SRA
-}
+

@@ -19,7 +19,3 @@ An object of class MSE
 \author{
 T. Carruthers
 }
-\examples{
-for(i in 1:length(DLMdat))assign(DLMdat[[i]]@Name,DLMdat[[i]]) # get data
-Pplot(MSEtest1)
-}

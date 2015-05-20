@@ -15,9 +15,9 @@
 \begin{document}
 
 %------ Frontmatter ------
-\title{DLMtool: Data-Limited Methods Toolkit (v1.34)}
+\title{DLMtool: Data-Limited Methods Toolkit (v1.35)}
 \author{Tom Carruthers\footnote{t.carruthers@fisheries.ubc.ca}}
-\date{September 2014}
+\date{May 2015}
 \maketitle
 
 \tableofcontents
@@ -33,32 +33,35 @@ DLMtool is a collaboration between the University of British Columbia and the Na
 DLMtool is specifically designed to be extensible in order to encourage the development and testing of new approaches for informing the management of data-limited fish stocks. The package is designed such that the very same methods that are tested by MSE can be applied to provide real management recommendations from real data. Easy incorporation of real data is central advantage of the software and a set of related functions automatically detect what method can be applied given the available data and what additional data are required to get other methods working.
 
 
+\section{A note on version 1.35}
 
-\section{A note on version 1.34}
 The package is still in a beta-testing phase but is now available on CRAN-R. If you find a bug or a problem please send a report to t.carruthers@fisheries.ubc.ca so that I can fix it!  
 
 Fundamentally the package is stochastic so if you run into problems with the code, please report it and in the mean time simply try running it again: it might just have been a rare combination of sampled parameters that caused the problem.
 
 I highly recommend that you use parallel-processing. If however you abort a parallel process (e.g. runMSE()) half-way through you are in the lap of the gods! It will often be necessary to quit R and restart the code. 
 
--- New to 1.34 --
+---- New to 1.35 ----
 
-(1) Temporal autocorrelation in recruitment deviations. This is a simple AR1 type process controlled by a fraction A which controls the weighed mean according to previous recruitment deviation and new recruitment deviation (sigma) in which dev(1)=sigma(1), dev(t)=A*dev(t-1)+(1-A)*sigma(t)
+(1) Ten data-limited management procedures from Geromont and Butterworth (2014, ICES journal, doi:10.1093/icesjms/fst232) CC1, CC4, LstepCC1, LstepCC4, Ltarget1, Ltarget4, Islope1, Islope4, Itarget1, Itarget4. 
 
-(2) Ricker stock recruitment relationship. Similarly to the Beverton Holt model this is parameterized according to steepness. This is now a slot in every stock object Stock@SRrel. SRrel=1 is BH stock-recruitment. SRrel=2 is Ricker stock-recruitment. 
+(2) Mark Maunders cpue index Management Procedure: SPmod, SPslope
 
-(3) SPMSY is no longer bugged. When it can't find a pair of r and K pairs that allow current depletion (inferred from catch trajectory) it widens the search to a larger range. Type in SPMSY at the R prompt to see what this new version looks like. 
+(3) Adaptive F management procedure: Fadapt
 
-(4) DynF, Gcontrol, Rcontrol and Rcontrol2 management proceedures now infer the gradient in Surplus production with biomass according to smoothed trends in catch and biomass. These are 1-degree loess smoothers applied to log(catch) and log(biomass). These approaches now seem to work a bit better, particularly DynF. Again type these in at the R prompt to see whats new. 
+(4) If you set reps to 1 for the MSE, methods no longer take stochastic draws of input parameters and instead use mean values for their respective calculations. 
 
-(5) One of the requirements of submission to CRAN-R is that parallel processing be limited to a maximum of two processors. Build time must also be relatively quick. These two restrictions make sense but they limit the full range of funcitonality that can be demonstrated in these vignettes. If you have a quad-core computer you should specify cpus=8 when calling sfInit()
+(5) Several of the management procedures from version 1.34 have been made more reliable and now operate under a wider range of simulated conditions. 
 
-(6) Deterministic methods. If the user specifies reps=1, any DLM quota method will produce a single quota recommendation that is calculated from the mean values of all the inputs. In some cases this provides very similar outcomes to sampling stochastic quotas and choosing some intermediate percentile (although rarely exactly the same). The central advantage is that the closed loop calculations are many fewer and it takes much less time to get comparable results. 
+---- Coming soon ----
 
+Management procedures linked to input controls. 
+
+Spawning Potential Ratio (SPR) based MPs (e.g. Prince et al. 2014)
 
 \section{Prerequisites}
 
-At the start of every session there are a few things to do: load the DLMtool library, make data available and set up cluster computing. 
+At the start of every session there are a few things to do: load the DLMtool library, make data available and set up parallel computing. 
 
 \subsection{Loading the library}
 <<Prerequisites_library,echo=TRUE,eval=TRUE>>=
@@ -164,7 +167,7 @@ This particular plot is for DD, a delay-difference model. It is clear from the l
 
 \subsection{Applying methods to real data}
 
-A number of real DLM data-objects were loaded into the workspace when we ran SendAll() at the start. In this section we examine a real data object and apply data-limited methods to it. Just like the operating model we can find all the objects of real data class 'DLM', we can list the slots of a DLM data object and also look up this class in the help file:
+A number of real DLM data-objects were loaded into the workspace at the start of this session. In this section we examine a real data object and apply data-limited methods to it. Just like the operating model we can find all the objects of real data class 'DLM', we can list the slots of a DLM data object and also look up this class in the help file:
 
 <<Demo_real_data_slots,echo=TRUE>>=
 avail('DLM')
@@ -200,7 +203,7 @@ RockReal<-Sense(RockReal,"DCAC")
 
 \section{From MSE to management recommendations}
 
-In this section we take a more thorough systematic approach to MSE and data implementation. This is an example of how DLMtool may be used to select methods and then apply them to real data. This is intended to be a straw-man demonstration and in no way is a recommendation about appropriate management objectives! 
+In this section we take a more thorough, systematic approach to MSE and data implementation. This is an example of how DLMtool may be used to select methods and then apply them to real data. This is intended to be a straw-man demonstration and in no way is a recommendation about appropriate management objectives! 
 
 In this example our real-life stock is a moderately long-lived reef-fish of moderately high recruitment compensation that has been subject to fairly consistent fishing pressure over recent years. We suspect that fishing activities do not effectively operate on older age classes since the fish exhibit ontogenetic offshore movements where there is less fishing. In general the stock is thought to be a relatively low stock levels going by catch rate observations but frankly, we don't have a precise handle on stock depletion. Since fishing activities have changed spatial distribution and the stock is targetted there is the potential for hyperstability in our observations of catch rates over time. 
 
@@ -239,7 +242,7 @@ ourOM<-new('OM',ourstock,ourfleet,Imprecise_Biased)
 
 \subsection{MSE evaluation of methods}
 
-Now that we have our operating model we run a trial MSE. In this case we use a very small number of simulations (20, which is very low to meet CRAN-R package building requirments) but change the length of the projection and the length of the interval between updates to reflect our stock and management system. 
+Now that we have our operating model we run a trial MSE. In this case we use a very small number of simulations (20, which is very low to meet CRAN-R package building requirements) but change the length of the projection and the length of the interval between updates to reflect our stock and management system. 
 
 Since we do not specify a vector of particular methods, the MSE will run for all possible methods. Note that this could take a few minutes depending on how monstrous you computer is. Note that in a real setting it might be advisable to increase the number of simulations to at least 192 and, if stochastic methods are to be used, increase the samples per method (reps) to at least 100 for this first stage to obtain stable aggregate results. 
 
@@ -253,7 +256,7 @@ ourMSE<-runMSE(ourOM,proyears=20,interval=5,nsim=20,reps=1)
 Tplot(ourMSE)
 @
 
-\noindent In this example process, we decide that we would like to select a targetted subset of these methods that have greater than 20 percent of long-term yield (given ideal fixed fishing mortality rate), less than a 50 percent rate of overfishing and less than a 10 percent chance of dropping below a low stock level, in this case 10 percent of BMSY. To do this we calculate the summary table and subset it:
+\noindent In this example process, we decide that we would like to select a targetted subset of these methods that have greater than 20 percent of long-term best yield (given ideal fixed fishing mortality rate), less than a 50 percent rate of overfishing and less than a 10 percent chance of dropping below a low stock level, in this case 10 percent of BMSY. To do this we calculate the summary table and subset it:
 
 <<Full_MSE_subset_targ,echo=TRUE>>==
 Results<-summary(ourMSE) 
@@ -262,7 +265,7 @@ Targetted<-subset(Results, Results$Yield>20 & Results$POF<50 & Results$P10<10)
 Targetted
 @
 
-\noindent Our new subsetted methods can be used to run a more focused MSE that includes a greater number of simulations for a detailed assessment of performance. Again note that in a real setting it would be advisable to increase the number of simulations further to at least 400.You might also want to increase the number of stochastic samples per method (reps) to a higher number.
+\noindent Our new subsetted methods can be used to run a more focused MSE that includes a greater number of simulations for a detailed assessment of performance. Again note that in a real setting it would be advisable to increase the number of simulations further to at least 400.You might also want to increase the number of stochastic samples per method (reps) to 200 or more.
 
 <<Full_MSE_runMSE_2,echo=T>>=
 ourMSE2<-runMSE(ourOM,Targetted$Method,proyears=20,interval=5,nsim=40,reps=1)
@@ -302,14 +305,14 @@ ourReefFish<-getQuota(ourReefFish)
 plot(ourReefFish)
 @
 
-\noindent The Needed() function shows that there is only one remaining data requirement to make each of these methods work, a current estimate of abundance (Abun, a slot in the DLM data object. see ?DLM). While this may seem like rather a demanding data requirement it is worth remembering that DynF, Fratio and YPR outperformed the remaining methods on average despite fairly bad current abundance information that could have observation error with a CV of up to 100 per cent and a bias sampled from a distribution with CV of 75 percent:
+\noindent The Needed() function shows that there is only one remaining data requirement to make each of these methods work, a current estimate of abundance (Abun, a slot in the DLM data object. see ?DLM). While this may seem like rather a demanding data requirement it is worth remembering that DynF, Fratio and YPR outperformed the remaining methods on average despite fairly bad current abundance information that could have observation error with a CV of up to 100 per cent and a bias sampled from a uniform-on-log distribution distribution between 1/5 and 5:
 
 <<Full_MSE_realdata_Bt_bias,echo=T>>=
 ourOM@Btcv
-ourOM@Btbiascv
+ourOM@Btbias
 @
 
-\noindent In other words our MSE generated observations of current biomass that could easily be double or half the true level  across the whole time series and were very noisy. The question now is whether gathering such data would be worthwhile (e.g. a systematic fishery independent survey). To refresh our memory we can re-plot he tradeoffs of the targetted MSE:
+\noindent In other words our MSE generated observations of current biomass that could easily be 1/3 or triple the true level  across the whole time series and were very noisy. The question now is whether gathering such data would be worthwhile (e.g. a systematic fishery independent survey). To refresh our memory we can re-plot he tradeoffs of the targetted MSE:
 
 <<Full_MSE_realdata_Tplot_2_refresh,echo=T,out.width='0.5\\linewidth',out.height='0.5\\linewidth'>>=
 Tplot(ourMSE2)
@@ -383,7 +386,7 @@ environment(agelim5) <- asNamespace('DLMtool')
 sfExport("agelim5")
 @
 
-\noindent Note that these approaches still require an 'x' argument even if they don't make use of it (ie they are the same regardless of the data or simulated data).
+\noindent Note that for compatibility, these approaches still require an 'x' argument even if they don't make use of it (ie they are the same regardless of the data or simulated data).
 
 \subsection{Reducing fishing rate in area 1 by 50 per cent}
 
@@ -525,16 +528,16 @@ The sensitivity plots reveal that the fraction of the stock in area1 is critical
 \section{Limitations}
 
 \subsection{Idealised observation models for catch composition data}
-Currently DLMtool simulates catch-composition data from the true simulated catch composition data via a multinomial distribution and some effective sample size. This observation model may be unrealistically well behaved and favour those approaches that use these data.
+Currently, DLMtool simulates catch-composition data from the true simulated catch composition data via a multinomial distribution and some effective sample size. This observation model may be unrealistically well-behaved and favour those approaches that use these data.
 
 \subsection{Harvest control rules must be integrated into data-limited methods}
-In this version of DLMtool harvest control rules (e.g. the 40-10 rule) must be written into a data-limited method. There is currently no functionality whereby a given HCR can be applied to a given class of method. The reason for this is that it would require further subclasses. For example the 40-10 rule may be appropriate for the output of DBSRA but it would not be appropriate for some of the algorithmic management procedures such as DynF that already incorporate throttling of quota recommendations according to stock depletion.
+In this version of DLMtool, harvest control rules (e.g. the 40-10 rule) must be written into a data-limited method. There is currently no functionality whereby a given HCR can be applied to a given class of method. The reason for this is that it would require further subclasses. For example the 40-10 rule may be appropriate for the output of DBSRA but it would not be appropriate for some of the simple management procedures such as DynF that already incorporate throttling of quota recommendations according to stock depletion.
 
 \subsection{Natural mortality rate at age}
 The current simulation assumes constant M with age. Age-specific M will be added soon. 
 
 \subsection{Ontogenetic habitat shifts}
-Since the operating model simulated two areas, it is possible to prescribe a log-linear model that moves fish from one are to the other as they grow older simulating, for example, the ontogenetic shift of groupers from near shore waters to offshore reefs. Currently this feature is in development. 
+Since the operating model simulated two areas, it is possible to prescribe a log-linear model that moves fish from one area to the other as they grow older. This could be used to simulate the ontogenetic shift of groupers from near shore waters to offshore reefs. Currently this feature is in development. 
 
 \subsection{Implementation error}
 In this edition of DLMtool there is no implementation  error. The only imperfection between a management recommendation and the simulated quota comes in the form of the MaxF argument that limits the maximum fishing mortality rate on any given age-class in the operating model. The default is 0.8 which is high for all but the shortest living fish species.  
@@ -542,6 +545,8 @@ In this edition of DLMtool there is no implementation  error. The only imperfect
 
 \section{References}
 Carruthers, T.R., Punt, A.E., Walters, C.J., MacCall, A., McAllister, M.K., Dick, E.J., Cope, J. 2014. Evaluating methods for setting catch-limits in data-limited fisheries. Fisheries Research. 153, 48-68.
+
+Carruthers, T.R., Kell, L., Butterworth, D., Maunder, M., Geromont, H., Walters, C., McAllister, M., Hillary, R., Kitakado, T., Davies, C. 2015. Performance review of simple management procedures. (Fish and Fisheries intended journal).  
 
 \noindent Costello, C., Ovando, D., Hilborn, R., Gains, S.D., Deschenes, O., Lester, S.E., 2012. Status and solutions for the world???s unassessed fisheries. Science. 338, 517-520. Deriso, R. B., 1980. Harvesting Strategies and Parameter Estimation for an Age-Structured Model. Can. J. Fish. Aquat. Sci. 37, 268-282.
 

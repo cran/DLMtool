@@ -18,7 +18,7 @@ setClass("OM",representation(Name="character",nyears="numeric",maxage="numeric",
                               LFScv="numeric",
                               B0cv="numeric",FMSYcv="numeric",FMSY_Mcv="numeric",BMSY_B0cv="numeric",
                               ageMcv="numeric",rcv="numeric",Fgaincv="numeric",A50cv="numeric",
-                              Dbiascv="numeric",Dcv="numeric",Btbiascv="numeric",Btcv="numeric",
+                              Dbiascv="numeric",Dcv="numeric",Btbias="numeric",Btcv="numeric",
                               Fcurbiascv="numeric",Fcurcv="numeric",hcv="numeric",
                               Icv="numeric",maxagecv="numeric",
                               Reccv="numeric",Irefcv="numeric",Crefcv="numeric",Brefcv="numeric"))
@@ -130,7 +130,7 @@ setClass("Observation",representation(Name="character",ageMcv="numeric",
                 LFCcv="numeric",LFScv="numeric",B0cv="numeric",
                 FMSYcv="numeric",FMSY_Mcv="numeric",BMSY_B0cv="numeric",
                 rcv="numeric",A50cv="numeric", Dbiascv="numeric",Dcv="numeric",
-                Btbiascv="numeric",Btcv="numeric",Fcurbiascv="numeric",Fcurcv="numeric",
+                Btbias="numeric",Btcv="numeric",Fcurbiascv="numeric",Fcurcv="numeric",
                 hcv="numeric",Icv="numeric",maxagecv="numeric",Reccv="numeric",
                 Irefcv="numeric",Crefcv="numeric",Brefcv="numeric",beta="numeric"))
 
@@ -163,7 +163,7 @@ setMethod("initialize", "Observation", function(.Object,OM){
   .Object@A50cv<-as.numeric(dat[match("A50cv",dname),1])
   .Object@Dbiascv<-as.numeric(dat[match("Dbiascv",dname),1])
   .Object@Dcv<-as.numeric(dat[match("Dcv",dname),1:2])
-  .Object@Btbiascv<-as.numeric(dat[match("Btbiascv",dname),1])
+  .Object@Btbias<-as.numeric(dat[match("Btbias",dname),1:2])
   .Object@Btcv<-as.numeric(dat[match("Btcv",dname),1:2])
   .Object@Fcurbiascv<-as.numeric(dat[match("Fcurbiascv",dname),1])
   .Object@Fcurcv<-as.numeric(dat[match("Fcurcv",dname),1:2])
@@ -182,10 +182,10 @@ setMethod("initialize", "Observation", function(.Object,OM){
 
 setClass("MSE",representation(Name="character",nyears="numeric",proyears="numeric",nmeths="numeric",meths="character",
                               nsim="numeric",OM="data.frame",Obs="data.frame",B_BMSY="array",
-                              F_FMSY="array",B="array",FM="array",C="array",quota="array"))
+                              F_FMSY="array",B="array",FM="array",C="array",quota="array",SSB_hist="array",CB_hist="array",FM_hist="array"))
 
 setMethod("initialize", "MSE", function(.Object,Name,nyears,proyears,nmeths,meths,
-                                                nsim,OMtable,Obs,B_BMSYa,F_FMSYa,Ba,FMa,Ca,OFLa){
+                                                nsim,OMtable,Obs,B_BMSYa,F_FMSYa,Ba,FMa,Ca,OFLa,SSB_hist,CB_hist,FM_hist){
   .Object@Name<-Name
   .Object@nyears <-nyears
   .Object@proyears<-proyears
@@ -200,12 +200,16 @@ setMethod("initialize", "MSE", function(.Object,Name,nyears,proyears,nmeths,meth
   .Object@FM<-FMa
   .Object@C<-Ca
   .Object@quota<-OFLa
+  .Object@SSB_hist<-SSB_hist
+  .Object@CB_hist<-CB_hist
+  .Object@FM_hist<-FM_hist
   .Object
 })
 
 sampy<-function(x) sample(x,1,prob=!is.na(x))
 
-runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,maxF=0.8,timelimit=1,reps=1){
+runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
+                 maxF=0.8,timelimit=1,reps=1){
 
   print("Loading operating model")
   flush.console()
@@ -222,7 +226,7 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,maxF=0
   AC<-runif(nsim,OM@AC[1],OM@AC[2])    # auto correlation parameter for recruitment deviations recdev(t)<-AC*recdev(t-1)+(1-AC)*recdev_proposed(t)
   procmu<--0.5*(procsd)^2 # adjusted log normal mean
   Perr<-array(rnorm((nyears+proyears)*nsim,rep(procmu,nyears+proyears),rep(procsd,nyears+proyears)),c(nsim,nyears+proyears))
-  for(y in 2:(nyears+proyears))Perr[,y]<-AC*Perr[,y-1]+(1-AC)*Perr[,y] # apply a pseudo AR1 autocorrelation to rec devs (log space)
+  for(y in 2:(nyears+proyears))Perr[,y]<-AC*Perr[,y-1]+Perr[,y]*(1-AC*AC)^0.5#2#AC*Perr[,y-1]+(1-AC)*Perr[,y] # apply a pseudo AR1 autocorrelation to rec devs (log space)
   Perr<-exp(Perr) # normal space (mean 1 on average)
   
   Csd<-runif(nsim,OM@Cobs[1],OM@Cobs[2])               # Observation error standard deviation for single catch at age by area
@@ -261,7 +265,6 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,maxF=0
   Kgrad<-runif(nsim,OM@Kgrad[1],OM@Kgrad[2]) # gradient in Von-B K parameter (K y-1)
   Karray<-gettempvar(K,Ksd,Kgrad,nyears+proyears,nsim) # the K array
   t0<-runif(nsim,OM@t0[1],OM@t0[2]) # a sample of theoretical age at length zero
-  R0<-OM@R0 # the unfished recruitment - this is inconsequential and a scalar
   ageM<-runif(nsim,OM@ageM[1],OM@ageM[2])   # now predicted by a log-linear model
   ageMarray<-array(ageM,dim=c(nsim,maxage)) # Age at maturity array
   Agearray<-array(rep(1:maxage,each=nsim),dim=c(nsim,maxage))   # Age array
@@ -470,7 +473,7 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,maxF=0
   AMbias<-rlnorm(nsim,mconv(1,OM@ageMcv),sdconv(1,OM@ageMcv))       # sample of age at maturity bias
   LFCbias<-rlnorm(nsim,mconv(1,OM@LFCcv),sdconv(1,OM@LFCcv))        # sample of length at first capture bias
   LFSbias<-rlnorm(nsim,mconv(1,OM@LFScv),sdconv(1,OM@LFScv))        # sample of length at full selection bias
-  Abias<-rlnorm(nsim,mconv(1,OM@Btbiascv),sdconv(1,OM@Btbiascv))    # smaple of current abundance bias
+  Abias<-exp(runif(nsim,log(OM@Btbias[1]),log(OM@Btbias[2])))#rlnorm(nsim,mconv(1,OM@Btbiascv),sdconv(1,OM@Btbiascv))    # smaple of current abundance bias
   Kbias<-rlnorm(nsim,mconv(1,OM@Kcv),sdconv(1,OM@Kcv))              # sample of von B. K parameter bias
   t0bias<-rlnorm(nsim,mconv(1,OM@t0cv),sdconv(1,OM@t0cv))           # sample of von B. t0 parameter bias
   Linfbias<-rlnorm(nsim,mconv(1,OM@Linfcv),sdconv(1,OM@Linfcv))     # sample of von B. maximum length bias
@@ -532,7 +535,7 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,maxF=0
                 LFS,age05,Vmaxage,LFC,OFLreal,betas,Spat_targ,Frac_area_1,Prob_staying,AC)) # put all the operating model parameters in one table
 
   DLM@Obs<-as.data.frame(cbind(Cbias,Csd,nsamp,CALsd,Isd,Dbias,Mbias,FMSY_Mbias,BMSY_B0bias,
-                 AMbias,LFCbias,LFSbias,Abias,Kbias,t0bias,Linfbias,hbias))  # put all the observation error model parameters in one table
+                 AMbias,LFCbias,LFSbias,Abias,Kbias,t0bias,Linfbias,hbias,Irefbias,Crefbias,Brefbias))  # put all the observation error model parameters in one table
   
   #assign("DLM",DLM,envir=.GlobalEnv) # for debugging fun
  
@@ -607,7 +610,6 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,maxF=0
       fishdist<-temp
       temp<-array(rep(temp,each=maxage),dim(CB[,,nyears,]))
       OFLused<-apply(CB[,,nyears,]*temp,1,sum)
-
     }
 
     CB_P[SAYR]<-Biomass_P[SAYR]*(1-exp(-Vn[SA]*fishdist[SR]))      # ignore magnitude of effort or q increase (just get distribution across age and fishdist across space
@@ -725,7 +727,9 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,maxF=0
         
         if(class(match.fun(Meths[mm]))=="DLM quota"){
           OFLused<-apply(Sam(MSElist[[mm]],Meths=Meths[mm],perc=pstar,reps=reps)@quota,3,quantile,p=pstar,na.rm=T)
+          MSElist[[mm]]@MPrec<-OFLused
         }
+        
       }
 
       if(class(match.fun(Meths[mm]))=="DLM quota"){
@@ -752,8 +756,8 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,maxF=0
     Ca[,mm,]<-apply(CB_P,c(1,3),sum)
     cat("\n")
   }    # end of mm methods
-
-  new('MSE',Name=OM@Name,nyears,proyears,nmeth,Meths,nsim,OMtable=DLM@OM,DLM@Obs,B_BMSYa,F_FMSYa,Ba,FMa,Ca,OFLa)
+  
+  new('MSE',Name=OM@Name,nyears,proyears,nmeth,Meths,nsim,OMtable=DLM@OM,DLM@Obs,B_BMSYa,F_FMSYa,Ba,FMa,Ca,OFLa,SSB_hist=SSB,CB_hist=CB,FM_hist=FM)
 
 }
 

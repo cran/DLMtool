@@ -1,5 +1,5 @@
 # DLM Source code
-# May 2014
+# Jan 2015
 # Tom Carruthers UBC (t.carruthers@fisheries.ubc.ca)
 utils::globalVariables(c("R0","Mdb","mod","i","nareas","nsim","R0","dFfinal"))
 
@@ -35,7 +35,7 @@ setClass("DLM",representation(Name="character",Year="vector",Cat="matrix",Ind="m
                                   quota="array",quotabias="array",
                                   Sense="array",
                                   CAL_bins="numeric",
-                                  CAL="array"))
+                                  CAL="array",MPrec="vector"))
 
 setMethod("initialize", "DLM", function(.Object,stock="nada"){
   # run an error check here
@@ -94,7 +94,8 @@ setMethod("initialize", "DLM", function(.Object,stock="nada"){
     .Object@CV_wlb<-as.numeric(dat[match("CV Length-weight parameter b", dname),1])
     .Object@CV_steep<-as.numeric(dat[match("CV Steepness", dname),1])
     .Object@MaxAge<-as.numeric(dat[match("Maximum age", dname),1])
-
+    .Object@MPrec<-as.numeric(dat[match("MPrec", dname),1])
+    
     if(length(grep("CAL",dname))>1){
       CAL_bins<-as.numeric(dat[match("CAL_bins",dname),dat[match("CAL_bins",dname),]!=""])
       nCAL<-length(CAL_bins)-1
@@ -159,7 +160,7 @@ setMethod("initialize", "DLM", function(.Object,stock="nada"){
   if(length(.Object@quota)==0).Object@quota<-array(1,c(1,1))
   if(length(.Object@quotabias)==0).Object@quotabias<-array(1,c(1,1))
   if(length(.Object@Sense)==0).Object@Sense<-array(1,c(1,1))
-
+  
   .Object
 })
 

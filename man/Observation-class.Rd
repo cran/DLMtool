@@ -35,7 +35,7 @@ Objects can be created by calls of the form \code{new("Observation", OM)}.
     \item{\code{A50cv}:}{Object of class \code{"numeric"} ~~ }
     \item{\code{Dbiascv}:}{Object of class \code{"numeric"} ~~ }
     \item{\code{Dcv}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Btbiascv}:}{Object of class \code{"numeric"} ~~ }
+    \item{\code{Btbias}:}{Object of class \code{"numeric"} ~~ }
     \item{\code{Btcv}:}{Object of class \code{"numeric"} ~~ }
     \item{\code{Fcurbiascv}:}{Object of class \code{"numeric"} ~~ }
     \item{\code{Fcurcv}:}{Object of class \code{"numeric"} ~~ }

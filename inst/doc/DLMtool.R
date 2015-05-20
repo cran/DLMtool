@@ -117,7 +117,7 @@ plot(ourReefFish)
 
 ## ----Full_MSE_realdata_Bt_bias,echo=T------------------------------------
 ourOM@Btcv
-ourOM@Btbiascv
+ourOM@Btbias
 
 ## ----Full_MSE_realdata_Tplot_2_refresh,echo=T,out.width='0.5\\linewidth',out.height='0.5\\linewidth'----
 Tplot(ourMSE2)

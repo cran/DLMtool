@@ -12,8 +12,8 @@ Simulation testing and implementation of data-limited fishery stock assessment m
 \tabular{ll}{
 Package: \tab DLMtool\cr
 Type: \tab Package\cr
-Version: \tab 1.34\cr
-Date: \tab 2014-09-11\cr
+Version: \tab 1.35\cr
+Date: \tab 2015-05-06\cr
 License: \tab GPL-2\cr
 Depends: \tab methods\cr
 }
@@ -33,6 +33,9 @@ Carruthers, T.R., Punt, A.E., Walters, C.J., MacCall, A., McAllister, M.K., Dick
 \examples{
 
 # --- Application to real fishery data ---
+library(DLMtool)
+library(snowfall)              # load package for parallel computing
+sfInit(parallel=TRUE,cpus=2)      # initiate the cluster with two cpus
 
 mydata<-new('DLM')             # create a new DLM data object and define:
 mydata@Year<-2001:2010         # years
@@ -44,22 +47,9 @@ mydata@FMSY_M<-0.5             # guess of the ratio of FMSY to natural mortality
 mydata@vbLinf<-200             # maximum length
 mydata@vbK<-0.2                # von B growth coefficient k
 mydata@LFC<-50                 # length at first capture
-Can(mydata)                    # what methods can be applied to these data
-Needed(mydata)                 # what data are needed to make the rest work
 mydata<-getQuota(mydata)       # calculate quotas
 plot(mydata)                   # plot them
 mydata<-Sense(mydata,"Fratio") # conduct a sensitivity analysis for one of the methods
 
-
-# --- Management strategy evaluation ---
-
-for(i in 1:length(DLMdat))assign(DLMdat[[i]]@Name,DLMdat[[i]]) # get data
-avail('Stock')                 # what stock objects are available?
-avail('Fleet')                 # what fleet objects are available?
-avail('Observation')           # what observation model objects are available?
-OM<-new('OM',Rockfish, Generic_fleet, Imprecise_Biased) # define a new operating model
-avail('DLM quota')                                      # available quota methods
-plot(MSEtest1)                                          # plot the results
-summary(MSEtest1)                                       # and summarize them in a table
-
+sfStop()
 }

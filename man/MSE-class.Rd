@@ -29,6 +29,9 @@ Objects can be created by calls of the form \code{new("MSE", Name, nyears, proye
     \item{\code{FM}:}{Object of class \code{"array"} ~~ }
     \item{\code{C}:}{Object of class \code{"array"} ~~ }
     \item{\code{quota}:}{Object of class \code{"array"} ~~ }
+    \item{\code{SSB_hist}:}{Object of class \code{"array"} ~~ }
+    \item{\code{CB_hist}:}{Object of class \code{"array"} ~~ }
+    \item{\code{FM_hist}:}{Object of class \code{"array"} ~~ }
   }
 }
 \section{Methods}{

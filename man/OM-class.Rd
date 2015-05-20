@@ -70,7 +70,7 @@ Objects can be created by calls of the form \code{new("OM", Stock, Fleet, Observ
     \item{\code{A50cv}:}{Persistent bias in the prescription of age at 50 percent vulnerability sampled from a log-normal distribution with coefficient of variation (A50cv)(uniform distribution)}
     \item{\code{Dbiascv}:}{Persistent bias in the prescription of stock depletion sampled from a log-normal distribution with coefficient of variation (Linfcv)(uniform distribution)}
     \item{\code{Dcv}:}{Imprecision in the prescription of stock depletion among years, expressed as a coefficient of variation (uniform distribution)}
-    \item{\code{Btbiascv}:}{Persistent bias in the prescription of current stock biomass sampled from a log-normal distribution with coefficient of variation (Btbiascv)(uniform distribution)}
+    \item{\code{Btbias}:}{Persistent bias in the prescription of current stock biomass sampled from a uniform-log distribution with range (Btbias)(uniform distribution)}
     \item{\code{Btcv}:}{Imprecision in the prescription of current stock biomass among years expressed as a coefficient of variation (uniform distribution)}
     \item{\code{Fcurbiascv}:}{Persistent bias in the prescription of current fishing mortality rate sampled from a log-normal distribution with coefficient of variation (Fcurcv)(uniform distribution)}
     \item{\code{Fcurcv}:}{Imprecision in the prescription of current fishing mortality rate among years expressed as a coefficient of variation (uniform distribution)}

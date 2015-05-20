@@ -19,8 +19,4 @@ A data-limited methods data object (class DLM)
 The maximum time (seconds) taken for a method to undertake 10 reps (this filters out methods that are too slow)
 }
 }
-\examples{
-for(i in 1:length(DLMdat))assign(DLMdat[[i]]@Name,DLMdat[[i]]) # get data
-avail('DLM')
-Can(Red_snapper,0.1)
-}
+

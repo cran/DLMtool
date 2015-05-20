@@ -22,9 +22,5 @@ The maximum time (seconds) taken to complete 10 reps
 \author{
 T. Carruthers
 }
-\examples{
-for(i in 1:length(DLMdat))assign(DLMdat[[i]]@Name,DLMdat[[i]]) # get data
-avail('DLM')
-Needed(Cobia,0.1)
-}
+
 

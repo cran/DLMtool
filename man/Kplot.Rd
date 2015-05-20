@@ -5,7 +5,7 @@
 KOBE plot: a projection by projection plot of F/FMSY and B/BMSY
 }
 \description{
-A standard KOBE plot by each method that also shows the percentage of methods that ended up in each quadrant
+A standard KOBE plot by each method that also shows the percentage of methods that ended up in each quadrant.
 }
 \usage{
 Kplot(MSEobj)
@@ -21,8 +21,4 @@ T. Carruthers
 }
 \note{
 Apologies for the nauseating shading. 
-}
-\examples{
-for(i in 1:length(DLMdat))assign(DLMdat[[i]]@Name,DLMdat[[i]]) # get data
-Kplot(MSEtest1)
 }
