@@ -8,18 +8,18 @@ Depletion Corrected Average Catch assuming 40 per cent stock depletion
 DCAC assuming that current stock biomass is exactly 40 per cent of unfished levels. 
 }
 \usage{
-DCAC_40(x, DLM, reps = 100)
+DCAC_40(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in a data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
-The number of stochastic samples of the quota recommendation
+The number of stochastic samples of the TAC recommendation
 }
 }
 \references{
@@ -29,5 +29,5 @@ MacCall, A.D., 2009. Depletion-corrected average catch: a simple formula for est
 T. Carruthers
 }
 \note{
-The 40 percent depletion assumption doesn't really affect DCAC that much as it already makes quota recommendations that are quite MSY- like. 
+The 40 percent depletion assumption doesn't really affect DCAC that much as it already makes TAC recommendations that are quite MSY-like. 
 }

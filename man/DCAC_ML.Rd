@@ -8,18 +8,18 @@ Depletion-Based Stock Reduction Analysis using mean-length estimator of current 
 DCAC that uses the mean length estimator to calculate current stock depletion. 
 }
 \usage{
-DCAC_ML(x, DLM, reps = 100)
+DCAC_ML(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in a data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
-The number of stochastic samples of the quota recommendation
+The number of stochastic samples of the TAC recommendation
 }
 }
 \references{

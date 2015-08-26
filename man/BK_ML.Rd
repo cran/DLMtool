@@ -8,18 +8,18 @@ Beddington and Kirkwood life-history analysis with mean-length estimator of curr
 Uses an approximation to FMSY based on length at first capture and an estimate of current abundance based on a mean-length estimator. 
 }
 \usage{
-BK_ML(x, DLM, reps = 100)
+BK_ML(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 Position in a data-limited methods data object
 }
-  \item{DLM}{
-A data-limited methods data object (class DLM)
+  \item{DLM_data}{
+A data-limited methods data object (class DLM_data)
 }
   \item{reps}{
-The number of samples of the quota recommendation
+The number of samples of the TAC recommendation
 }
 }
 \references{

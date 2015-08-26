@@ -8,14 +8,14 @@ A management procedure that incrementally adjusts the TAC to reach a target mean
 The least biologically precautionary of four target length MPs proposed by Geromont and Butterworth 2014. Tested by Carruthers et al. 2015
 }
 \usage{
-Ltarget1(x, DLM, reps = 100, yrsmth = 5, xx=0, xL=1.05)
+Ltarget1(x, DLM_data, reps = 100, yrsmth = 5, xx=0, xL=1.05)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
@@ -36,7 +36,7 @@ Parameter controlling the magnitude of the target mean length of catches relativ
 Tested by Carruthers et al. 2015. 
 }
 \value{
-A numeric vector of quota recommendations
+A numeric vector of TAC recommendations
 }
 \references{
 Carruthers et al. 2015. Performance evaluation of simple management procedures. Fish and Fisheries. In press.

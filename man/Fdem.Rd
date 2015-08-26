@@ -8,18 +8,18 @@ Demographic FMSY method
 FMSY is calculated as r/2 where r is calculated from a demographic approach (inc steepness). Coupled with an estimate of current abundance that gives you the OFL. 
 }
 \usage{
-Fdem(x, DLM, reps = 100)
+Fdem(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
-The number of quota samples
+The number of TAC samples
 }
 }
 \details{

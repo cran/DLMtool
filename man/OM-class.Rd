@@ -48,10 +48,15 @@ Objects can be created by calls of the form \code{new("OM", Stock, Fleet, Observ
     \item{\code{Vmaxage}:}{The vulnerability of the oldest age class (uniform distribution)}
     \item{\code{Fsd}:}{Inter-annual variability in fishing mortality rate}
     \item{\code{Fgrad}:}{Final historical gradient in fishing mortality rate expressed as percentage change per year (uniform distribution)}
+    \item{\code{qinc}:}{Average percentage change in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls)}
+    \item{\code{qcv}:}{Inter-annual variability in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls)}
     \item{\code{Cobs}:}{Log-normal catch observation error expressed as a coefficient of variation (uniform distribution)}
     \item{\code{Cbiascv}:}{A coefficient of variation controlling the sampling of bias in catch observations for each simulation (uniform distribution)}
-    \item{\code{CAAobs}:}{Effective sample size of the multinomial catch-at-age observation error model (uniform distribution)}
-    \item{\code{CALobs}:}{Observation error of the catch-at-length observations}
+    \item{\code{CAA_nsamp}:}{Number of catch-at-age observation per time step (uniform distribution)}
+    \item{\code{CAA_ESS}:}{Effective sample size (independent age draws) of the multinomial catch-at-age observation error model (uniform distribution)}
+    \item{\code{CAL_nsamp}:}{Number of catch-at-length observation per time step (uniform distribution)}
+    \item{\code{CAL_ESS}:}{Effective sample size (independent length draws) of the multinomial catch-at-length observation error model (uniform distribution)}
+    \item{\code{CALcv}:}{Lognormal, variability in the length at age (uniform distribution)}
     \item{\code{Iobs}:}{Observation error in the relative abundance indices expressed as a coefficient of variation (uniform distribution)}
     \item{\code{Perr}:}{The extent of inter-annual log-normal recruitment variability (sigma R)(uniform distribution)}
     \item{\code{Mcv}:}{Persistent bias in the prescription of natural mortality rate sampled from a log-normal distribution with coefficient of variation (Mcv)(uniform distribution)}
@@ -66,7 +71,6 @@ Objects can be created by calls of the form \code{new("OM", Stock, Fleet, Observ
     \item{\code{BMSY_B0cv}:}{Persistent bias in the prescription of BMsY relative to unfished sampled from a log-normal distribution with coefficient of variation (BMSY_B0cv)(uniform distribution)}
     \item{\code{ageMcv}:}{Persistent bias in the prescription of age-at-maturity sampled from a log-normal distribution with coefficient of variation (ageMcv)(uniform distribution)}
     \item{\code{rcv}:}{Persistent bias in the prescription of intrinsic rate of increase sampled from a log-normal distribution with coefficient of variation (rcv)(uniform distribution)}
-    \item{\code{Fgaincv}:}{Persistent bias in the prescription of trend in fishing mortality rate sampled from a log-normal distribution with coefficient of variation (Fgaincv)(uniform distribution)}
     \item{\code{A50cv}:}{Persistent bias in the prescription of age at 50 percent vulnerability sampled from a log-normal distribution with coefficient of variation (A50cv)(uniform distribution)}
     \item{\code{Dbiascv}:}{Persistent bias in the prescription of stock depletion sampled from a log-normal distribution with coefficient of variation (Linfcv)(uniform distribution)}
     \item{\code{Dcv}:}{Imprecision in the prescription of stock depletion among years, expressed as a coefficient of variation (uniform distribution)}

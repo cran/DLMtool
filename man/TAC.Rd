@@ -1,21 +1,21 @@
-\name{getQuota}
-\alias{getQuota}
+\name{TAC}
+\alias{TAC}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Calculate quota
+Calculate TAC recommendations for more than one MP
 }
 \description{
-A function that returns the stochastic estimates of a quota recommendation from a vector of data-limited methods (Meths) given a data-limited data object DLM
+A function that returns the stochastic TAC recommendations from a vector of data-limited MPs (DLM_output) given a data-limited data object DLM_data
 }
 \usage{
-getQuota(DLM, Meths = NA, reps = 100, maxlines = 6, perc = NA, xlims = NA)
+TAC(DLM_data, MPs = NA, reps = 100, maxlines = 6, perc = NA, xlims = NA)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{DLM}{
+  \item{DLM_data}{
 %%     ~~Describe \code{DLM} here~~
 }
-  \item{Meths}{
+  \item{MPs}{
 %%     ~~Describe \code{Meths} here~~
 }
   \item{reps}{

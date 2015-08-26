@@ -2,10 +2,10 @@
 \alias{DLMDataDir}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Directory of the installed packaged on your computer
+Directory of the installed package on your computer
 }
 \description{
-Just a way of locating where the package was installed so you can find data files and code etc
+A way of locating where the package was installed so you can find example data files and code etc.
 }
 \usage{
 DLMDataDir(stock=NA)

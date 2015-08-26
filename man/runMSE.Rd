@@ -8,7 +8,7 @@ Run a Management Strategy Evaluation
 A function that runs a Management Strategy Evaluation (closed-loop simulation) for a specified operating model
 }
 \usage{
-runMSE(OM = "1", Meths = NA, nsim = 48, proyears = 28, 
+runMSE(OM = "1", MPs = NA, nsim = 48, proyears = 28, 
        interval = 4, pstar = 0.5, maxF = 0.8, 
        timelimit = 1, reps=1)
 }
@@ -17,8 +17,8 @@ runMSE(OM = "1", Meths = NA, nsim = 48, proyears = 28,
   \item{OM}{
 An operating model object (class OM)
 }
-  \item{Meths}{
-A vector of methods (character string) of class DLM quota, DLM space or DLM size
+  \item{MPs}{
+A vector of methods (character string) of class DLM_output or DLM_input.
 }
   \item{nsim}{
 Number of simulations

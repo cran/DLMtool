@@ -5,17 +5,17 @@
 A management procedure that incrementally adjusts the TAC (starting from reference level that is a fraction of mean recent catches) to reach a target CPUE / relative abundance index.
 }
 \description{
-The least biologically precautionary of two index/CPUE target methods proposed by Geromont and Butterworth 2014. Tested by Carruthers et al. 2015
+The least biologically precautionary of two index/CPUE target MPs proposed by Geromont and Butterworth 2014. Tested by Carruthers et al. 2015
 }
 \usage{
-Itarget1(x, DLM, reps = 100, yrsmth = 5, xx=0, Imulti=1.5)
+Itarget1(x, DLM_data, reps = 100, yrsmth = 5, xx=0, Imulti=1.5)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
@@ -36,7 +36,7 @@ Parameter controlling how much larger target CPUE / index is compared with recen
 Tested by Carruthers et al. 2015. 
 }
 \value{
-A numeric vector of quota recommendations
+A numeric vector of TAC recommendations
 }
 \references{
 Carruthers et al. 2015. Performance evaluation of simple management procedures. Fish and Fisheries. In press.

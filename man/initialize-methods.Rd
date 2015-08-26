@@ -1,7 +1,7 @@
 \name{initialize-methods}
 \docType{methods}
 \alias{initialize-methods}
-\alias{initialize,DLM-method}
+\alias{initialize,DLM_data-method}
 \alias{initialize,Fleet-method}
 \alias{initialize,MSE-method}
 \alias{initialize,Observation-method}

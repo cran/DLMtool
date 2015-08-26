@@ -8,18 +8,18 @@ Demographic FMSY method that uses mean length data to estimate recent Z
 Demographic F (r/2) method using the mean length estimator to calculate current abundance. 
 }
 \usage{
-Fdem_ML(x, DLM, reps = 100)
+Fdem_ML(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
-The number of quota samples
+The number of TAC samples
 }
 }
 \references{

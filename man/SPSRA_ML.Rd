@@ -8,18 +8,18 @@ Surplus Production Stock Reduction Analysis using a mean-length estimate of curr
 A surplus production equivalent of DB-SRA that uses a demographically derived prior for intrinsic rate of increase. A prior for depletion is calculated from a mean-length estimator
 }
 \usage{
-SPSRA_ML(x, DLM, reps = 100)
+SPSRA_ML(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
 \item{x}{
 A position in a data-limited methods data object
 }
-\item{DLM}{
+\item{DLM_data}{
 A data-limited methods data object (class DLM)
 }
   \item{reps}{
-The number of samples of the quota taken for the calculation of the quota
+The number of samples of the TAC taken
 }
 }
 \references{

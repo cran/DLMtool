@@ -8,18 +8,18 @@ A reference FMSY method that fishes at three quarters of FMSY (uses perfect info
 FMSY is taken from the operating model stored at DLM@OM$FMSY
 }
 \usage{
-FMSYref75(x, DLM, reps = 100)
+FMSYref75(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
-The number of quota samples
+The number of TAC samples
 }
 }
 \details{

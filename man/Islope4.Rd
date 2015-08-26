@@ -8,14 +8,14 @@ A management procedure that incrementally adjusts the TAC to maintain a constant
 The most biologically precautionary of two constant index / CPUE methods proposed by Geromont and Butterworth 2014. Tested by Carruthers et al. 2015
 }
 \usage{
-Islope4(x, DLM, reps = 100, yrsmth = 5, lambda=0.2,xx=0.4)
+Islope4(x, DLM_data, reps = 100, yrsmth = 5, lambda=0.2,xx=0.4)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{

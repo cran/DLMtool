@@ -2,24 +2,24 @@
 \alias{SBT1}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-SBT simple harvest control rule
+SBT simple MP
 }
 \description{
-A harvest control rule that makes incremental adjustments to quota recommendations based on the apparent trend in surplus production
+An MP that makes incremental adjustments to TAC recommendations based on the apparent trend in CPUE
 }
 \usage{
-SBT1(x, DLM, reps = 100, yrsmth=10, k1=1.5, k2=3, gamma=1)
+SBT1(x, DLM_data, reps = 100, yrsmth=10, k1=1.5, k2=3, gamma=1)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in a data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
-The number of samples of the quota
+The number of samples of the TAC
 }
   \item{yrsmth}{
 The number of years for evaluating trend in relative abundance indices

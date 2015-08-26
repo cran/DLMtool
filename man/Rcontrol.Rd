@@ -5,17 +5,17 @@
 Harvest Control Rule using prior for intrinsic rate of increase
 }
 \description{
-A harvest control rule proposed by Carl Walters that modifies quotas according to trends in apparent surplus production that includes information from a demographically derived prior for intrinsic rate of increase
+An MP proposed by Carl Walters that modifies TACs according to trends in apparent surplus production that includes information from a demographically derived prior for intrinsic rate of increase
 }
 \usage{
-Rcontrol(x, DLM, reps = 100, yrsmth = 10, gg = 2, glim = c(0.5, 2))
+Rcontrol(x, DLM_data, reps = 100, yrsmth = 10, gg = 2, glim = c(0.5, 2))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
@@ -28,7 +28,7 @@ The number of years for smoothing catch and biomass data
 A gain parameters
 }
   \item{glim}{
-Limits for the change in quota among years
+Limits for the change in TAC among years
 }
 }
 \references{

@@ -8,14 +8,14 @@ A management procedure that incrementally adjusts the TAC to maintain a constant
 The least biologically precautionary of two constant index / CPUE methods proposed by Geromont and Butterworth 2014. Tested by Carruthers et al. 2015
 }
 \usage{
-Islope1(x, DLM, reps = 100, yrsmth = 5, lambda=0.4,xx=0.2)
+Islope1(x, DLM_data, reps = 100, yrsmth = 5, lambda=0.4,xx=0.2)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
@@ -39,7 +39,7 @@ Tested by Carruthers et al. 2015.
 A numeric vector of quota recommendations
 }
 \references{
-Carruthers et al. 2015. Performance evaluation of simple management procedures. Fish and Fisheries. In press.
+Carruthers et al. 2015. Performance review of simple management procedures. Fish and Fisheries. In press.
 
 Geromont, H.F., Butterworth, D.S. 2014. Generic management procedures for data-poor fisheries; forecasting with few data. ICES J. Mar. Sci. doi:10.1093/icesjms/fst232
 }

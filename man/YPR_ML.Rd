@@ -9,18 +9,18 @@ A simple yield per recruit approximation to FMSY (F01) which is the position of 
 A mean-length estimate of recent Z is used to infer current abundance
 }
 \usage{
-YPR_ML(x, DLM, reps = 100)
+YPR_ML(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in a data-limited methods data object
 }
-  \item{DLM}{
-A data-limited methods data object (class DLM)
+  \item{DLM_data}{
+A data-limited methods data object
 }
   \item{reps}{
-The number of samples of the quota taken for the calculation of the quota
+The number of samples of the TAC
 }
 }
 \author{

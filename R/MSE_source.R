@@ -9,15 +9,16 @@ setClass("OM",representation(Name="character",nyears="numeric",maxage="numeric",
                               Source="character",
 
                               beta="numeric", Spat_targ="numeric",AFS="numeric",age05="numeric",Vmaxage="numeric",
-                              Fsd="numeric",Fgrad="numeric",AC="numeric",
+                              Fsd="numeric",Fgrad="numeric",qinc="numeric",qcv="numeric",AC="numeric",
 
-                              Cobs="numeric",Cbiascv="numeric",CAAobs="numeric",CALobs="numeric",
+                              Cobs="numeric",Cbiascv="numeric",CAA_nsamp="numeric",CAA_ESS="numeric",
+                              CAL_nsamp="numeric",CAL_ESS="numeric",CALcv="numeric",
                               Iobs="numeric",Perr="numeric",
                               Mcv="numeric",Kcv="numeric",t0cv="numeric",Linfcv="numeric",
                               LFCcv="numeric",
                               LFScv="numeric",
                               B0cv="numeric",FMSYcv="numeric",FMSY_Mcv="numeric",BMSY_B0cv="numeric",
-                              ageMcv="numeric",rcv="numeric",Fgaincv="numeric",A50cv="numeric",
+                              ageMcv="numeric",rcv="numeric",A50cv="numeric",
                               Dbiascv="numeric",Dcv="numeric",Btbias="numeric",Btcv="numeric",
                               Fcurbiascv="numeric",Fcurcv="numeric",hcv="numeric",
                               Icv="numeric",maxagecv="numeric",
@@ -89,7 +90,8 @@ setMethod("initialize", "Stock", function(.Object,OM){
 })
 
 setClass("Fleet",representation(Name="character",nyears="numeric", Spat_targ="numeric",
-                 AFS="numeric",age05="numeric",Vmaxage="numeric",Fsd="numeric",Fgrad="numeric"))
+                 AFS="numeric",age05="numeric",Vmaxage="numeric",Fsd="numeric",
+                 Fgrad="numeric",qinc="numeric",qcv="numeric"))
 
 
 setMethod("initialize", "Fleet", function(.Object,OM){
@@ -106,6 +108,9 @@ setMethod("initialize", "Fleet", function(.Object,OM){
   .Object@Vmaxage<-as.numeric(dat[match("Vmaxage",dname),1:2])
   .Object@Fsd<-as.numeric(dat[match("Fsd",dname),1:2])
   .Object@Fgrad<-as.numeric(dat[match("Fgrad",dname),1:2])
+  .Object@qinc<-as.numeric(dat[match("qinc",dname),1:2])
+  .Object@qcv<-as.numeric(dat[match("qcv",dname),1:2])
+  
   .Object
 
 })
@@ -125,7 +130,8 @@ setMethod("initialize", "lmmodel", function(.Object,Name,models){
 
 
 setClass("Observation",representation(Name="character",ageMcv="numeric",
-                Cobs="numeric",Cbiascv="numeric",CAAobs="numeric",CALobs="numeric",
+                Cobs="numeric",Cbiascv="numeric",CAA_nsamp="numeric",CAA_ESS="numeric",
+                CAL_nsamp="numeric",CAL_ESS="numeric",CALcv="numeric",
                 Iobs="numeric",Mcv="numeric",Kcv="numeric",t0cv="numeric",Linfcv="numeric",
                 LFCcv="numeric",LFScv="numeric",B0cv="numeric",
                 FMSYcv="numeric",FMSY_Mcv="numeric",BMSY_B0cv="numeric",
@@ -145,8 +151,11 @@ setMethod("initialize", "Observation", function(.Object,OM){
   .Object@ageMcv<-as.numeric(dat[match("ageMsd",dname),1])
   .Object@Cobs<-as.numeric(dat[match("Cobs",dname),1:2])
   .Object@Cbiascv<-as.numeric(dat[match("Cbiascv",dname),1])
-  .Object@CAAobs<-as.numeric(dat[match("CAAobs",dname),1:2])
-  .Object@CALobs<-as.numeric(dat[match("CALobs",dname),1:2])
+  .Object@CAA_nsamp<-as.numeric(dat[match("CAA_nsamp",dname),1:2])
+  .Object@CAA_ESS<-as.numeric(dat[match("CAA_ESS",dname),1:2])
+  .Object@CAL_nsamp<-as.numeric(dat[match("CAA_nsamp",dname),1:2])
+  .Object@CAL_ESS<-as.numeric(dat[match("CAA_ESS",dname),1:2])
+  .Object@CALcv<-as.numeric(dat[match("CALcv",dname),1:2])
   .Object@Iobs<-as.numeric(dat[match("Iobs",dname),1:2])
   .Object@Mcv<-as.numeric(dat[match("Mcv",dname),1])
   .Object@Kcv<-as.numeric(dat[match("Kcv",dname),1])
@@ -180,17 +189,17 @@ setMethod("initialize", "Observation", function(.Object,OM){
 })
 
 
-setClass("MSE",representation(Name="character",nyears="numeric",proyears="numeric",nmeths="numeric",meths="character",
+setClass("MSE",representation(Name="character",nyears="numeric",proyears="numeric",nMPs="numeric",MPs="character",
                               nsim="numeric",OM="data.frame",Obs="data.frame",B_BMSY="array",
-                              F_FMSY="array",B="array",FM="array",C="array",quota="array",SSB_hist="array",CB_hist="array",FM_hist="array"))
+                              F_FMSY="array",B="array",FM="array",C="array",TAC="array",SSB_hist="array",CB_hist="array",FM_hist="array"))
 
-setMethod("initialize", "MSE", function(.Object,Name,nyears,proyears,nmeths,meths,
-                                                nsim,OMtable,Obs,B_BMSYa,F_FMSYa,Ba,FMa,Ca,OFLa,SSB_hist,CB_hist,FM_hist){
+setMethod("initialize", "MSE", function(.Object,Name,nyears,proyears,nMPs,MPs,
+                                                nsim,OMtable,Obs,B_BMSYa,F_FMSYa,Ba,FMa,Ca,TACa,SSB_hist,CB_hist,FM_hist){
   .Object@Name<-Name
   .Object@nyears <-nyears
   .Object@proyears<-proyears
-  .Object@nmeths<-nmeths
-  .Object@meths<-meths
+  .Object@nMPs<-nMPs
+  .Object@MPs<-MPs
   .Object@nsim<-nsim
   .Object@OM<-OMtable
   .Object@Obs<-Obs
@@ -199,7 +208,7 @@ setMethod("initialize", "MSE", function(.Object,Name,nyears,proyears,nmeths,meth
   .Object@B<-Ba
   .Object@FM<-FMa
   .Object@C<-Ca
-  .Object@quota<-OFLa
+  .Object@TAC<-TACa
   .Object@SSB_hist<-SSB_hist
   .Object@CB_hist<-CB_hist
   .Object@FM_hist<-FM_hist
@@ -208,13 +217,14 @@ setMethod("initialize", "MSE", function(.Object,Name,nyears,proyears,nmeths,meth
 
 sampy<-function(x) sample(x,1,prob=!is.na(x))
 
-runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
+runMSE<-function(OM="1",MPs=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
                  maxF=0.8,timelimit=1,reps=1){
 
   print("Loading operating model")
   flush.console()
   if(class(OM)!="OM")stop("You must specify an operating model")
-
+  if(!sfIsRunning())stop("You must initialize snowfall functions sfInit() see ??DLMtool")
+  
   nyears<-OM@nyears  # number of  historical years
   maxage<-OM@maxage  # maximum age (no plus group)
   dep<-runif(nsim,OM@D[1],OM@D[2])  # sample from the range of user-specified depletion (Bcurrent/B0)
@@ -387,7 +397,8 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
   
   } # end of year
 
-  CN<-apply(N*(1-exp(-Z))*(FM/Z),c(1,3,2),sum)                              # Catch in numbers
+  CN<-apply(N*(1-exp(-Z))*(FM/Z),c(1,3,2),sum)  # Catch in numbers
+  CN[is.na(CN)]<-0
   CB<-Biomass*(1-exp(-Z))*(FM/Z)                                            # Catch in biomass
 
   Csd<-runif(nsim,OM@Cobs[1],OM@Cobs[2])                                    # Sampled catch observation error (lognormal sd)
@@ -396,27 +407,40 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
   Cerr<-array(rlnorm((nyears+proyears)*nsim,mconv(1,rep(Csd,(nyears+proyears))),sdconv(1,rep(Csd,nyears+proyears))),c(nsim,nyears+proyears)) # composite of bias and observation error
   Cobs<-Cbiasa[,1:nyears]*Cerr[,1:nyears]*apply(CB,c(1,3),sum)              # Simulated observed catch (biomass)
 
-  nsamp<-ceiling(runif(nsim,OM@CAAobs[1],OM@CAAobs[2]))                     # Number of catch-at-age observations
+  
+  
+  # Simulate Catch at length data
+  CAA_nsamp<-ceiling(runif(nsim,OM@CAA_nsamp[1],OM@CAA_nsamp[2]))                     # Number of catch-at-age observations
+  CAA_ESS<-ceiling(runif(nsim,OM@CAA_ESS[1],OM@CAA_ESS[2]))                                          # Effective sample size
   CAA<-array(NA,dim=c(nsim,nyears,maxage))                                  # Catch  at age array
   cond<-apply(CN,1:2,sum,na.rm=T)<1                                         # this is a fix for low sample sizes. If CN is zero across the board a single fish is caught in age class of model selectivity (dumb I know)
   fixind<-as.matrix(cbind(expand.grid(1:nsim,1:nyears),rep(ceiling(mod),nyears))) # more fix
   CN[fixind[cond,]]<-1                                                      # puts a catch in the most vulnerable age class
-  for(i in 1:nsim)for(j in 1:nyears)CAA[i,j,]<-rmultinom(1,nsamp[i],CN[i,j,]) # a multinomial observation model for catch-at-age data
+  for(i in 1:nsim)for(j in 1:nyears)CAA[i,j,]<-ceiling(-0.5+rmultinom(1,CAA_nsamp[i],CN[i,j,])*CAA_nsamp[i]/CAA_ESS[i]) # a multinomial observation model for catch-at-age data
 
-  CALsd<-runif(nsim,OM@CALobs[1],OM@CALobs[2])                              # Observation error standard deviation for single catch at age by area
-  CALmu<--0.5*CALsd^2                                                       # Catch at length lognormal adjustment
+  CAL_nsamp<-runif(nsim,OM@CAL_nsamp[1],OM@CAL_nsamp[2])                              # Observation error standard deviation for single catch at age by area
+  CAL_ESS<-ceiling(runif(nsim,OM@CAL_ESS[1],OM@CAL_ESS[2]))                                          # Effective sample size
+  
+  CALcv<-runif(nsim,OM@CALcv[1],OM@CALcv[2])                                    # Observation error standard deviation for single catch at age by area
+  LatASD <- Len_age * CALcv
+  MaxBin <- ceiling(max(Linfarray) + 2 * max(LatASD))
+  binWidth <- ceiling(0.05 * MaxBin)
+  CAL_bins <- seq(from=0, to=MaxBin+binWidth, by=binWidth) 
+  CAL_binsmid <- seq(from=0.5*binWidth, by=binWidth, length=length(CAL_bins)-1)
+  nCALbins <- length(CAL_binsmid)
+    
+  CAL <- array(NA,dim=c(nsim,nyears,nCALbins))                                # the catch at length array
+  LFC <- rep(NA,nsim) # length at first capture
 
-  nCALbins<-20                                                              # the number of catch-at-length bins
-  CAL_bins<-seq(0,max(Len_age),length.out=nCALbins)                         # the breakpoints of the CAL bins
-  CAL_bins<-c(CAL_bins,CAL_bins[nCALbins]*5)                                
-  CAL<-array(NA,dim=c(nsim,nyears,nCALbins))                                # the catch at length array
-  LFC<-rep(NA,nsim)                                                         # an array for length at first capture
   for(i in 1:nsim){
     for(j in 1:nyears){
-      ages<-rep(1:maxage,CAA[i,j,])+runif(sum(CAA[i,j,]),-0.5,0.5)          # sample expected age
-      lengths<-Linfarray[i,j]*(1-exp(-Karray[i,j]*(ages-t0[i])))*exp(rnorm(sum(CAA[i,j,]),CALmu[i],CALsd[i])) # calculate length
-      CAL[i,j,]<-hist(lengths,CAL_bins,plot=F)$counts                       # assign to bins
-      LFC[i]<-min(c(lengths,LFC[i]),na.rm=T)                                # get the smallest CAL observation
+      tempCN<-rmultinom(1, size=CAL_ESS[i], prob=CN[i,j,])
+      #ages <- rep(1:maxage,tempCN)+runif(sum(tempCN),-0.5,0.5)          # sample expected age
+      lens <- unlist(sapply(1:maxage, function (X) rnorm(tempCN[X],  Len_age[i,X,j], LatASD[i,X,j])))
+      lens[lens > (max(Linfarray) + 2 * max(LatASD))|lens>max(CAL_bins)] <- max(Linfarray) + 2 * max(LatASD) # truncate at 2 sd 
+      CAL[i,j,] <- hist(lens,CAL_bins,plot=F)$counts                       # assign to bins
+      LFC[i] <- min(c(lens,LFC[i]),na.rm=T)                                # get the smallest CAL observation
+      #CAL[i,j,] <- ceiling(rmultinom(1, size=ESS[i], prob=tempCAL)*CAL_nsamp[i]*CAL_ESS[i]-0.5) # could replace with Dirichlet distribution
     }
   }
 
@@ -456,6 +480,7 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
   }
   
   Depletion<-(apply(Biomass[,,nyears,],1,sum)/apply(Biomass[,,1,],1,sum))#^betas   # apply hyperstability / hyperdepletion
+  #cbind(dep,Depletion)
   FMSY_M<-FMSY/M                      # ratio of true FMSY to natural mortality rate M
   LFS<-Linf*(1-exp(-K*(mod-t0)))      # Length at full selection
   A<-apply(VBiomass[,,nyears,],1,sum) # Abundance
@@ -491,77 +516,87 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
   
   
   hsim<-rep(NA,nsim)                      # simulate values in steepness 
-  hsim[hs>0.6]<-0.2+rbeta(sum(hs>0.6),alphaconv((hs-0.2)/0.8,(1-(hs-0.2)/0.8)*OM@hcv),betaconv((hs-0.2)/0.8,(1-(hs-0.2)/0.8)*OM@hcv))*0.8
-  hsim[hs<0.6]<-0.2+rbeta(sum(hs<0.6),alphaconv((hs-0.2)/0.8,(hs-0.2)/0.8*OM@hcv),betaconv((hs-0.2)/0.8,(hs-0.2)/0.8*OM@hcv))*0.8
+  cond<-hs>0.6
+  hsim[cond]<-0.2+rbeta(sum(hs>0.6),alphaconv((hs[cond]-0.2)/0.8,(1-(hs[cond]-0.2)/0.8)*OM@hcv),betaconv((hs[cond]-0.2)/0.8,(1-(hs[cond]-0.2)/0.8)*OM@hcv))*0.8
+  hsim[!cond]<-0.2+rbeta(sum(hs<0.6),alphaconv((hs[!cond]-0.2)/0.8,(hs[!cond]-0.2)/0.8*OM@hcv),betaconv((hs[!cond]-0.2)/0.8,(hs[!cond]-0.2)/0.8*OM@hcv))*0.8
   hbias<-hsim/hs                          # back calculate the simulated bias
 
-  DLM<-new('DLM',stock="MSE")             # create a blank DLM data object
-  if(reps==1)DLM<-OneRep(DLM)             # make stochastic variables certain for only one rep
-  DLM<-replic8(DLM,nsim)                  # make nsim sized slots in the DLM data object
-  DLM@Name<-OM@Name
-  DLM@Year<-1:nyears
-  DLM@Cat<-Cobs
-  DLM@Ind<-II
-  DLM@Rec<-apply(N[,1,,],c(1,2),sum)*Recerr[,1:nyears]
-  DLM@t<-rep(nyears,nsim)
-  DLM@AvC<-apply(Cobs,1,mean)
-  DLM@Dt<-Dbias*Depletion^betas
-  DLM@Mort<-M*Mbias
-  DLM@FMSY_M<-FMSY_M*FMSY_Mbias
-  DLM@BMSY_B0<-BMSY_B0*BMSY_B0bias
-  DLM@Cref<-MSY*Crefbias
-  DLM@Bref<-BMSY*Brefbias
-  DLM@Iref<-Iref*Irefbias
-  DLM@AM<-ageM*AMbias
-  DLM@LFC<-LFC*LFCbias
-  DLM@LFS<-LFS*LFSbias
-  DLM@CAA<-CAA
-  DLM@Dep<-Dbias*Depletion^betas
-  DLM@Abun<-A*Abias
-  DLM@vbK<-K*Kbias
-  DLM@vbt0<-t0*t0bias
-  DLM@vbLinf<-Linf*Linfbias
-  DLM@steep<-hs*hbias
-  DLM@CAL_bins<-CAL_bins
-  DLM@CAL<-CAL
-  DLM@MaxAge<-maxage
-  DLM@Units<-"unitless"
-  DLM@Ref<-OFLreal
-  DLM@Ref_type<-'Simulated OFL'
-  DLM@wla<-rep(OM@a,nsim)
-  DLM@wlb<-rep(OM@b,nsim)
-  DLM@OM<-as.data.frame(cbind(RefY,M,Depletion,A,BMSY_B0,FMSY_M,Mgrad,Msd,procsd,Esd,dFfinal,MSY,
-                FMSY,Linf,K,t0,hs,Linfgrad,Kgrad,Linfsd,recgrad,Ksd,ageM,
-                LFS,age05,Vmaxage,LFC,OFLreal,betas,Spat_targ,Frac_area_1,Prob_staying,AC)) # put all the operating model parameters in one table
-
-  DLM@Obs<-as.data.frame(cbind(Cbias,Csd,nsamp,CALsd,Isd,Dbias,Mbias,FMSY_Mbias,BMSY_B0bias,
-                 AMbias,LFCbias,LFSbias,Abias,Kbias,t0bias,Linfbias,hbias,Irefbias,Crefbias,Brefbias))  # put all the observation error model parameters in one table
+  qinc<-runif(nsim,OM@qinc[1],OM@qinc[2])
+  qcv<-runif(nsim,OM@qcv[1],OM@qcv[2])                 # interannual variability in catchability
   
-  #assign("DLM",DLM,envir=.GlobalEnv) # for debugging fun
+  
+  DLM_data<-new('DLM_data',stock="MSE")             # create a blank DLM data object
+  if(reps==1)DLM_data<-OneRep(DLM_data)             # make stochastic variables certain for only one rep
+  DLM_data<-replic8(DLM_data,nsim)                  # make nsim sized slots in the DLM data object
+  DLM_data@Name<-OM@Name
+  DLM_data@Year<-1:nyears
+  DLM_data@Cat<-Cobs
+  DLM_data@Ind<-II
+  DLM_data@Rec<-apply(N[,1,,],c(1,2),sum)*Recerr[,1:nyears]
+  DLM_data@t<-rep(nyears,nsim)
+  DLM_data@AvC<-apply(Cobs,1,mean)
+  DLM_data@Dt<-Dbias*Depletion
+  DLM_data@Mort<-M*Mbias
+  DLM_data@FMSY_M<-FMSY_M*FMSY_Mbias
+  DLM_data@BMSY_B0<-BMSY_B0*BMSY_B0bias
+  DLM_data@Cref<-MSY*Crefbias
+  DLM_data@Bref<-BMSY*Brefbias
+  DLM_data@Iref<-Iref*Irefbias
+  DLM_data@AM<-ageM*AMbias
+  DLM_data@LFC<-LFC*LFCbias
+  DLM_data@LFS<-LFS*LFSbias
+  DLM_data@CAA<-CAA
+  DLM_data@Dep<-Dbias*Depletion
+  DLM_data@Abun<-A*Abias
+  DLM_data@vbK<-K*Kbias
+  DLM_data@vbt0<-t0*t0bias
+  DLM_data@vbLinf<-Linf*Linfbias
+  DLM_data@steep<-hs*hbias
+  DLM_data@CAL_bins<-CAL_bins
+  DLM_data@CAL<-CAL
+  DLM_data@MaxAge<-maxage
+  DLM_data@Units<-"unitless"
+  DLM_data@Ref<-OFLreal
+  DLM_data@Ref_type<-'Simulated OFL'
+  DLM_data@wla<-rep(OM@a,nsim)
+  DLM_data@wlb<-rep(OM@b,nsim)
+  DLM_data@OM<-as.data.frame(cbind(RefY,M,Depletion,A,BMSY_B0,FMSY_M,Mgrad,Msd,procsd,Esd,dFfinal,MSY,qinc,qcv,CALcv,
+                FMSY,Linf,K,t0,hs,Linfgrad,Kgrad,Linfsd,recgrad,Ksd,ageM,
+                LFS,age05,Vmaxage,LFC,OFLreal,Spat_targ,Frac_area_1,Prob_staying,AC)) # put all the operating model parameters in one table
+
+  DLM_data@Obs<-as.data.frame(cbind(Cbias,Csd,CAA_nsamp,CAA_ESS,CAL_nsamp,CAL_ESS,Isd,Dbias,Mbias,FMSY_Mbias,BMSY_B0bias,
+                 AMbias,LFCbias,LFSbias,Abias,Kbias,t0bias,Linfbias,hbias,Irefbias,Crefbias,Brefbias,betas))  # put all the observation error model parameters in one table
+  
+  #assign("DLM_data",DLM_data,envir=.GlobalEnv) # for debugging fun
  
   # Run projections ===========================================================================
+  qmu<--0.5*qcv^2                                      # Mean
+  qvar<-array(exp(rnorm(proyears*nsim,rep(qmu,proyears),rep(qcv,proyears))),c(nsim,proyears)) # Variations in interannual variation
+  FinF<-Find[,nyears]
+  
   print("Determining available methods")  # print an progress report
   flush.console()                         # update the console
 
-  PosMeths<-Can(DLM)                      # list all the methods that could be applied to a DLM data object
-  if(is.na(Meths[1]))Meths<-PosMeths      # if the user does not supply an argument Meths run the MSE or all available methods
-  if(!is.na(Meths[1]))Meths<-Meths[Meths%in%PosMeths] # otherwise run the MSE for all methods that are deemed possible
-  if(length(Meths)==0)stop('MSE stopped: no viable methods \n\n') # if none of the user specied methods are possible stop the run
+  PosMPs<-Can(DLM_data)                 # list all the methods that could be applied to a DLM data object
+ # print(PosMPs)
+  if(is.na(MPs[1]))MPs<-PosMPs      # if the user does not supply an argument MPs run the MSE or all available methods
+  if(!is.na(MPs[1]))MPs<-MPs[MPs%in%PosMPs] # otherwise run the MSE for all methods that are deemed possible
+  if(length(MPs)==0)stop('MSE stopped: no viable methods \n\n') # if none of the user specied methods are possible stop the run
 
-  nmeth<-length(Meths)                    # the total number of methods used
+  nMP<-length(MPs)                    # the total number of methods used
 
-  MSElist<-list(DLM)[rep(1,nmeth)]        # create a data object for each method (they have identical historical data and branch in projected years)
+  MSElist<-list(DLM_data)[rep(1,nMP)]        # create a data object for each method (they have identical historical data and branch in projected years)
 
-  B_BMSYa<-array(NA,dim=c(nsim,nmeth,proyears))  # store the projected B_BMSY
-  F_FMSYa<-array(NA,dim=c(nsim,nmeth,proyears))  # store the projected F_FMSY
-  Ba<-array(NA,dim=c(nsim,nmeth,proyears))       # store the projected Biomass
-  FMa<-array(NA,dim=c(nsim,nmeth,proyears))      # store the projected fishing mortality rate
-  Ca<-array(NA,dim=c(nsim,nmeth,proyears))       # store the projected catch
-  OFLa<-array(NA,dim=c(nsim,nmeth,proyears))     # store the projected quota recommendation
+  B_BMSYa<-array(NA,dim=c(nsim,nMP,proyears))  # store the projected B_BMSY
+  F_FMSYa<-array(NA,dim=c(nsim,nMP,proyears))  # store the projected F_FMSY
+  Ba<-array(NA,dim=c(nsim,nMP,proyears))       # store the projected Biomass
+  FMa<-array(NA,dim=c(nsim,nMP,proyears))      # store the projected fishing mortality rate
+  Ca<-array(NA,dim=c(nsim,nMP,proyears))       # store the projected catch
+  TACa<-array(NA,dim=c(nsim,nMP,proyears))     # store the projected TAC recommendation
 
-  for(mm in 1:nmeth){    # MSE Loop over methods
+  for(mm in 1:nMP){    # MSE Loop over methods
 
-    print(paste(mm,"/",nmeth," Running MSE for ",Meths[mm],sep=""))  # print a progress report
+    print(paste(mm,"/",nMP," Running MSE for ",MPs[mm],sep=""))  # print a progress report
     flush.console()                                                  # update the console
 
     # projection arrays
@@ -571,6 +606,8 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
     SSN_P<-array(NA,dim=c(nsim,maxage,proyears,nareas))
     SSB_P<-array(NA,dim=c(nsim,maxage,proyears,nareas))
     FM_P<-array(NA,dim=c(nsim,maxage,proyears,nareas))
+    FM_nospace<-array(NA,dim=c(nsim,maxage,proyears,nareas)) # stores prospective F before reallocation to new areas
+    FML<-array(NA,dim=c(nsim,nareas)) # last apical F
     Z_P<-array(NA,dim=c(nsim,maxage,proyears,nareas))
     CB_P<-array(NA,dim=c(nsim,maxage,proyears,nareas))
 
@@ -580,6 +617,10 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
     SAYR<-as.matrix(expand.grid(1:nsim,1:maxage,1,1:nareas))
     SYt<-SAYRt[,c(1,3)]
     SR<-SAYR[,c(1,4)]
+    SA1<-SAYR[,1:2]
+    S1<-SAYR[,1]
+    SY1<-SAYR[,c(1,3)]
+    SAY1<-SAYR[,1:3]
 
     SYA<-as.matrix(expand.grid(1:nsim,1,1:maxage))         # Projection year
     SY<-SYA[,1:2]
@@ -587,47 +628,84 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
     SAY<-SYA[,c(1,3,2)]
     S<-SYA[,1]
 
-    N_P[SAYR]<-N[SAYRL]
-    SSN_P[SAYR]<-SSN[SAYRL]
-    Biomass_P[SAYR]<-Biomass[SAYRL]
-    VBiomass_P[SAYR]<-VBiomass[SAYRL]
-    SSB_P[SAYR]<-SSB[SAYRL]
-
-    if(class(match.fun(Meths[mm]))=="DLM quota"){
-      Vn<-V
-      OFLused<-apply(Sam(MSElist[[mm]],Meths=Meths[mm],perc=pstar,reps=reps)@quota,3,quantile,p=pstar,na.rm=T)
-      OFLa[,mm,1]<-OFLused
-      fishdist<-(apply(Biomass_P[,,1,],c(1,3),sum)^Spat_targ)/apply(apply(Biomass_P[,,1,],c(1,3),sum)^Spat_targ,1,mean)   # spatial preference according to spatial biomass
-    }else if(class(match.fun(Meths[mm]))=="DLM size"){
-      temp<-t(sapply(1:nsim,Meths[mm],DLM=MSElist[[mm]]))
-      Vn<-V*temp
-      temp<-array(temp,dim(CB[,,nyears,]))
-      OFLused<-apply(CB[,,nyears,],1,sum)
-      fishdist<-(apply(Biomass_P[,,1,],c(1,3),sum)^Spat_targ)/apply(apply(Biomass_P[,,1,],c(1,3),sum)^Spat_targ,1,mean)   # spatial preference according to spatial biomass
-    }else if(class(match.fun(Meths[mm]))=="DLM space"){
-      Vn<-V
-      temp<-t(sapply(1:nsim,Meths[mm],DLM=MSElist[[mm]]))
-      fishdist<-temp
-      temp<-array(rep(temp,each=maxage),dim(CB[,,nyears,]))
-      OFLused<-apply(CB[,,nyears,]*temp,1,sum)
+    if(SRrel[1]==1){
+      N_P[,1,1,]<-Perr[,nyears]*(0.8*R0a*hs*apply(SSB[,,nyears,],c(1,3),sum))/(0.2*SSBpR*R0a*(1-hs)+(hs-0.2)*apply(SSB[,,nyears,],c(1,3),sum))  # Recruitment assuming regional R0 and stock wide steepness
+    }else{ # most transparent form of the Ricker uses alpha and beta params
+      N_P[,1,1,]<-Perr[,nyears]*aR*apply(SSB[,,nyears,],c(1,3),sum)*exp(-bR*apply(SSB[,,nyears,],c(1,3),sum))
     }
-
-    CB_P[SAYR]<-Biomass_P[SAYR]*(1-exp(-Vn[SA]*fishdist[SR]))      # ignore magnitude of effort or q increase (just get distribution across age and fishdist across space
-    temp<-CB_P[,,1,]/apply(CB_P[,,1,],1,sum)   # how catches are going to be distributed
-    CB_P[,,1,]<-OFLused*temp           # debug - to test distribution code make quota = quota2, should be identical
-    temp<-(CB_P[SAYR]/Biomass_P[SAYR])
-    temp[temp>(1-exp(-maxF))]<-1-exp(-maxF)
-
-    FM_P[SAYR]<--log(1-temp)
-    Z_P[SAYR]<-FM_P[SAYR]+Marray[SYt]
-
+    indMov<-as.matrix(expand.grid(1:nareas,1:nareas,1,1:maxage,1:nsim)[5:1])
+    indMov2<-indMov[,c(1,2,3,4)]
+    indMov3<-indMov[,c(1,4,5)]
+    
+    N_P[,2:maxage,1,]<-N[,1:(maxage-1),nyears,]*exp(-Z[,1:(maxage-1),nyears,])        # Total mortality
+    temp<-array(N_P[indMov2]*mov[indMov3],dim=c(nareas,nareas,maxage,nsim))   # Move individuals
+    N_P[,,1,]<-apply(temp,c(4,3,1),sum)
+    Biomass_P[SAYR]<-N_P[SAYR]*Wt_age[SAY1]                                    # Calculate biomass
+    VBiomass_P[SAYR]<-Biomass_P[SAYR]*V[SA1]                                   # Calculate vulnerable biomass
+    SSN_P[SAYR]<-N_P[SAYR]*Mat_age[SA1]                                        # Calculate spawning stock numbers
+    SSB_P[SAYR]<-SSN_P[SAYR]*Wt_age[SAY1]
+    FML<-apply(FM[,,nyears,],c(1,3),max)
+    
+    #N_P[SAYR]<-N[SAYRL]
+    #SSN_P[SAYR]<-SSN[SAYRL]
+    #Biomass_P[SAYR]<-Biomass[SAYRL]
+    #VBiomass_P[SAYR]<-VBiomass[SAYRL]
+    #SSB_P[SAYR]<-SSB[SAYRL]
+    
+    if(class(match.fun(MPs[mm]))=="DLM_output"){
+      TACused<-apply(Sam(MSElist[[mm]],MPs=MPs[mm],perc=pstar,reps=reps)@TAC,3,quantile,p=pstar,na.rm=T)
+      TACa[,mm,1]<-TACused
+      fishdist<-(apply(VBiomass_P[,,1,],c(1,3),sum)^Spat_targ)/apply(apply(VBiomass_P[,,1,],c(1,3),sum)^Spat_targ,1,mean)   # spatial preference according to spatial biomass
+      CB_P[SAYR]<-Biomass_P[SAYR]*(1-exp(-V[SA1]*fishdist[SR]))      # ignore magnitude of effort or q increase (just get distribution across age and fishdist across space
+      temp<-CB_P[,,1,]/apply(CB_P[,,1,],1,sum)   # how catches are going to be distributed
+      CB_P[,,1,]<-TACused*temp           # debug - to test distribution code make TAC = TAC2, should be identical
+      temp<-(CB_P[SAYR]/Biomass_P[SAYR])
+      temp[temp>(1-exp(-maxF))]<-1-exp(-maxF)
+      FM_P[SAYR]<--log(1-temp)
+    }else{ # input control
+      
+      inc<-sapply(1:nsim,MPs[mm],DLM_data=MSElist[[mm]])
+      Ai<-inc[1,]
+      Ei<-inc[2,]
+      Si<-t(inc[3:4,])
+      Vi<-t(inc[5:(4+maxage),])
+      y<-1
+       
+      if(sum(Si!=1)==0){ # if there is no spatial closure
+        if(sum(!is.na(Vi[1,1]))==0){ # if no vulnerability schedule is specified
+          newVB<-apply(VBiomass_P[,,y,],c(1,3),sum) # vulnerability isn't changed
+          fishdist<-(newVB^Spat_targ)/apply(newVB^Spat_targ,1,mean)   # spatial preference according to spatial biomass
+          FM_P[SAYR]<-FinF[S1]*Ei[S1]*V[SA1]*fishdist[SR]*qvar[SY1]*qs[S1]*(1+qinc[S1]/100)^y   # Fishing mortality rate determined by effort, catchability, vulnerability and spatial preference according to biomass
+        }else{
+          newVB<-apply(VBiomass_P[,,y,]*Vi[SA1],c(1,3),sum) # vulnerability modified
+          fishdist<-(newVB^Spat_targ)/apply(newVB^Spat_targ,1,mean)   # spatial preference according to spatial biomass
+          FM_P[SAYR]<-FinF[S1]*Ei[S1]*Vi[SA1]*fishdist[SR]*qvar[SY1]*qs[S1]*(1+qinc[S1]/100)^y   # Fishing mortality rate determined by effort, catchability, vulnerability and spatial preference according to biomass
+        }
+      }else{  # A spatial closure
+        if(sum(!is.na(Vi[1,1]))==0){ # if no vulnerability schedule is specified
+         newVB<-apply(VBiomass_P[,,y,],c(1,3),sum) # vulnerability isn't changed
+          fishdist<-(newVB^Spat_targ)/apply(newVB^Spat_targ,1,mean)   # spatial preference according to spatial biomass
+          Emult<-1+((2/apply(fishdist*Si,1,sum))-1)*Ai  # allocate effort to new area according to fraction allocation Ai
+          FM_P[SAYR]<-FinF[S1]*Ei[S1]*V[SA1]*Si[SR]*fishdist[SR]*Emult[S1]*qvar[SY1]*qs[S1]^(1+qinc[S1]/100)^y 
+        }else{
+          newVB<-apply(VBiomass_P[,,y,]*Vi[SA1],c(1,3),sum) # vulnerability modified
+          fishdist<-(newVB^Spat_targ)/apply(newVB^Spat_targ,1,mean)   # spatial preference according to spatial biomass
+          Emult<-1+((2/apply(fishdist*Si,1,sum))-1)*Ai  # allocate effort to new area according to fraction allocation Ai
+          FM_P[SAYR]<-FinF[S1]*Ei[S1]*Vi[SA1]*Si[SR]*fishdist[SR]*Emult[S1]*qvar[SY1]*qs[S1]^(1+qinc[S1]/100)^y 
+        } # vulnerability specified
+      }  # spatial closure specified  
+    }   # input control  
+    CB_P[SAYR]<-Biomass_P[SAYR]*(1-exp(-FM_P[SAYR])) 
+    Z_P[SAYR]<-FM_P[SAYR]+Marray[SYt] 
+ 
     upyrs<-1+(0:(floor(proyears/interval)-1))*interval  # the years in which there are updates (every three years)
     cat(".")
     flush.console()
+    
     for(y in 2:proyears){
       cat(".")
       flush.console()
-      OFLa[,mm,y]<-OFLused
+      if(class(match.fun(MPs[mm]))=="DLM_output")TACa[,mm,y]<-TACused
       SAYRt<-as.matrix(expand.grid(1:nsim,1:maxage,y+nyears,1:nareas)) # Trajectory year
       SAYt<-SAYRt[,1:3]
       SYt<-SAYRt[,c(1,3)]
@@ -635,6 +713,9 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
       SAYR<-as.matrix(expand.grid(1:nsim,1:maxage,y,1:nareas))
       SY<-SAYR[,c(1,3)]
       SA<-SAYR[,1:2]
+      S1<-SAYR[,1]
+      
+      
       SAY<-SAYR[,1:3]
       S<-SAYR[,1]
       SR<-SAYR[,c(1,4)]
@@ -643,7 +724,6 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
       indMov<-as.matrix(expand.grid(1:nareas,1:nareas,y,1:maxage,1:nsim)[5:1])
       indMov2<-indMov[,c(1,2,3,4)]
       indMov3<-indMov[,c(1,4,5)]
-
 
       N_P[SA2YR]<-N_P[SA1YR]*exp(-Z_P[SA1YR])         # Total mortality
       if(SRrel[1]==1){
@@ -656,45 +736,43 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
       N_P[,,y,]<-apply(temp,c(4,3,1),sum)
 
       Biomass_P[SAYR]<-N_P[SAYR]*Wt_age[SAYt]                                    # Calculate biomass
-      VBiomass_P[SAYR]<-Biomass_P[SAYR]*Vn[SA]                       # Calculate vulnerable biomass
+      VBiomass_P[SAYR]<-Biomass_P[SAYR]*V[SA]                       # Calculate vulnerable biomass
       SSN_P[SAYR]<-N_P[SAYR]*Mat_age[SA]                                       # Calculate spawning stock numbers
       SSB_P[SAYR]<-SSN_P[SAYR]*Wt_age[SAYt]                                      # Calculate spawning stock biomass
 
-      if(y%in%upyrs){  # rewrite the DLM object and run the OFL function
+      if(y%in%upyrs){  # rewrite the DLM object and run the TAC function
 
         yind<-upyrs[match(y,upyrs)-1]:(upyrs[match(y,upyrs)]-1)
-        CNtemp<-N_P[,,yind,]*exp(Z_P[,,yind,])*(1-exp(-Z_P[,,yind,]))*(FM_P[,,yind,]/Z_P[,,yind,])
-        CBtemp<-Biomass_P[,,yind,]*exp(Z_P[,,yind,])*(1-exp(-Z_P[,,yind,]))*(FM_P[,,yind,]/Z_P[,,yind,])
+        CNtemp<-array(N_P[,,yind,]*exp(Z_P[,,yind,])*(1-exp(-Z_P[,,yind,]))*(FM_P[,,yind,]/Z_P[,,yind,]),c(nsim,maxage,interval,nareas))
+        CBtemp<-array(Biomass_P[,,yind,]*exp(Z_P[,,yind,])*(1-exp(-Z_P[,,yind,]))*(FM_P[,,yind,]/Z_P[,,yind,]),c(nsim,maxage,interval,nareas))
         CNtemp[is.na(CNtemp)]<-1e-20
         CBtemp[is.na(CNtemp)]<-1e-20
         CNtemp<-apply(CNtemp,c(1,3,2),sum)
         CNtemp[CNtemp==0]<-CNtemp[CNtemp==0]+tiny
         Cobs<-Cbiasa[,nyears+yind]*Cerr[,nyears+yind]*apply(CBtemp,c(1,3),sum)
         Cobs[is.na(Cobs)]<-tiny
-        Recobs<-Recerr[,nyears+yind]*apply(N_P[,1,yind,],c(1,2),sum)
-                
-        CAA<-array(NA,dim=c(nsim,interval,maxage))
-        for(i in 1:nsim)for(j in 1:interval)CAA[i,j,]<-rmultinom(1,nsamp[i],CNtemp[i,j,])
-
-        nCALbins<-20
-        CAL_bins<-seq(0,max(Len_age),length.out=nCALbins)
-        CAL_bins<-c(CAL_bins,CAL_bins[nCALbins]*5)
-        CAL<-array(NA,dim=c(nsim,interval,nCALbins))
+        Recobs<-Recerr[,nyears+yind]*apply(array(N_P[,1,yind,],c(nsim,interval,nareas)),c(1,2),sum)
+        
+        CAA<-array(NA,dim=c(nsim,interval,maxage))                                  # Catch  at age array
+        for(i in 1:nsim)for(j in 1:interval)CAA[i,j,]<-ceiling(-0.5+rmultinom(1,CAA_nsamp[i],CNtemp[i,j,])*CAA_nsamp[i]/CAA_ESS[i]) # a multinomial observation model for catch-at-age data
+        
+        CAL <- array(NA,dim=c(nsim,interval,nCALbins))                                # the catch at length array
+        CNtemp[is.na(CNtemp)]<-0
         for(i in 1:nsim){
           for(j in 1:interval){
             yy<-yind[j]
-            ages<-rep(1:maxage,CAA[i,j,])+runif(sum(CAA[i,j,]),-0.5,0.5)
-            lengths<-Linfarray[i,yy]*(1-exp(-Karray[i,yy]*(ages-t0[i])))*exp(rnorm(sum(CAA[i,j,]),CALmu[i],CALsd[i]))
-            CAL[i,j,]<-hist(lengths,CAL_bins,plot=F)$counts
+            tempCN<-rmultinom(1, size=CAL_ESS[i], prob=CNtemp[i,j,])
+            #ages <- rep(1:maxage,tempCN)+runif(sum(tempCN),-0.5,0.5)          # sample expected age
+            lens <- unlist(sapply(1:maxage, function (X) rnorm(tempCN[X],  Len_age[i,X,j], LatASD[i,X,j])))
+            lens[lens > (max(Linfarray) + 2 * max(LatASD))|lens>max(CAL_bins)] <- max(Linfarray) + 2 * max(LatASD) # truncate at 2 sd 
+            CAL[i,j,] <- hist(lens,CAL_bins,plot=F)$counts                       # assign to bins
           }
         }
 
-        I2<-apply(Biomass_P,c(1,3),sum)[,1:(y-1)]*Ierr[,(nyears+1):(nyears+(y-1))]^betas
-        I2<-cbind(MSElist[[mm]]@Ind[,1:nyears],I2/(I2[,1]/MSElist[[mm]]@Ind[,nyears]))
+        I2<-cbind(apply(Biomass,c(1,3),sum),apply(Biomass_P,c(1,3),sum)[,1:(y-1)])*Ierr[,1:(nyears+(y-1))]^betas
         I2[is.na(I2)]<-tiny
         I2<-I2/apply(I2,1,mean)
         
-
         Depletion<-apply(Biomass_P[,,y,],1,sum)/apply(Biomass[,,1,],1,sum)
         A<-apply(VBiomass_P[,,y,],1,sum)
         A[is.na(A)]<-tiny
@@ -708,45 +786,88 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
         MSElist[[mm]]@Rec<-cbind(MSElist[[mm]]@Rec,Recobs)
         MSElist[[mm]]@t<-rep(nyears+y,nsim)
         MSElist[[mm]]@AvC<-apply(MSElist[[mm]]@Cat,1,mean)
-        MSElist[[mm]]@Dt<-Dbias*Depletion^betas
+        MSElist[[mm]]@Dt<-Dbias*Depletion
         oldCAA<-MSElist[[mm]]@CAA
         MSElist[[mm]]@CAA<-array(0,dim=c(nsim,nyears+y-1,maxage))
         MSElist[[mm]]@CAA[,1:(nyears+y-interval-1),]<-oldCAA
         MSElist[[mm]]@CAA[,nyears+yind,]<-CAA
-        MSElist[[mm]]@Dep<-Dbias*Depletion^betas
+        MSElist[[mm]]@Dep<-Dbias*Depletion
         MSElist[[mm]]@Abun<-A*Abias
         MSElist[[mm]]@CAL_bins<-CAL_bins
         oldCAL<-MSElist[[mm]]@CAL
         MSElist[[mm]]@CAL<-array(0,dim=c(nsim,nyears+y-1,nCALbins))
         MSElist[[mm]]@CAL[,1:(nyears+y-interval-1),]<-oldCAL
-        MSElist[[mm]]@CAL[,nyears+yind,]<-CAL
+        MSElist[[mm]]@CAL[,nyears+yind,]<-CAL[,1:interval,]
         MSElist[[mm]]@Ref<-OFLreal
         MSElist[[mm]]@Ref_type<-'Simulated OFL'
         
         #assign("DLM",MSElist[[mm]],envir=.GlobalEnv) # for debugging fun
         
-        if(class(match.fun(Meths[mm]))=="DLM quota"){
-          OFLused<-apply(Sam(MSElist[[mm]],Meths=Meths[mm],perc=pstar,reps=reps)@quota,3,quantile,p=pstar,na.rm=T)
-          MSElist[[mm]]@MPrec<-OFLused
+        if(class(match.fun(MPs[mm]))=="DLM_output"){
+          
+          TACused<-apply(Sam(MSElist[[mm]],MPs=MPs[mm],perc=pstar,reps=reps)@TAC,3,quantile,p=pstar,na.rm=T)
+          TACa[,mm,y]<-TACused
+          MSElist[[mm]]@MPrec<-TACused
+          fishdist<-(apply(VBiomass_P[,,y,],c(1,3),sum)^Spat_targ)/apply(apply(VBiomass_P[,,y,],c(1,3),sum)^Spat_targ,1,mean)   # spatial preference according to spatial biomass
+          CB_P[SAYR]<-Biomass_P[SAYR]*(1-exp(-V[SA]*fishdist[SR]))      # ignore magnitude of effort or q increase (just get distribution across age and fishdist across space
+          temp<-CB_P[,,y,]/apply(CB_P[,,y,],1,sum)   # how catches are going to be distributed
+          CB_P[,,y,]<-TACused*temp           # debug - to test distribution code make TAC = TAC2, should be identical
+          temp<-(CB_P[SAYR]/Biomass_P[SAYR])
+          temp[temp>(1-exp(-maxF))]<-1-exp(-maxF)
+          FM_P[SAYR]<--log(1-temp)
+         
+        }else{
+          
+          inc<-sapply(1:nsim,matagelim,DLM_data=MSElist[[mm]])
+          Ai<-inc[1,]
+          Ei<-inc[2,]
+          Si<-t(inc[3:4,])
+          Vi<-t(inc[5:(4+maxage),])
+          MSElist[[mm]]@MPrec<-Ei
+          
+          if(sum(Si!=1)==0){ # if there is no spatial closure
+            if(sum(!is.na(Vi[1,1]))==0){ # if no vulnerability schedule is specified
+              newVB<-apply(VBiomass_P[,,y,],c(1,3),sum) # vulnerability isn't changed
+              fishdist<-(newVB^Spat_targ)/apply(newVB^Spat_targ,1,mean)   # spatial preference according to spatial biomass
+              FM_P[SAYR]<-FinF[S1]*Ei[S1]*V[SA]*fishdist[SR]*qvar[SY]*qs[S1]*(1+qinc[S1]/100)^y   # Fishing mortality rate determined by effort, catchability, vulnerability and spatial preference according to biomass
+            }else{
+              newVB<-apply(VBiomass_P[,,y,]*Vi[SA],c(1,3),sum) # vulnerability modified
+              fishdist<-(newVB^Spat_targ)/apply(newVB^Spat_targ,1,mean)   # spatial preference according to spatial biomass
+              FM_P[SAYR]<-FinF[S1]*Ei[S1]*Vi[SA]*fishdist[SR]*qvar[SY]*qs[S1]*(1+qinc[S1]/100)^y   # Fishing mortality rate determined by effort, catchability, vulnerability and spatial preference according to biomass
+            }
+          }else{  # A spatial closure
+            if(sum(!is.na(Vi[1,1]))==0){ # if no vulnerability schedule is specified
+              newVB<-apply(VBiomass_P[,,y,],c(1,3),sum) # vulnerability isn't changed
+              fishdist<-(newVB^Spat_targ)/apply(newVB^Spat_targ,1,mean)   # spatial preference according to spatial biomass
+              Emult<-1+((2/apply(fishdist*Si,1,sum))-1)*Ai  # allocate effort to new area according to fraction allocation Ai
+              FM_P[SAYR]<-FinF[S1]*Ei[S1]*V[SA]*Si[SR]*fishdist[SR]*Emult[S1]*qvar[SY]*qs[S1]*(1+qinc[S1]/100)^y 
+            }else{
+              newVB<-apply(VBiomass_P[,,y,]*Vi[SA],c(1,3),sum) # vulnerability modified
+              fishdist<-(newVB^Spat_targ)/apply(newVB^Spat_targ,1,mean)   # spatial preference according to spatial biomass
+              Emult<-1+((2/apply(fishdist*Si,1,sum))-1)*Ai  # allocate effort to new area according to fraction allocation Ai
+              FM_P[SAYR]<-FinF[S1]*Ei[S1]*Vi[SA]*Si[SR]*fishdist[SR]*Emult[S1]*qvar[SY]*qs[S1]*(1+qinc[S1]/100)^y 
+            } #vuln not changed
+          }   # spatial closure
+         
+        }   # input or output control 
+        CB_P[SAYR]<-Biomass_P[SAYR]*(1-exp(-FM_P[SAYR])) 
+        Z_P[SAYR]<-FM_P[SAYR]+Marray[SYt] 
+      
+      }else{ # not an update yr
+
+        if(class(match.fun(MPs[mm]))=="DLM_output"){
+          CB_P[SAYR]<-Biomass_P[SAYR]*(1-exp(-fishdist[SR]*V[SA]))      # ignore magnitude of effort or q increase (just get distribution across age and fishdist across space
+          temp<-CB_P[,,y,]/apply(CB_P[,,y,],1,sum)   # how catches are going to be distributed
+          CB_P[,,y,]<-TACused*temp           # debug - to test distribution code make TAC = TAC2, should be identical
+          temp<-(CB_P[SAYR]/Biomass_P[SAYR])
+          temp[temp>(1-exp(-maxF))]<-1-exp(-maxF)
+          FM_P[SAYR]<--log(1-temp)
+        }else{ #input contol
+          FM_P[SAYR]<-FM_P[SAY1R]*qvar[SY]*(1+qinc[S1]/100)^y  # add fishing efficiency changes and variability
         }
-        
-      }
-
-      if(class(match.fun(Meths[mm]))=="DLM quota"){
-         fishdist<-(apply(Biomass_P[,,y-1,],c(1,3),sum)^Spat_targ)/apply(apply(Biomass_P[,,y-1,],c(1,3),sum)^Spat_targ,1,mean)   # spatial preference according to spatial biomass
-      }else if(class(match.fun(Meths[mm]))=="DLM size"){
-         fishdist<-(apply(Biomass_P[,,y-1,],c(1,3),sum)^Spat_targ)/apply(apply(Biomass_P[,,y-1,],c(1,3),sum)^Spat_targ,1,mean)   # spatial preference according to spatial biomass
-      }
-
-      CB_P[SAYR]<-Biomass_P[SAYR]*(1-exp(-fishdist[SR]*Vn[SA]))      # ignore magnitude of effort or q increase (just get distribution across age and fishdist across space
-      temp<-CB_P[,,y,]/apply(CB_P[,,y,],1,sum)   # how catches are going to be distributed
-      CB_P[,,y,]<-OFLused*temp           # debug - to test distribution code make quota = quota2, should be identical
-      temp<-(CB_P[SAYR]/Biomass_P[SAYR])
-      temp[temp>(1-exp(-maxF))]<-1-exp(-maxF)
-      FM_P[SAYR]<--log(1-temp)
-      CB_P[SAYR]<-Biomass_P[SAYR]*(1-exp(-FM_P[SAYR]))
-      Z_P[SAYR]<-FM_P[SAYR]+Marray[SYt]
-
+        CB_P[SAYR]<-Biomass_P[SAYR]*(1-exp(-FM_P[SAYR])) 
+        Z_P[SAYR]<-FM_P[SAYR]+Marray[SYt]
+      } # not an update year
     } # end of year
 
     B_BMSYa[,mm,]<-apply(Biomass_P,c(1,3),sum)/BMSY
@@ -757,12 +878,12 @@ runMSE<-function(OM="1",Meths=NA,nsim=48,proyears=28,interval=4,pstar=0.5,
     cat("\n")
   }    # end of mm methods
   
-  new('MSE',Name=OM@Name,nyears,proyears,nmeth,Meths,nsim,OMtable=DLM@OM,DLM@Obs,B_BMSYa,F_FMSYa,Ba,FMa,Ca,OFLa,SSB_hist=SSB,CB_hist=CB,FM_hist=FM)
+  new('MSE',Name=OM@Name,nyears,proyears,nMP,MPs,nsim,OMtable=DLM_data@OM,DLM_data@Obs,B_BMSYa,F_FMSYa,Ba,FMa,Ca,TACa,SSB_hist=SSB,CB_hist=CB,FM_hist=FM)
 
 }
 
 
-Tplot<-function(MSEobj){
+Tplot<-function(MSEobj,nam=NA){
   FMSYr<-quantile(MSEobj@F_FMSY,c(0.001,0.90),na.rm=T)
   BMSYr<-quantile(MSEobj@B_BMSY,c(0.001,0.975),na.rm=T)
 
@@ -775,15 +896,15 @@ Tplot<-function(MSEobj){
   colF[1:200]<-colsse
   colF<-makeTransparent(colF,60)
 
-  Yd<-rep(NA,MSEobj@nmeths)
-  P10<-rep(NA,MSEobj@nmeths)
-  P50<-rep(NA,MSEobj@nmeths)
-  P100<-rep(NA,MSEobj@nmeths)
-  POF<-rep(NA,MSEobj@nmeths)
+  Yd<-rep(NA,MSEobj@nMPs)
+  P10<-rep(NA,MSEobj@nMPs)
+  P50<-rep(NA,MSEobj@nMPs)
+  P100<-rep(NA,MSEobj@nMPs)
+  POF<-rep(NA,MSEobj@nMPs)
   yind<-max(MSEobj@proyears-4,1):MSEobj@proyears
   RefYd<-MSEobj@OM$RefY
 
-  for(mm in 1:MSEobj@nmeths){
+  for(mm in 1:MSEobj@nMPs){
     Yd[mm]<-round(mean(apply(MSEobj@C[,mm,yind],1,mean,na.rm=T)/RefYd,na.rm=T)*100,1)
   #cbind(MSEobj@C[,mm,yind],unlist(MSEobj@OM$MSY))
     POF[mm]<-round(sum(MSEobj@F_FMSY[,mm,]>1,na.rm=T)/prod(dim(MSEobj@F_FMSY[,mm,]),na.rm=T)*100,1)
@@ -793,15 +914,18 @@ Tplot<-function(MSEobj){
   }
   
   #dev.new2(width=7,height=7)
-  par(mfrow=c(2,2),mai=c(0.85,0.7,0.1,0.1),omi=rep(0.01,4))
+  par(mfrow=c(2,2),mai=c(0.9,1,0.1,0.1),omi=c(0.1,0.1,0.4,0))
 
-  tradeoffplot(POF,Yd,"Prob. of overfishing (%)", "Relative yield",MSEobj@meths[1:MSEobj@nmeths],vl=50,hl=100)
-  tradeoffplot(P100,Yd,"Prob. biomass < BMSY (%)", "Relative yield",MSEobj@meths[1:MSEobj@nmeths],vl=50,hl=100)
-  tradeoffplot(P50,Yd,"Prob. biomass < 0.5BMSY (%)", "Relative yield",MSEobj@meths[1:MSEobj@nmeths],vl=50,hl=100)
-  tradeoffplot(P10,Yd,"Prob. biomass < 0.1BMSY (%)", "Relative yield",MSEobj@meths[1:MSEobj@nmeths],vl=50,hl=100)
+  tradeoffplot(POF,Yd,"Prob. of overfishing (%)", "Relative yield",MSEobj@MPs[1:MSEobj@nMPs],vl=50,hl=100)
+  tradeoffplot(P100,Yd,"Prob. biomass < BMSY (%)", "Relative yield",MSEobj@MPs[1:MSEobj@nMPs],vl=50,hl=100)
+  tradeoffplot(P50,Yd,"Prob. biomass < 0.5BMSY (%)", "Relative yield",MSEobj@MPs[1:MSEobj@nMPs],vl=50,hl=100)
+  tradeoffplot(P10,Yd,"Prob. biomass < 0.1BMSY (%)", "Relative yield",MSEobj@MPs[1:MSEobj@nMPs],vl=50,hl=100)
+
+  if(is.na(nam))mtext(deparse(substitute(MSEobj)),3,outer=T,line=0.3,font=2)
+  if(!is.na(nam))mtext(MSEobj@Name,3,outer=T,line=0.3,font=2)
 }
 
-Pplot<-function(MSEobj){
+Pplot<-function(MSEobj,nam=NA){
   
   FMSYr<-quantile(MSEobj@F_FMSY,c(0.001,0.90),na.rm=T)
   BMSYr<-quantile(MSEobj@B_BMSY,c(0.001,0.975),na.rm=T)
@@ -815,15 +939,15 @@ Pplot<-function(MSEobj){
   colF[1:200]<-colsse
   colF<-makeTransparent(colF,60)
   
-  Yd<-rep(NA,MSEobj@nmeths)
-  P10<-rep(NA,MSEobj@nmeths)
-  P50<-rep(NA,MSEobj@nmeths)
-  P100<-rep(NA,MSEobj@nmeths)
-  POF<-rep(NA,MSEobj@nmeths)
+  Yd<-rep(NA,MSEobj@nMPs)
+  P10<-rep(NA,MSEobj@nMPs)
+  P50<-rep(NA,MSEobj@nMPs)
+  P100<-rep(NA,MSEobj@nMPs)
+  POF<-rep(NA,MSEobj@nMPs)
   yind<-max(MSEobj@proyears-4,1):MSEobj@proyears
   RefYd<-MSEobj@OM$RefY
   
-  for(mm in 1:MSEobj@nmeths){
+  for(mm in 1:MSEobj@nMPs){
     Yd[mm]<-round(mean(apply(MSEobj@C[,mm,yind],1,mean,na.rm=T)/RefYd,na.rm=T)*100,1)
     #cbind(MSEobj@C[,mm,yind],unlist(MSEobj@OM$MSY))
     POF[mm]<-round(sum(MSEobj@F_FMSY[,mm,]>1,na.rm=T)/prod(dim(MSEobj@F_FMSY[,mm,]),na.rm=T)*100,1)
@@ -832,52 +956,63 @@ Pplot<-function(MSEobj){
     P100[mm]<-round(sum(MSEobj@B_BMSY[,mm,]<1,na.rm=T)/prod(dim(MSEobj@B_BMSY[,mm,]))*100,1)
   }
     
-  nr<-ceiling(MSEobj@nmeths/8)
-  nc<-ceiling(MSEobj@nmeths/nr)
+  nr<-ceiling(MSEobj@nMPs/8)
+  nc<-ceiling(MSEobj@nMPs/nr)
   nr<-nr*2
   MSEcols<-c('red','green','blue','orange','brown','purple','dark grey','violet','dark red','pink','dark blue','grey')
-
+  temp<-array(0,c(nr*2+(nr/2-1),nc*2))
+  i<-0
+  for(c in 1:nc){
+    for(r in 1:nr){
+      i<-i+1
+      temp[(ceiling(r/2)-1)+(1:2)+(r-1)*2,(1:2)+(c-1)*2]<-((c-1)*nr)+r
+    }
+  }
+  par(mfcol=c(nr,nc),mai=c(0.2,0.35,0.3,0.01),omi=c(0.5,0.4,0.4,0.05))
+  layout(temp)
   #dev.new2(width=nc*3,height=nr*3)
-  par(mfcol=c(nr,nc),mai=c(0.2,0.25,0.3,0.01),omi=c(0.4,0.3,0.05,0.05))
+  #
   lwdy<-2.5
 
-  for(mm in 1:MSEobj@nmeths){
+  for(mm in 1:MSEobj@nMPs){
     plot(MSEobj@F_FMSY[1,mm,],ylim=FMSYr,col=colF[ceiling(mean(MSEobj@F_FMSY[1,mm,],na.rm=T)*100)],type='l',lwd=lwdy)
     for(i in 1:MSEobj@nsim)lines(MSEobj@F_FMSY[i,mm,],col=colF[ceiling(mean(MSEobj@F_FMSY[i,mm,],na.rm=T)*100)],lwd=lwdy)
     abline(h=100,col="grey",lwd=3)
-    mtext(MSEobj@meths[mm],3,outer=F,line=0.6)
-    legend('top',c(paste(POF[mm],"% POF",sep=""),
-                 paste(Yd[mm],"% FMSY yield",sep="")),bty='n',cex=0.9)
+    mtext(MSEobj@MPs[mm],3,outer=F,line=0.6)
+    legend('topright',c(paste(POF[mm],"% POF",sep=""),
+                 paste(Yd[mm],"% FMSY yield",sep="")),bty='n',cex=0.8)
     if(mm%in%(1:(nr/2)))mtext("F/FMSY",2,line=2.5,outer=F)
     abline(h=1,col=makeTransparent("grey",30),lwd=2.5)
   
     plot(MSEobj@B_BMSY[1,mm,],ylim=BMSYr,col=colB[ceiling(MSEobj@B_BMSY[1,mm,MSEobj@proyears]*100)],type='l',lwd=lwdy)
     for(i in 1:MSEobj@nsim)lines(MSEobj@B_BMSY[i,mm,],col=colB[ceiling(MSEobj@B_BMSY[i,mm,MSEobj@proyears]*100)],lwd=lwdy)
     abline(h=100,col="grey",lwd=3)
-    legend('top',c(paste(P100[mm],"% < BMSY",sep=""),
+    legend('topright',c(paste(P100[mm],"% < BMSY",sep=""),
                  paste(P50[mm],"% < 0.5BMSY",sep=""),
-                 paste(P10[mm],"% < 0.1BMSY",sep="")),bty='n',cex=0.9)
+                 paste(P10[mm],"% < 0.1BMSY",sep="")),bty='n',cex=0.8)
     if(mm%in%(1:(nr/2)))mtext("B/BMSY",2,line=2.5,outer=F)
     abline(h=1,col=makeTransparent("grey",30),lwd=2.5)
   
   }
   mtext("Projection year",1,outer=T,line=1.2)
+  if(is.na(nam))mtext(deparse(substitute(MSEobj)),3,outer=T,line=0.3,font=2)
+  if(!is.na(nam))mtext(MSEobj@Name,3,outer=T,line=0.3,font=2)
 }
 
-Kplot<-function(MSEobj){
-  nr<-floor((MSEobj@nmeths)^0.5)
-  nc<-ceiling((MSEobj@nmeths)/nr)
+Kplot<-function(MSEobj,maxsim=60,nam=NA){
+  nr<-floor((MSEobj@nMPs)^0.5)
+  nc<-ceiling((MSEobj@nMPs)/nr)
     
   FMSYr<-quantile(MSEobj@F_FMSY,c(0.001,0.90),na.rm=T)
   BMSYr<-quantile(MSEobj@B_BMSY,c(0.001,0.975),na.rm=T)
     
   #dev.new2(width=nc*3,height=nr*3.6)
-  par(mfrow=c(nr,nc),mai=c(0.2,0.3,0.4,0.01),omi=c(0.45,0.3,0.01,0.01))
+  par(mfrow=c(nr,nc),mai=c(0.45,0.45,0.45,0.01),omi=c(0.45,0.3,0.35,0.01))
   
-  colsse<-rainbow(MSEobj@proyears,start=0.57,end=0.7)[1:MSEobj@proyears]
-  colsse<-makeTransparent(colsse,90)
+  colsse<-rainbow(MSEobj@proyears,start=0.63,end=0.95)[1:MSEobj@proyears]
+  colsse<-makeTransparent(colsse,95)
   
-  for(mm in 1:MSEobj@nmeths){
+  for(mm in 1:MSEobj@nMPs){
     plot(c(MSEobj@B_BMSY[1,mm,1],MSEobj@B_BMSY[1,mm,2]),
          c(MSEobj@F_FMSY[1,mm,1],MSEobj@F_FMSY[1,mm,2]),xlim=BMSYr,ylim=FMSYr,
          col=colsse[1],type='l')
@@ -887,27 +1022,27 @@ Kplot<-function(MSEobj){
     UO<-round(sum(MSEobj@B_BMSY[,mm,MSEobj@proyears]<1&MSEobj@F_FMSY[,mm,MSEobj@proyears]<1,na.rm=T)/MSEobj@nsim*100,1)
     UU<-round(sum(MSEobj@B_BMSY[,mm,MSEobj@proyears]>1&MSEobj@F_FMSY[,mm,MSEobj@proyears]<1,na.rm=T)/MSEobj@nsim*100,1)
     
-    alp<-80
-    polygon(c(1,-1000,-1000,1),c(1,1,1000,1000),col=makeTransparent("orange",alp),border=makeTransparent("orange",alp))
-    polygon(c(1,1000,1000,1),c(1,1,1000,1000),col=makeTransparent("yellow",alp),border=makeTransparent("yellow",alp))
-    polygon(c(1,-1000,-1000,1),c(1,1,-1000,-1000),col=makeTransparent("yellow",alp),border=makeTransparent("yellow",alp))
-    polygon(c(1,1000,1000,1),c(1,1,-1000,-1000),col=makeTransparent("green",alp),border=makeTransparent("yellow",alp))
+    #alp<-80
+    #polygon(c(1,-1000,-1000,1),c(1,1,1000,1000),col=makeTransparent("orange",alp),border=makeTransparent("orange",alp))
+    #polygon(c(1,1000,1000,1),c(1,1,1000,1000),col=makeTransparent("yellow",alp),border=makeTransparent("yellow",alp))
+    #polygon(c(1,-1000,-1000,1),c(1,1,-1000,-1000),col=makeTransparent("yellow",alp),border=makeTransparent("yellow",alp))
+    #polygon(c(1,1000,1000,1),c(1,1,-1000,-1000),col=makeTransparent("green",alp),border=makeTransparent("yellow",alp))
     
     
     abline(h=1,col="grey",lwd=3)
     abline(v=1,col="grey",lwd=3)
     #abline(v=c(0.1,0.5),col="grey",lwd=2)
-    
-    for(i in 1:MSEobj@nsim){
+    rng<-1:min(maxsim,MSEobj@nsim)
+    for(i in rng){
       for(y in 1:(MSEobj@proyears-1)){
         lines(c(MSEobj@B_BMSY[i,mm,y],MSEobj@B_BMSY[i,mm,y+1]),
               c(MSEobj@F_FMSY[i,mm,y],MSEobj@F_FMSY[i,mm,y+1]),
-              col=colsse[y],lwd=1.5)
+              col=colsse[y],lwd=1.6)
       }
     }
     
-    points(MSEobj@B_BMSY[,mm,1],MSEobj@F_FMSY[,mm,1],pch=19,cex=0.8,col=colsse[1])
-    points(MSEobj@B_BMSY[,mm,MSEobj@proyears],MSEobj@F_FMSY[,mm,MSEobj@proyears],pch=19,cex=0.8,col=colsse[MSEobj@proyears])
+    points(MSEobj@B_BMSY[rng,mm,1],MSEobj@F_FMSY[rng,mm,1],pch=19,cex=0.8,col=colsse[1])
+    points(MSEobj@B_BMSY[rng,mm,MSEobj@proyears],MSEobj@F_FMSY[rng,mm,MSEobj@proyears],pch=19,cex=0.8,col=colsse[MSEobj@proyears])
     
     if(mm==1)legend('right',c("Start","End"),bty='n',text.col=c(colsse[1],colsse[MSEobj@proyears]),pch=19,col=c(colsse[1],colsse[MSEobj@proyears]))
     legend('topleft',paste(OO,"%",sep=""),bty='n',text.font=2)
@@ -915,221 +1050,209 @@ Kplot<-function(MSEobj){
     legend('bottomleft',paste(UO,"%",sep=""),bty='n',text.font=2)
     legend('bottomright',paste(UU,"%",sep=""),bty='n',text.font=2)
     
-    mtext(MSEobj@meths[mm],3,line=0.45)
+    mtext(MSEobj@MPs[mm],3,line=0.45)
   }
   mtext("B/BMSY",1,outer=T,line=1.4)
   mtext("F/FMSY",2,outer=T,line=0.2)
-  
+  if(is.na(nam))mtext(deparse(substitute(MSEobj)),3,outer=T,line=0.25,font=2)
+  if(!is.na(nam))mtext(MSEobj@Name,3,outer=T,line=0.25,font=2)
 }
 
 # Plotting code for MSE object
 setMethod("plot",
   signature(x = "MSE"),
   function(x){
-  options(warn=-1)
   MSEobj<-x
-  # Plot the trajectories of F/FMSY and B/BMSY    ============================================
-  FMSYr<-quantile(MSEobj@F_FMSY,c(0.001,0.90),na.rm=T)
-  BMSYr<-quantile(MSEobj@B_BMSY,c(0.001,0.975),na.rm=T)
+  Pplot(MSEobj)
+  Kplot(MSEobj)
+  Tplot(MSEobj)
+})
 
-  colsse<-rainbow(100,start=0,end=0.36)[1:100]
-  colB<-rep(colsse[100],ceiling(BMSYr[2]*100))
-  colB[1:100]<-colsse
-  colB<-makeTransparent(colB,60)
-  colsse<-rainbow(200,start=0,end=0.36)[200:1]
-  colF<-rep(colsse[200],ceiling(FMSYr[2]*100))
-  colF[1:200]<-colsse
-  colF<-makeTransparent(colF,60)
-
-  Yd<-rep(NA,MSEobj@nmeths)
-  P10<-rep(NA,MSEobj@nmeths)
-  P50<-rep(NA,MSEobj@nmeths)
-  P100<-rep(NA,MSEobj@nmeths)
-  POF<-rep(NA,MSEobj@nmeths)
-  yind<-max(MSEobj@proyears-4,1):MSEobj@proyears
-  RefYd<-MSEobj@OM$RefY
-
-  for(mm in 1:MSEobj@nmeths){
-    Yd[mm]<-round(mean(apply(MSEobj@C[,mm,yind],1,mean,na.rm=T)/RefYd,na.rm=T)*100,1)
-    #cbind(MSEobj@C[,mm,yind],unlist(MSEobj@OM$MSY))
-    POF[mm]<-round(sum(MSEobj@F_FMSY[,mm,]>1,na.rm=T)/prod(dim(MSEobj@F_FMSY[,mm,]),na.rm=T)*100,1)
-    P10[mm]<-round(sum(MSEobj@B_BMSY[,mm,]<0.1,na.rm=T)/prod(dim(MSEobj@B_BMSY[,mm,]))*100,1)
-    P50[mm]<-round(sum(MSEobj@B_BMSY[,mm,]<0.5,na.rm=T)/prod(dim(MSEobj@B_BMSY[,mm,]))*100,1)
-    P100[mm]<-round(sum(MSEobj@B_BMSY[,mm,]<1,na.rm=T)/prod(dim(MSEobj@B_BMSY[,mm,]))*100,1)
+# Value of information analysis
+VOI<-function(MSEobj,ncomp=6,nbins=10,maxrow=8,Ut=NA,Utnam="Utility"){# Value of information  ====================================================================
+  objnam<-deparse(substitute(MSEobj))
+  nsim<-MSEobj@nsim
+ 
+  if(is.na(Ut[1])){
+    Ut<-array(NA,c(nsim,MSEobj@nMPs))
+    yind<-max(MSEobj@proyears-4,1):MSEobj@proyears
+    RefYd<-MSEobj@OM$RefY
+  
+    for(mm in 1:MSEobj@nMPs){
+      Ut[,mm]<-apply(MSEobj@C[,mm,yind],1,mean,na.rm=T)/RefYd*100
+    #POF[,mm]<-apply(MSEobj@F_FMSY[,mm,]>1,1,sum)/MSEobj@proyears
+    #P10[,mm]<-apply(MSEobj@B_BMSY[,mm,]<0.1,1,sum)/MSEobj@proyears
+    }
+    Utnam<-"Long-term yield relative to MSY (%)"
   }
     
-  nr<-ceiling(MSEobj@nmeths/8)
-  nc<-ceiling(MSEobj@nmeths/nr)
-  nr<-nr*2
-  MSEcols<-c('red','green','blue','orange','brown','purple','dark grey','violet','dark red','pink','dark blue','grey')
-  
-  #dev.new2(width=nc*3,height=nr*3)
-  par(mfcol=c(nr,nc),mai=c(0.2,0.25,0.3,0.01),omi=c(0.4,0.3,0.05,0.05))
-  lwdy<-2.5
-  
-  for(mm in 1:MSEobj@nmeths){
-    plot(MSEobj@F_FMSY[1,mm,],ylim=FMSYr,col=colF[ceiling(mean(MSEobj@F_FMSY[1,mm,],na.rm=T)*100)],type='l',lwd=lwdy)
-    for(i in 1:MSEobj@nsim)lines(MSEobj@F_FMSY[i,mm,],col=colF[ceiling(mean(MSEobj@F_FMSY[i,mm,],na.rm=T)*100)],lwd=lwdy)
-    abline(h=100,col="grey",lwd=3)
-    mtext(MSEobj@meths[mm],3,outer=F,line=0.6)
-    legend('top',c(paste(POF[mm],"% POF",sep=""),
-                        paste(Yd[mm],"% FMSY yield",sep="")),bty='n',cex=0.9)
-    if(mm%in%(1:(nr/2)))mtext("F/FMSY",2,line=2.5,outer=F)
-    abline(h=1,col=makeTransparent("grey",30),lwd=2.5)
     
-    plot(MSEobj@B_BMSY[1,mm,],ylim=BMSYr,col=colB[ceiling(MSEobj@B_BMSY[1,mm,MSEobj@proyears]*100)],type='l',lwd=lwdy)
-    for(i in 1:MSEobj@nsim)lines(MSEobj@B_BMSY[i,mm,],col=colB[ceiling(MSEobj@B_BMSY[i,mm,MSEobj@proyears]*100)],lwd=lwdy)
-    abline(h=100,col="grey",lwd=3)
-    legend('top',c(paste(P100[mm],"% < BMSY",sep=""),
-                        paste(P50[mm],"% < 0.5BMSY",sep=""),
-                        paste(P10[mm],"% < 0.1BMSY",sep="")),bty='n',cex=0.9)
-    if(mm%in%(1:(nr/2)))mtext("B/BMSY",2,line=2.5,outer=F)
-    abline(h=1,col=makeTransparent("grey",30),lwd=2.5)
+  
+  MPs<-MSEobj@MPs
+  nMPs<-MSEobj@nMPs
+ 
+  onlycor<-c("RefY","A","MSY","Linf","t0","OFLreal")
+  MSEobj@OM<- MSEobj@OM[,!names(MSEobj@OM)%in%onlycor]
     
-  }
-  mtext("Projection year",1,outer=T,line=1.2)
- 
-  # KOBE plots ==============================================================================
+  OMp<-apply(MSEobj@OM,2,quantile,p=seq(0,1,length.out=nbins+1))
+  Obsp<-apply(MSEobj@Obs,2,quantile,p=seq(0,1,length.out=nbins+1))
+  OMv<-array(NA,c(nMPs,ncol(MSEobj@OM),nbins))
+  Obsv<-array(NA,c(nMPs,ncol(MSEobj@Obs),nbins))
   
-  nr<-floor((MSEobj@nmeths)^0.5)
-  nc<-ceiling((MSEobj@nmeths)/nr)
-  
-  #dev.new2(width=nc*3,height=nr*3.6)
-  par(mfrow=c(nr,nc),mai=c(0.2,0.3,0.4,0.01),omi=c(0.45,0.3,0.01,0.01))
-
-  colsse<-rainbow(MSEobj@proyears,start=0.57,end=0.7)[1:MSEobj@proyears]
-  colsse<-makeTransparent(colsse,90)
- 
-  for(mm in 1:MSEobj@nmeths){
-    plot(c(MSEobj@B_BMSY[1,mm,1],MSEobj@B_BMSY[1,mm,2]),
-           c(MSEobj@F_FMSY[1,mm,1],MSEobj@F_FMSY[1,mm,2]),xlim=BMSYr,ylim=FMSYr,
-           col=colsse[1],type='l')
-
-    OO<-round(sum(MSEobj@B_BMSY[,mm,MSEobj@proyears]<1&MSEobj@F_FMSY[,mm,MSEobj@proyears]>1,na.rm=T)/MSEobj@nsim*100,1)
-    OU<-round(sum(MSEobj@B_BMSY[,mm,MSEobj@proyears]>1&MSEobj@F_FMSY[,mm,MSEobj@proyears]>1,na.rm=T)/MSEobj@nsim*100,1)
-    UO<-round(sum(MSEobj@B_BMSY[,mm,MSEobj@proyears]<1&MSEobj@F_FMSY[,mm,MSEobj@proyears]<1,na.rm=T)/MSEobj@nsim*100,1)
-    UU<-round(sum(MSEobj@B_BMSY[,mm,MSEobj@proyears]>1&MSEobj@F_FMSY[,mm,MSEobj@proyears]<1,na.rm=T)/MSEobj@nsim*100,1)
-
-    alp<-80
-    polygon(c(1,-1000,-1000,1),c(1,1,1000,1000),col=makeTransparent("orange",alp),border=makeTransparent("orange",alp))
-    polygon(c(1,1000,1000,1),c(1,1,1000,1000),col=makeTransparent("yellow",alp),border=makeTransparent("yellow",alp))
-    polygon(c(1,-1000,-1000,1),c(1,1,-1000,-1000),col=makeTransparent("yellow",alp),border=makeTransparent("yellow",alp))
-    polygon(c(1,1000,1000,1),c(1,1,-1000,-1000),col=makeTransparent("green",alp),border=makeTransparent("yellow",alp))
-
-
-    abline(h=1,col="grey",lwd=3)
-    abline(v=1,col="grey",lwd=3)
-    #abline(v=c(0.1,0.5),col="grey",lwd=2)
-
-    for(i in 1:MSEobj@nsim){
-      for(y in 1:(MSEobj@proyears-1)){
-        lines(c(MSEobj@B_BMSY[i,mm,y],MSEobj@B_BMSY[i,mm,y+1]),
-              c(MSEobj@F_FMSY[i,mm,y],MSEobj@F_FMSY[i,mm,y+1]),
-              col=colsse[y],lwd=1.5)
+  for(mm in 1:nMPs){
+    for(j in 1:nbins){
+      for(i in 1:ncol(MSEobj@OM)){
+        cond<-MSEobj@OM[,i]>OMp[j,i]&MSEobj@OM[,i]<OMp[j+1,i]
+        OMv[mm,i,j]<-mean(Ut[cond,mm],na.rm=T)
+      }
+      for(i in 1:ncol(MSEobj@Obs)){
+        cond<-MSEobj@Obs[,i]>Obsp[j,i]&MSEobj@Obs[,i]<Obsp[j+1,i]
+        Obsv[mm,i,j]<-mean(Ut[cond,mm],na.rm=T)
       }
     }
-
-    points(MSEobj@B_BMSY[,mm,1],MSEobj@F_FMSY[,mm,1],pch=19,cex=0.8,col=colsse[1])
-    points(MSEobj@B_BMSY[,mm,MSEobj@proyears],MSEobj@F_FMSY[,mm,MSEobj@proyears],pch=19,cex=0.8,col=colsse[MSEobj@proyears])
-
-    if(mm==1)legend('right',c("Start","End"),bty='n',text.col=c(colsse[1],colsse[MSEobj@proyears]),pch=19,col=c(colsse[1],colsse[MSEobj@proyears]))
-    legend('topleft',paste(OO,"%",sep=""),bty='n',text.font=2)
-    legend('topright',paste(OU,"%",sep=""),bty='n',text.font=2)
-    legend('bottomleft',paste(UO,"%",sep=""),bty='n',text.font=2)
-    legend('bottomright',paste(UU,"%",sep=""),bty='n',text.font=2)
-
-    mtext(MSEobj@meths[mm],3,line=0.45)
   }
-  mtext("B/BMSY",1,outer=T,line=1.4)
-  mtext("F/FMSY",2,outer=T,line=0.2)
-
-  # Trade-off plots ==========================================================================
-
-  #dev.new2(width=7,height=7)
-  par(mfrow=c(2,2),mai=c(0.85,0.7,0.1,0.1),omi=rep(0.01,4))
-
-  tradeoffplot(POF,Yd,"Prob. of overfishing (%)", "Relative yield",MSEobj@meths[1:MSEobj@nmeths],vl=50,hl=100)
-  tradeoffplot(P100,Yd,"Prob. biomass < BMSY (%)", "Relative yield",MSEobj@meths[1:MSEobj@nmeths],vl=50,hl=100)
-  tradeoffplot(P50,Yd,"Prob. biomass < 0.5BMSY (%)", "Relative yield",MSEobj@meths[1:MSEobj@nmeths],vl=50,hl=100)
-  tradeoffplot(P10,Yd,"Prob. biomass < 0.1BMSY (%)", "Relative yield",MSEobj@meths[1:MSEobj@nmeths],vl=50,hl=100)
-
-
-  # Value of information  ====================================================================
-
-  Meths<-MSEobj@meths
-  nm<-length(Meths)
-  nq<-6
-
-  nc<-ncol(MSEobj@OM)+ncol(MSEobj@Obs)
-  Qname<-c(names(MSEobj@OM),names(MSEobj@Obs))
-  Qmat<-cbind(MSEobj@OM,MSEobj@Obs)
-
+  
+  
+  # -- Operating model variables
+  OMs<-apply(OMv,1:2,sd,na.rm=T)
+  OMstr<-array("",c(nMPs*2,ncomp+1))
+   
+  for(mm in 1:nMPs){
+    ind<-order(OMs[mm,],decreasing=T)[1:ncomp]
+    OMstr[1+(mm-1)*2,1]<-MPs[mm]
+    OMstr[1+(mm-1)*2,2:(1+ncomp)]<-names(MSEobj@OM[ind])
+    OMstr[2+(mm-1)*2,2:(1+ncomp)]<-round(OMs[mm,ind],2)
+  }
+  OMstr<-data.frame(OMstr)
+  names(OMstr)<-c("MP",1:ncomp)
+  
+  
+  # -- Observation model variables
+  slots<-c( "Cat",  "Cat","AvC",  "AvC","CAA",      "CAA",    "CAL",      "CAL",    "Ind","Dep",  "Dt",   "Mort", "FMSY_M",    "BMSY_B0",     "AM",    "LFC",    "LFS",    "Abun", "vbK",  "vbt0",  "vbLinf",  "Steep","Iref",    "Cref",    "Bref")
+  Obsnam<-c("Cbias","Csd","Cbias","Csd","CAA_nsamp","CAA_ESS","CAL_nsamp","CAL_ESS","Isd","Dbias","Dbias","Mbias","FMSY_Mbias","BMSY_B0bias", "AMbias","LFCbias","LFSbias","Abias","Kbias","t0bias","Linfbias","hbias","Irefbias","Crefbias","Brefbias")
+  Obss<-apply(Obsv,1:2,sd,na.rm=T)
+  Obsstr<-array("",c(nMPs*2,ncomp+1))
+  for(mm in 1:nMPs){
+    relobs<-Obsnam[slots%in%unlist(strsplit(Required(MPs[mm])[,2],split=", "))]
+    ind<-(1:ncol(MSEobj@Obs))[match(relobs,names(MSEobj@Obs))]
+    pos<-names(MSEobj@Obs)[ind]# possible observation processes
+    maxy<-min(max(1,length(pos)),ncomp,na.rm=T)
+    ind2<-order(Obss[mm,ind],decreasing=T)[1:maxy]
+    Obsstr[1+(mm-1)*2,1]<-MPs[mm]
+    Obsstr[1+(mm-1)*2,2:(1+maxy)]<-pos[ind2]
+    Obsstr[2+(mm-1)*2,2:(1+maxy)]<-round(Obss[mm,ind][ind2],2)
+  }
+  Obsstr<-data.frame(Obsstr)
+  names(Obsstr)<-c("MP",1:ncomp)
+  
+  
+  
+  
   ncols<-40
   #colsse<-makeTransparent(rainbow(ncols,start=0,end=0.36),95)[ncols:1]
-  colsse<-rainbow(ncols,start=0,end=0.36)[ncols:1]
-
-  for(m in 1:nm){
-    Yd<-apply(MSEobj@C[,m,yind],1,mean)/RefYd*100
-    POF<-apply(MSEobj@F_FMSY[,m,]>1,1,sum)/(dim(MSEobj@F_FMSY[,m,])[2])*100
-    Yd[Yd>300]<-NA
-
-    #dev.new2(height=7.5,width=nq*2.5)
-    par(mfrow=c(2,nq),mai=c(0.6,0.25,0.05,0.05),omi=c(0.01,0.5,0.4,0.01))
-
-    Qcor<-cor(cbind(Yd,MSEobj@OM,MSEobj@Obs),use="complete.obs")
-    mq<-order(abs(Qcor[1,2:nc]),decreasing=T)[1:nq]
-
-    for(q in 1:nq){
-      coly=colsse[ceiling(abs(Qcor[1,1+mq[q]])^0.6*ncols)]
-      plot(Qmat[,mq[q]],Yd,xlim=quantile(Qmat[,mq[q]],p=c(0.02,0.97),na.rm=T),ylim=quantile(Yd,p=c(0.02,0.97),na.rm=T),col=coly,pch=19,xlab="",ylab="",cex=1.2)
-      xx<-Qmat[order(Qmat[,mq[q]]),mq[q]]
-      yy<-log(Yd[order(Qmat[,mq[q]])]+1e-15)
-      pred<-predict(loess(yy~xx),se=T)
-      lines(xx[!is.na(yy)],exp(pred$fit),col=coly,lwd=2)
-      lines(xx[!is.na(yy)],exp(pred$fit+pred$se.fit*qnorm(0.975)),col=coly,lwd=1)
-      lines(xx[!is.na(yy)],exp(pred$fit-pred$se.fit*qnorm(0.975)),col=coly,lwd=1)
-
-      points(Qmat[,mq[q]],Yd,cex=1.2)
-      abline(h=100,col="#50505040")
-      mtext(Qname[mq[q]],1,line=2.5,outer=F)
-      if(q==1)mtext("Yield (%relative to FMSY)",2,line=2.5,outer=F)
-
-    }
-
-    Qcor<-cor(cbind(POF,MSEobj@OM,MSEobj@Obs),use="complete.obs")
-    mq<-order(abs(Qcor[1,2:nc]),decreasing=T)[1:nq]
-
-    for(q in 1:nq){
-      coly=colsse[ceiling(abs(Qcor[1,1+mq[q]])^0.6*ncols)]
-      plot(Qmat[,mq[q]],POF,xlim=quantile(Qmat[,mq[q]],p=c(0.02,0.98),na.rm=T),ylim=quantile(POF,p=c(0.02,0.98),na.rm=T),col=coly,pch=19,xlab="",ylab="",cex=1.2)
-      xx<-Qmat[order(Qmat[,mq[q]]),mq[q]]
-      yy<-POF[order(Qmat[,mq[q]])]/100
-      yy[yy==1]<-0.9999
-      yy[yy==0]<-0.0001
-      yy<-log(yy/(1-yy))
-      pred<-predict(loess(yy~xx),se=T)
-      lines(xx[!is.na(yy)],exp(pred$fit)/(1+exp(pred$fit))*100,col=coly,lwd=2)
-      lines(xx[!is.na(yy)],exp(pred$fit+pred$se.fit*qnorm(0.975))/(1+exp(pred$fit+pred$se.fit*qnorm(0.975)))*100,col=coly,lwd=1)
-      lines(xx[!is.na(yy)],exp(pred$fit-pred$se.fit*qnorm(0.975))/(1+exp(pred$fit-pred$se.fit*qnorm(0.975)))*100,col=coly,lwd=1)
-      points(Qmat[,mq[q]],POF,cex=1.2)
-      abline(h=100,col="#50505040")
-      mtext(Qname[mq[q]],1,line=2.5,outer=F)
-      if(q==1)mtext("Prob. Overfishing(%)",2,line=2.5,outer=F)
-
-    }
-
-    mtext(paste("MSE correlation evaluation for ",MSEobj@Name,": ",Meths[m],sep=""),3,line=0.6,outer=T)
-  }
-  options(warn=1)
-})
+  colsse<-makeTransparent(rainbow(ncols,start=0,end=0.36),90)[ncols:1]
+  minsd<-0
+  maxsd<-max(OMs)
+  coly<-ceiling(OMs/maxsd*ncols)
+ 
+  # Operating model variables
+  mbyp <- split(1:nMPs, ceiling(1:nMPs/maxrow))
+  ylimy=c(0,max(OMv,na.rm=T)*1.2)              
+  
+  
+  for(pp in 1:length(mbyp)){
+    
+    par(mfrow=c(length(mbyp[[pp]]),ncomp),mai=c(0.15,0.1,0.15,0.05),omi=c(0.1,0.9,0.3,0.05))
+   
+    for(mm in mbyp[[pp]]){
+      for(cc in 1:ncomp){
+        rind<-(mm-1)*2+1
+        y<-Ut[,mm]
+        cind<-match(OMstr[rind,1+cc],names(MSEobj@OM))
+        x<-MSEobj@OM[,cind]
+        plot(x,y,col="white",axes=F,ylim=ylimy)
+        axis(1,pretty(OMp[,cind]),pretty(OMp[,cind]),cex.axis=0.8,padj=-2)
+        abline(v=OMp[,cind],col="#99999960")
+        points(x,y,col=colsse[coly[mm,cind]],pch=19,cex=0.8)
+        x2<-(OMp[1:nbins,cind]+OMp[2:(nbins+1),cind])/2
+        y2<-OMv[mm,cind,]
+        lines(x2,y2)
+        legend('bottomright',legend=round(OMs[mm,cind],2),bty='n',cex=0.8)
+        legend('topleft',legend=OMstr[rind,1+cc],bty='n',cex=0.85)
+        if(cc==1){ 
+          mtext(MPs[mm],2,font=2,outer=F,cex=0.8,line=2)
+          ytick<-pretty(seq(ylimy[1],ylimy[2]*1.3,length.out=10))
+          axis(2,ytick,ytick,cex.axis=0.8)
+        } # only first column
+      } # parameters (columns)
+    } # MPs (rows)
+    
+    mtext(Utnam,2,outer=T,cex=0.9,line=3.5)
+    mtext(paste("Operating model parameters: ",objnam,"@OM",sep=""),3,outer=T,font=2,cex=0.9)
+    
+  } # Plots
+  
+  # Observation model values
+  
+  ylimy=c(0,max(Obsv,na.rm=T)*1.2)              
+  minsd<-0
+  maxsd<-max(Obss)
+  coly<-ceiling(Obss/maxsd*ncols)
+  
+  if(sum(is.na(Obsstr)|Obsstr=="")<(ncomp+1)*nMPs*2-nMPs){ # only if there is data to plot
+  
+  for(pp in 1:length(mbyp)){
+    
+    par(mfrow=c(length(mbyp[[pp]]),ncomp),mai=c(0.15,0.1,0.15,0.05),omi=c(0.1,0.9,0.3,0.05))
+    
+    for(mm in mbyp[[pp]]){
+      rind<-(mm-1)*2+1
+      npres<-sum(Obsstr[rind+1,]!="")
+      for(cc in 1:ncomp){
+        if(!is.na(npres)&cc<(npres+1)){
+          y<-Ut[,mm]
+          cind<-match(Obsstr[rind,1+cc],names(MSEobj@Obs))
+          x<-MSEobj@Obs[,cind]
+          plot(x,y,col="white",axes=F,ylim=ylimy)
+          axis(1,pretty(Obsp[,cind]),pretty(Obsp[,cind]),cex.axis=0.6,padj=-2)
+          abline(v=Obsp[,cind],col="#99999960")
+          points(x,y,col=colsse[coly[mm,cind]],pch=19,cex=0.8)
+          x2<-(Obsp[1:nbins,cind]+Obsp[2:(nbins+1),cind])/2
+          y2<-Obsv[mm,cind,]
+          lines(x2,y2)
+          legend('bottomright',legend=round(Obss[mm,cind],2),bty='n',cex=0.8)
+          legend('topleft',legend=Obsstr[rind,1+cc],bty='n',cex=0.75)
+          if(cc==1){ 
+            mtext(MPs[mm],2,font=2,outer=F,cex=0.6,line=2)
+            ytick<-pretty(seq(ylimy[1],ylimy[2]*1.3,length.out=10))
+            axis(2,ytick,ytick,cex.axis=0.6)
+          } # only first column
+        }else{
+          plot(0,type='n',axes=FALSE,ann=FALSE)
+          if(cc==1){ 
+            mtext(MPs[mm],2,font=2,outer=F,cex=0.6,line=2)
+          } # only first column
+        }  
+      } # parameters (columns)
+    } # MPs (rows)
+    
+    mtext(Utnam,2,outer=T,cex=0.9,line=3.5)
+    mtext(paste("Observation model parameters: ",objnam,"@Obs",sep=""),3,outer=T,font=2,cex=0.9)
+   
+  } # Plots
+  } # if there is data to plot
+  
+  list(OMstr,Obsstr)
+  
+} # VOI
 
 tradeoffplot<-function(x,y,xlab,ylab,labs,cex,vl,hl){
    adjj<-c(0.7,1.3)
-   coly<-rep(c('#0000ff80','#ff000080','#00ff0080'),10)
+   coly<-rep(c('#0000ff95','#ff000095','#20ff1095'),10)
    plot(NA,xlim=range(x,na.rm=T)*adjj,ylim=range(y,na.rm=T)*adjj,xlab=xlab,ylab=ylab)
-   abline(v=vl,col="grey",lwd=2)
-   abline(h=hl,col="grey",lwd=2)
-   text(x,y,labs,font=2,col=coly)
+   abline(v=vl,col="#99999940",lwd=2)
+   abline(h=hl,col="#99999940",lwd=2)
+   text(x,y,labs,font=2,col=coly,cex=0.7)
 }
 
 tradeoffplot2<-function(x,y,xlab,ylab,cex=1,vl,hl,coly,leg){
@@ -1164,7 +1287,7 @@ movfit<-function(par,prb,frac){
 }
 
 getq<-function(x,dep,Find,Perr,Marray,hs,Mat_age,Wt_age,R0,V,nyears,maxage,mov,Spat_targ,SRrel,aR,bR){
-  opt<-optimize(qopt,log(c(0.001,10)),depc=dep[x],Fc=Find[x,],Perrc=Perr[x,],
+  opt<-optimize(qopt,log(c(0.0075,15)),depc=dep[x],Fc=Find[x,],Perrc=Perr[x,],
                      Mc=Marray[x,],hc=hs[x],Mac=Mat_age[x,],Wac=Wt_age[x,,],
                      R0c=R0,Vc=V[x,],nyears=nyears,maxage=maxage,movc=mov[x,,],
                      Spat_targc=Spat_targ[x],SRrelc=SRrel[x],aRc=aR[x,],bRc=bR[x,])
@@ -1238,7 +1361,8 @@ getFMSY<-function(x,Marray,hs,Mat_age,Wt_age,R0,V,maxage,nyears,proyears,Spat_ta
                      R0c=R0,Vc=V[x,],maxage=maxage,nyears=nyears,proyears=proyears,Spat_targc=Spat_targ[x],movc=mov[x,,],SRrelc=SRrel[x],aRc=aR[x,],bRc=bR[x,],Opt=T)
   return(FMSYopt(opt$minimum,
                      Mc=Marray[x,nyears],hc=hs[x],Mac=Mat_age[x,],Wac=Wt_age[x,,nyears],
-                     R0c=R0,Vc=V[x,],maxage=maxage,nyears=nyears,proyears=proyears,Spat_targc=Spat_targ[x],movc=mov[x,,],SRrelc=SRrel[x],aRc=aR[x,],bRc=bR[x,],Opt=F))
+                     R0c=R0,Vc=V[x,],maxage=maxage,nyears=nyears,proyears=proyears,Spat_targc=Spat_targ[x],movc=mov[x,,],SRrelc=SRrel[x],aRc=aR[x,],bRc=bR[x,],Opt=F)
+         )
 }
 
 
@@ -1257,7 +1381,7 @@ FMSYopt<-function(lnF,Mc,hc,Mac,Wac,R0c,Vc,maxage,nyears,proyears,Spat_targc,mov
   SSB<-SSN*Wac                              # Calculate spawning stock biomass
 
   VB0<-sum(VBiomass)
-  R0a<-idist*R0
+  R0a<-idist*R0c
   SSB0<-apply(SSB,2,sum)
   SSBpR<-SSB0/R0a
 
@@ -1294,25 +1418,25 @@ FMSYopt<-function(lnF,Mc,hc,Mac,Wac,R0c,Vc,maxage,nyears,proyears,Spat_targc,mov
   if(Opt){
     return(-CBc)
   }else{
-    return(c(CBc,-log(1-(CBc/sum(VBiomass))),sum(VBiomass)/VB0))
+    return(c(CBc,-log(1-(CBc/(sum(VBiomass)+CBc))),sum(VBiomass)/VB0))
   }
 }
 
-Sam<-function(DLM,Meths=NA,reps=100,maxlines=10,perc=0.5){
+Sam<-function(DLM_data,MPs=NA,reps=100,maxlines=10,perc=0.5){
   nm <-deparse(substitute(DLM))
-  DLM@PosMeths<-Meths
-  funcs<-DLM@PosMeths
-  nmeths<-length(funcs)
-  DLM@Meths<-funcs
-  OFLa<-getOFL(DLM,Meths=funcs,reps)
-  nsim<-length(DLM@Mort)
-  ref<-array(rep(DLM@Ref,nmeths),c(nsim,nmeths))
-  OFLm<-apply(OFLa,c(3,1),quantile,p=perc,na.rm=T)
-  OFLbias<-(OFLm-ref)/ref *100
-  POF<-round(apply(OFLbias>0,2,sum)/length(DLM@Mort)*100,1)
-  DLM@quota<-OFLa
-  DLM@quotabias<-OFLbias
-  DLM
+  DLM_data@PosMPs<-MPs
+  funcs<-DLM_data@PosMPs
+  nMPs<-length(funcs)
+  DLM_data@MPs<-funcs
+  TACa<-getTAC(DLM_data,MPs=funcs,reps)
+  nsim<-length(DLM_data@Mort)
+  ref<-array(rep(DLM_data@Ref,nMPs),c(nsim,nMPs))
+  TACm<-apply(TACa,c(3,1),quantile,p=perc,na.rm=T)
+  TACbias<-(TACm-ref)/ref *100
+  POF<-round(apply(TACbias>0,2,sum)/length(DLM_data@Mort)*100,1)
+  DLM_data@TAC<-TACa
+  DLM_data@TACbias<-TACbias
+  DLM_data
 }
 
 
@@ -1476,11 +1600,11 @@ doprojPI<-function(lnF,Mvec,Wac,Mac,Pc,N_c,SSN_c,Biomass_c,VBiomass_c,SSB_c,Vc,h
   
 }
 
-comp<-function(MSEobj,Meths=NA){
+comp<-function(MSEobj,MPs=NA){
   
-  if(is.na(Meths))Meths<-MSEobj@meths
-  notm<-Meths[!(Meths%in%MSEobj@meths)]
-  canm<-Meths[Meths%in%MSEobj@meths]
+  if(is.na(MPs))MPs<-MSEobj@MPs
+  notm<-MPs[!(MPs%in%MSEobj@MPs)]
+  canm<-MPs[MPs%in%MSEobj@MPs]
   if(length(notm)>0)print(paste("Methods",paste(notm,collapse=", "),"were not carried out in MSE",deparse(substitute(MSEobj)),sep=" "))
   
   if(length(canm)==0)stop(paste('None of the methods you specified were carried out in the MSE', deparse(substitute(MSEobj)),sep=""))
@@ -1490,7 +1614,7 @@ comp<-function(MSEobj,Meths=NA){
     canm<-canm[1:4]
   } 
   
-  mind<-match(canm,MSEobj@meths)
+  mind<-match(canm,MSEobj@MPs)
   nm<-length(mind)
   nsim<-MSEobj@nsim
   proyears<-MSEobj@proyears
@@ -1529,7 +1653,7 @@ setMethod("summary",
           function(object){            
 
     MSEobj<-object      
-    nm<-MSEobj@nmeths
+    nm<-MSEobj@nMPs
     nsim<-MSEobj@nsim
     proyears<-MSEobj@proyears
     
@@ -1549,13 +1673,13 @@ setMethod("summary",
       P100[m,]<-round(apply(MSEobj@B_BMSY[,m,]<1,1,sum,na.rm=T)/proyears*100,1)
     }
     nr<-2
-    out<-cbind(MSEobj@meths,round(apply(Yd,1,mean,na.rm=T),nr),round(apply(Yd,1,sd,na.rm=T),nr),
+    out<-cbind(MSEobj@MPs,round(apply(Yd,1,mean,na.rm=T),nr),round(apply(Yd,1,sd,na.rm=T),nr),
                              round(apply(POF,1,mean,na.rm=T),nr),round(apply(POF,1,sd,na.rm=T),nr),
                              round(apply(P10,1,mean,na.rm=T),nr),round(apply(P10,1,sd,na.rm=T),nr),
                              round(apply(P50,1,mean,na.rm=T),nr),round(apply(P50,1,sd,na.rm=T),nr),
                              round(apply(P100,1,mean,na.rm=T),nr),round(apply(P100,1,sd,na.rm=T),nr))
     out<-as.data.frame(out)
-    names(out)<-c("Method","Yield","","POF"," ","P10","  ",
+    names(out)<-c("MP","Yield","","POF"," ","P10","  ",
                   "P50","   ","P100","    ")
     out[,1]<-as.character(out[,1])
     for(i in 2:ncol(out))out[,i]<-as.numeric(as.character(out[,i]))

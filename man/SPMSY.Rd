@@ -2,24 +2,24 @@
 \alias{SPMSY}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Surplus Production MSY method
+Catch trend Surplus Production MSY MP
 }
 \description{
-A method that uses Martell and Froese (2012) method for estimating MSY to determine the OFL. Since their approach estimates stock trajectories based on catches and a rule for intrinsic rate of increase it also returns depletion. Given their surplus production model predicts K, r and depletion it is straighforward to calculate the OFL based on the Schaefer productivity curve
+An MP that uses Martell and Froese (2012) method for estimating MSY to determine the OFL. Since their approach estimates stock trajectories based on catches and a rule for intrinsic rate of increase it also returns depletion. Given their surplus production model predicts K, r and depletion it is straighforward to calculate the OFL based on the Schaefer productivity curve. OFL = dep x (1-dep) x r x K x 2
 }
 \usage{
-SPMSY(x, DLM, reps = 100)
+SPMSY(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
 \item{x}{
 A position in a data-limited methods data object
 }
-\item{DLM}{
-A data-limited methods data object (class DLM)
+\item{DLM_data}{
+A data-limited methods data object 
 }
   \item{reps}{
-The number of samples of the quota taken for the calculation of the quota
+The number of samples of the TAC
 }
 }
 \details{

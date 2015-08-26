@@ -1,14 +1,14 @@
-\name{DLM-class}
+\name{DLM_data-class}
 \Rdversion{1.1}
 \docType{class}
-\alias{DLM-class}
+\alias{DLM_data-class}
 
-\title{Class \code{"DLM"}}
+\title{Class \code{"DLM_data"}}
 \description{
 An object for storing data for analysis using data-limited methods
 }
 \section{Objects from the Class}{
-Objects can be created by calls of the form \code{new("DLM", stock)}.
+Objects can be created by calls of the form \code{new("DLM_data", stock)}.
 %%  ~~ describe objects here ~~ 
 }
 \section{Slots}{
@@ -60,12 +60,12 @@ Objects can be created by calls of the form \code{new("DLM", stock)}.
     \item{\code{Ref_type}:}{Its type}
     \item{\code{Log}:}{A log of events}
     \item{\code{params}:}{A place to store estimated parameters}
-    \item{\code{PosMeths}:}{The methods that can be applied to these data}
-    \item{\code{Meths}:}{The methods that were applied to these data}
+    \item{\code{PosMPs}:}{The methods that can be applied to these data}
+    \item{\code{MPs}:}{The methods that were applied to these data}
     \item{\code{OM}:}{A table of operating model conditions}
     \item{\code{Obs}:}{A table of observation model conditions}
-    \item{\code{quota}:}{The calculated quota}
-    \item{\code{quotabias}:}{The known bias in the calculated quotas}
+    \item{\code{TAC}:}{The calculated TAC}
+    \item{\code{TACbias}:}{The known bias in the calculated TAC}
     \item{\code{Sense}:}{The results of the sensitivity analysis}
     \item{\code{CAL_bins}:}{The length bins for the catch-at-length data}
     \item{\code{CAL}:}{Catch-at-length data}
@@ -82,9 +82,9 @@ Objects can be created by calls of the form \code{new("DLM", stock)}.
 }
 \section{Methods}{
   \describe{
-    \item{initialize}{\code{signature(.Object = "DLM")}: ... }
-    \item{plot}{\code{signature(x = "DLM")}: ... }
-    \item{summary}{\code{signature(object = "DLM")}: ... }
+    \item{initialize}{\code{signature(.Object = "DLM_data")}: ... }
+    \item{plot}{\code{signature(x = "DLM_data")}: ... }
+    \item{summary}{\code{signature(object = "DLM_data")}: ... }
 	 }
 }
 
@@ -92,6 +92,6 @@ Objects can be created by calls of the form \code{new("DLM", stock)}.
 T. Carruthers
 }
 \examples{
-newdata<-new('DLM')
+newdata<-new('DLM_data')
 }
 \keyword{classes}

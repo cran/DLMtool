@@ -1,7 +1,7 @@
 \name{plot-methods}
 \docType{methods}
 \alias{plot-methods}
-\alias{plot,DLM-method}
+\alias{plot,DLM_data-method}
 \alias{plot,MSE-method}
 \title{ ~~ Methods for Function \code{plot}  ~~}
 \description{
@@ -10,7 +10,7 @@
 \section{Methods}{
 \describe{
 
-\item{\code{signature(x = "DLM")}}{
+\item{\code{signature(x = "DLM_data")}}{
 %%  ~~describe this method here~~
 }
 

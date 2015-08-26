@@ -8,18 +8,18 @@ Surplus Production Stock Reduction Analysis
 A surplus production equivalent of DB-SRA that uses a demographically derived prior for intrinsic rate of increase (McAllister method, below)
 }
 \usage{
-SPSRA(x, DLM, reps = 100)
+SPSRA(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
 \item{x}{
 A position in a data-limited methods data object
 }
-\item{DLM}{
+\item{DLM_data}{
 A data-limited methods data object (class DLM)
 }
   \item{reps}{
-The number of samples of the quota taken for the calculation of the quota
+The number of samples of the TAC taken for the calculation of the quota
 }
 
 }

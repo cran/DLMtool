@@ -2,24 +2,24 @@
 \alias{SBT2}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-SBT complex harvest control rule
+SBT complex MP
 }
 \description{
-A harvest control rule that makes incremental adjustments to quota recommendations based on index levels relative to target levels (BMSY/B0) and catch levels relative to target levels (MSY)
+An MP that makes incremental adjustments to TAC recommendations based on index levels relative to target levels (BMSY/B0) and catch levels relative to target levels (MSY)
 }
 \usage{
-SBT2(x, DLM, reps = 100, epsB=0.25,epsR=0.75,tauR=5,tauB=7,gamma=1)
+SBT2(x, DLM_data, reps = 100, epsB=0.25,epsR=0.75,tauR=5,tauB=7,gamma=1)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in a data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
-The number of samples of the quota
+The number of samples of the TAC
 }
   \item{epsB}{
 Control parameter

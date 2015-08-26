@@ -8,14 +8,14 @@ An adaptive MP that uses trajectory in inferred suplus production and fishing mo
 Fishing rate is modified each year according to the gradient of surplus production with biomass (aims for zero).  F is bounded by FMSY/2 and 2FMSY and walks in the logit space according to dSP/dB. This is derived from the theory of Maunder 2014. 
 }
 \usage{
-Fadapt(x, DLM, reps = 100, yrsmth = 7, gg=1)
+Fadapt(x, DLM_data, reps = 100, yrsmth = 7, gg=1)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{

@@ -9,18 +9,18 @@ A simple yield per recruit approximation to FMSY (F01) which is the position of 
 A naive catch-curve analysis is used to determine recent Z which given M (Mort) gives F and thus abundance = Ct/(1-exp(-F))
 }
 \usage{
-YPR_CC(x, DLM, reps = 100, Fmin=0.005)
+YPR_CC(x, DLM_data, reps = 100, Fmin=0.005)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
 \item{x}{
 A position in a data-limited methods data object
 }
-\item{DLM}{
+\item{DLM_data}{
 A data-limited methods data object (class DLM)
 }
   \item{reps}{
-The number of samples of the quota taken for the calculation of the quota
+The number of samples of the TAC
 }
   \item{Fmin}{
 The minimum fishing mortality rate inferred from the catch-curve analysis

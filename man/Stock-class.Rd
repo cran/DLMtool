@@ -14,33 +14,33 @@ Objects can be created by calls of the form \code{new("Stock", OM)}.
 }
 \section{Slots}{
   \describe{
-    \item{\code{Name}:}{Object of class \code{"character"} ~~ }
-    \item{\code{maxage}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{R0}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{M}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Msd}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Mgrad}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{h}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Linf}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{K}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{t0}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Ksd}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Kgrad}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Linfsd}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Linfgrad}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{recgrad}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{a}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{b}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{D}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{ageM}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{ageMsd}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Perr}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Size_area_1}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Frac_area_1}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Prob_staying}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{Source}:}{Object of class \code{"character"} ~~ }
-    \item{\code{AC}:}{Object of class \code{"numeric"} ~~ }
-    \item{\code{SRrel}:}{Object of class \code{"numeric"} ~~ }
+    \item{\code{Name}:}{The name of the Stock object}
+    \item{\code{maxage}:}{The maximum age of individuals that is simulated (there is no 'plus group': individuals die off beyone the maximum age so there isn't a huge cost to simulating more older age classes)}
+    \item{\code{R0}:}{The magnitude of unfished recruitment. This is normally fixed to some arbitrary value since it simply scales the simulated numbers)}
+    \item{\code{M}:}{Natural mortality rate (uniform distribution)}
+    \item{\code{Msd}:}{Inter-annual variability in natural mortality rate expressed as a coefficient of variation (uniform distribution)}
+    \item{\code{Mgrad}:}{Mean temporal trend in natural mortality rate, expressed as a percentage change in M per year (uniform distribution)}
+    \item{\code{h}:}{Steepness of the stock recruit relationship (uniform distribution)}
+    \item{\code{SRrel}:}{Type of stock-recruit relationship (1)Beverton-Holt (2) Ricker}
+    \item{\code{Linf}:}{Maximum length (uniform distribution)}
+    \item{\code{K}:}{von B. growth parameter k (uniform distribution)}
+    \item{\code{t0}:}{von B. theoretical age at length zero (uniform distribution)}
+    \item{\code{Ksd}:}{Inter-annual variability in growth parameter k (uniform distribution)}
+    \item{\code{Kgrad}:}{Mean temporal trend in growth parameter k, expressed as a percentage change in k per year (uniform distribution)}
+    \item{\code{Linfsd}:}{Inter-annual variability in maximum length - uniform distribution}
+    \item{\code{Linfgrad}:}{Mean temporal trend in maximum length, expressed as a percentage change in Linf per year (uniform distribution)}
+    \item{\code{recgrad}:}{Mean temporal trend in log-normal recruitment deviations (uniform distribution)}
+    \item{\code{AC}:}{Autocorrelation in recruitment deviations rec(t)=AC*rec(t-1)+(1-AC)*sigma(t) (uniform distribution)}
+    \item{\code{a}:}{Length-weight parameter alpha (uniform distribution)}
+    \item{\code{b}:}{Length-weight parameter beta (uniform distribution)}
+    \item{\code{ageM}:}{age-at-maturity (uniform distribution)}
+    \item{\code{ageMsd}:}{interannual-variability in age-at-maturity}
+    \item{\code{D}:}{Current level of stock depletion (Bcurrent/Bunfished) (uniform distribution)}
+    \item{\code{Perr}:}{Process error, the CV of lognormal recruitment deviations  (uniform distribution)}
+    \item{\code{Size_area_1}:}{The size of area 1 relative to area 2 (uniform distribution)}
+    \item{\code{Frac_area_1}:}{The fraction of the unfished biomass in stock 1 (uniform distribution)}
+    \item{\code{Prob_staying}:}{The probability of inviduals in area 1 remaining in area 1 over the course of one year}
+    \item{\code{Source}:}{A reference to a website or article form which parameters were taken to define the operating model}
   }
 }
 \section{Methods}{

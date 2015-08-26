@@ -5,25 +5,25 @@
 Geromont and Butterworth Constant Catch Harvest Control Rule
 }
 \description{
-A harvest control rule that aims for MSY subject to imperfect information.
+A simple MP that aims for average historical catches (as a proxy for MSY) subject to imperfect information.
 }
 \usage{
-GB_CC(x, DLM, reps = 100)
+GB_CC(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
-The number of quota samples
+The number of TAC samples
 }
 }
 \details{
-Note that this is my interpretation of their approach and is now stochastic. Currently it is generalized and is not 'tuned' to more detailed assessment data which might explain why in some cases it leads to stock declines. 
+Note that this is my interpretation of their MP and is now stochastic. Currently it is generalized and is not 'tuned' to more detailed assessment data which might explain why in some cases it leads to stock declines. 
 }
 
 \references{

@@ -12,8 +12,8 @@ Simulation testing and implementation of data-limited fishery stock assessment m
 \tabular{ll}{
 Package: \tab DLMtool\cr
 Type: \tab Package\cr
-Version: \tab 1.35\cr
-Date: \tab 2015-05-06\cr
+Version: \tab 2.0\cr
+Date: \tab 2015-08-23\cr
 License: \tab GPL-2\cr
 Depends: \tab methods\cr
 }
@@ -35,9 +35,9 @@ Carruthers, T.R., Punt, A.E., Walters, C.J., MacCall, A., McAllister, M.K., Dick
 # --- Application to real fishery data ---
 library(DLMtool)
 library(snowfall)              # load package for parallel computing
-sfInit(parallel=TRUE,cpus=2)      # initiate the cluster with two cpus
+sfInit(parallel=TRUE,cpus=2)   # initiate the cluster with two cpus
 
-mydata<-new('DLM')             # create a new DLM data object and define:
+mydata<-new('DLM_data')        # create a new DLM data object and define:
 mydata@Year<-2001:2010         # years
 mydata@Cat<-matrix((11:20)*10*runif(10,0.5,1.5),nrow=1) # make up some annual catches
 mydata@Ind<-matrix(seq(1.1,0.9,length.out=10)*runif(10,0.5,1.5),nrow=1) 
@@ -47,7 +47,7 @@ mydata@FMSY_M<-0.5             # guess of the ratio of FMSY to natural mortality
 mydata@vbLinf<-200             # maximum length
 mydata@vbK<-0.2                # von B growth coefficient k
 mydata@LFC<-50                 # length at first capture
-mydata<-getQuota(mydata)       # calculate quotas
+mydata<-TAC(mydata)            # calculate quotas
 plot(mydata)                   # plot them
 mydata<-Sense(mydata,"Fratio") # conduct a sensitivity analysis for one of the methods
 

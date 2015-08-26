@@ -6,5 +6,5 @@
   A dataset including objects for operating models and real data examples
 }
 \usage{DLMdat}
-\format{A list of 110 objects}
+\format{A list of 61 objects}
 

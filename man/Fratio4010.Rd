@@ -8,18 +8,18 @@ An FMSY/M ratio method paired with the 40-10 rule
 Calculates the OFL based on a fixed ratio of FMSY to M multiplied by a current estimate of abundance. In this method DBSRA is paired with the 40-10 rule that throttles back the OFL to zero at 10 percent of unfished biomass.
 }
 \usage{
-Fratio4010(x, DLM, reps = 100)
+Fratio4010(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
-The number of quota samples
+The number of TAC samples
 }
 }
 

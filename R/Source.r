@@ -1,7 +1,7 @@
 # DLM Source code
 # Jan 2015
 # Tom Carruthers UBC (t.carruthers@fisheries.ubc.ca)
-utils::globalVariables(c("R0","Mdb","mod","i","nareas","nsim","R0","dFfinal"))
+utils::globalVariables(c("R0","Mdb","mod","i","nareas","nsim","dFfinal"))
 
 tiny<-1E-15
 
@@ -9,12 +9,12 @@ tiny<-1E-15
 getclass<-function(x,classy)inherits(get(x),classy)
 #avail<-function(classy)ls(envir=package:DLMtool)[unlist(lapply(ls(envir=.GlobalEnv),getclass,classy=classy))]
 avail<-function(classy){
-  c(ls('package:DLMtool')[unlist(lapply(ls('package:DLMtool'),getclass,classy=classy))],
-    ls(envir=.GlobalEnv)[unlist(lapply(ls(envir=.GlobalEnv),getclass,classy=classy))])
+  unique(c(ls('package:DLMtool')[unlist(lapply(ls('package:DLMtool'),getclass,classy=classy))],
+    ls(envir=.GlobalEnv)[unlist(lapply(ls(envir=.GlobalEnv),getclass,classy=classy))]))
 }
 
 # Define classes --------------------------------------------------------------------------------------------------------------------------
-setClass("DLM",representation(Name="character",Year="vector",Cat="matrix",Ind="matrix",Rec="matrix",t="vector",AvC="vector",
+setClass("DLM_data",representation(Name="character",Year="vector",Cat="matrix",Ind="matrix",Rec="matrix",t="vector",AvC="vector",
                                   Dt="vector",Mort="vector",FMSY_M="vector",BMSY_B0="vector",Cref="vector",
                                   Bref="vector",Iref="vector",
                                   AM="vector",LFC="vector",LFS="vector",CAA="array",
@@ -30,14 +30,14 @@ setClass("DLM",representation(Name="character",Year="vector",Cat="matrix",Ind="m
                                   MaxAge="vector",
                                   Units="character",Ref="numeric",Ref_type="character",
                                   Log="list",params="list",
-                                  PosMeths="vector",Meths="vector",
+                                  PosMPs="vector",MPs="vector",
                                   OM="data.frame",Obs="data.frame",
-                                  quota="array",quotabias="array",
+                                  TAC="array",TACbias="array",
                                   Sense="array",
                                   CAL_bins="numeric",
                                   CAL="array",MPrec="vector"))
 
-setMethod("initialize", "DLM", function(.Object,stock="nada"){
+setMethod("initialize", "DLM_data", function(.Object,stock="nada"){
   # run an error check here
   if(file.exists(stock)){
     dat <- read.csv(stock,header=F,colClasses="character") # read 1st sheet
@@ -111,21 +111,21 @@ setMethod("initialize", "DLM", function(.Object,stock="nada"){
     }
 
     .Object@Units<-dat[match("Units", dname),1]
-    .Object@Ref<-as.numeric(dat[match("Reference OFL",dname),1])
-    .Object@Ref_type<-dat[match("Reference OFL type",dname),1]
+    .Object@Ref<-as.numeric(dat[match("Reference TAC",dname),1])
+    .Object@Ref_type<-dat[match("Reference TAC type",dname),1]
     .Object@Log[[1]]<-paste("Created:", Sys.time())
     .Object@params<-new('list')
     .Object@OM<-data.frame(NA)
     .Object@Obs<-data.frame(NA)
-    .Object@quota<-array(NA,dim=c(1,1,1))
-    .Object@quotabias<-array(NA,dim=c(1,1,1))
+    .Object@TAC<-array(NA,dim=c(1,1,1))
+    .Object@TACbias<-array(NA,dim=c(1,1,1))
     .Object@Sense<-array(NA,dim=c(1,1,1))
-    .Object@PosMeths<-NA
-    .Object@Meths<-NA
+    .Object@PosMPs<-NA
+    .Object@MPs<-NA
 
   }else{
     if(stock!="MSE"){
-      if(!is.na(stock))print("Couldn't find specified csv file in DLM/Data folder, blank DLM object created")
+      if(!is.na(stock))print("Couldn't find specified csv file, blank DLM object created")
     }
   }
 
@@ -157,8 +157,8 @@ setMethod("initialize", "DLM", function(.Object,stock="nada"){
   if(length(.Object@CAA)==0).Object@CAA<-array(NA,c(1,1,1))
   if(length(.Object@CAL)==0).Object@CAL<-array(NA,c(1,1,1))
   if(length(.Object@CAL_bins)==0).Object@CAL_bins<-1
-  if(length(.Object@quota)==0).Object@quota<-array(1,c(1,1))
-  if(length(.Object@quotabias)==0).Object@quotabias<-array(1,c(1,1))
+  if(length(.Object@TAC)==0).Object@TAC<-array(1,c(1,1))
+  if(length(.Object@TACbias)==0).Object@TACbias<-array(1,c(1,1))
   if(length(.Object@Sense)==0).Object@Sense<-array(1,c(1,1))
   
   .Object
@@ -177,55 +177,53 @@ alphaconv<-function(m,sd)m*(((m*(1-m))/(sd^2))-1)
 betaconv<-function(m,sd)(1-m)*(((m*(1-m))/(sd^2))-1)
 trlnorm<-function(reps,mu,cv)return(rlnorm(reps,mconv(mu,mu*cv),sdconv(mu,mu*cv)))
 
-
-DLMdiag<-function(DLM,command="available",reps=5,timelimit=1){
-   funcs1<-c(avail("DLM quota"),avail("DLM size"),avail("DLM space"))
-   good<-rep(TRUE,length(funcs1))
-   report<-rep("Worked fine",length(funcs1))
-   test<-new('list')
-   timey<-new('list')
-   options(show.error.messages = FALSE)
-   for(y in 1:length(funcs1)){
-     if(class(match.fun(funcs1[y]))=="DLM quota"){
-       time1<-Sys.time()
-       suppressWarnings({
-         setTimeLimit(timelimit*1.5)
-         test[[y]]<-try(do.call(funcs1[y],list(x=1,DLM=DLM,reps=5)),silent=T)
-         setTimeLimit(Inf)
-       })
-     }else{
-       time1<-Sys.time()
-       suppressWarnings({
-         setTimeLimit(timelimit*1.5)
-         test[[y]]<-try(do.call(funcs1[y],list(x=1,DLM=DLM)),silent=T)
-         setTimeLimit(Inf)
-       })
-     }
-     time2<-Sys.time()
-     timey[[y]]<-time2-time1
-     if(class(test[[y]])=="try-error"){
-       report[[y]]<-"Insufficient data"
-       good[[y]]<-FALSE
-     }else if(sum(is.na(test[[y]]))==length(test[[y]])){
-       report[[y]]<-"Produced all NA scores"
-       good[[y]]<-FALSE
-     }
-     if(timey[[y]]>timelimit){
+DLMdiag<-function(DLM_data,command="available",reps=5,timelimit=1){
+  funcs1<-c(avail("DLM_output"),avail("DLM_input"))
+  good<-rep(TRUE,length(funcs1))
+  report<-rep("Worked fine",length(funcs1))
+  test<-new('list')
+  timey<-new('list')
+  options(show.error.messages = FALSE)
+  for(y in 1:length(funcs1)){
+    if(class(match.fun(funcs1[y]))=="DLM_output"){
+      time1<-Sys.time()
+      suppressWarnings({
+        setTimeLimit(timelimit*1.5)
+        test[[y]]<-try(do.call(funcs1[y],list(x=1,DLM_data=DLM_data,reps=5)),silent=T)
+        setTimeLimit(Inf)
+      })
+    }else{
+      time1<-Sys.time()
+      suppressWarnings({
+        setTimeLimit(timelimit*1.5)
+        test[[y]]<-try(do.call(funcs1[y],list(x=1,DLM_data=DLM_data)),silent=T)
+        setTimeLimit(Inf)
+      })
+    }
+    time2<-Sys.time()
+    timey[[y]]<-time2-time1
+    if(class(test[[y]])=="try-error"){
+      report[[y]]<-"Insufficient data"
+      good[[y]]<-FALSE
+    }else if(sum(is.na(test[[y]]))==length(test[[y]])){
+      report[[y]]<-"Produced all NA scores"
+      good[[y]]<-FALSE
+    }
+    if(timey[[y]]>timelimit){
       report[[y]]<-"Exceeded the user-specified time limit"
       good[[y]]<-FALSE
     }
-   } # end of funcs
-   options(show.error.messages = TRUE)
-   if(command=="available")return(funcs1[good])
-   if(command=="not available")return(cbind(funcs1[!good],report[!good]))
-   if(command=="needed")return(needed(DLM,funcs=funcs1[!good]))
+  } # end of funcs
+  options(show.error.messages = TRUE)
+  if(command=="available")return(funcs1[good])
+  if(command=="not available")return(cbind(funcs1[!good],report[!good]))
+  if(command=="needed")return(needed(DLM_data,funcs=funcs1[!good]))
 }
 
-
 Required<-function(funcs=NA){
-  if(is.na(funcs[1]))funcs<-c(avail("DLM quota"),avail("DLM size"))
-  slots<-slotNames('DLM')
-  slotnams<-paste("DLM@",slotNames('DLM'),sep="")
+  if(is.na(funcs[1]))funcs<-c(avail("DLM_output"),avail("DLM_input"))
+  slots<-slotNames('DLM_data')
+  slotnams<-paste("DLM_data@",slotNames('DLM_data'),sep="")
   repp<-rep("",length(funcs))
 
   for(i in 1:length(funcs)){
@@ -238,10 +236,10 @@ Required<-function(funcs=NA){
   cbind(funcs,repp,deparse.level=0)
 }
 
-needed<-function(DLM,funcs=NA){
-  if(is.na(funcs[1]))funcs<-avail("DLM quota")
-  slots<-slotNames('DLM')
-  slotnams<-paste("DLM@",slotNames(DLM),sep="")
+needed<-function(DLM_data,funcs=NA){
+  if(is.na(funcs[1]))funcs<-avail("DLM_output")
+  slots<-slotNames('DLM_data')
+  slotnams<-paste("DLM_data@",slotNames(DLM_data),sep="")
   repp<-rep("",length(funcs))
 
   for(i in 1:length(funcs)){
@@ -249,7 +247,7 @@ needed<-function(DLM,funcs=NA){
     temp<-paste(temp[1:(length(temp))],collapse=" ")
     rec<-""
     for(j in 1:length(slotnams)){
-      if(grepl(slotnams[j],temp)&NAor0(slot(DLM,slots[j])))rec<-c(rec,slots[j])
+      if(grepl(slotnams[j],temp)&NAor0(slot(DLM_data,slots[j])))rec<-c(rec,slots[j])
     }
     repp[i]<-paste(funcs[i],": ",paste(rec[2:length(rec)],collapse=", "),sep="")
   }
@@ -257,9 +255,9 @@ needed<-function(DLM,funcs=NA){
 }
 
 # Primary functions
-Can<-function(DLM,timelimit=1)DLMdiag(DLM,"available",timelimit=timelimit)
-Cant<-function(DLM,timelimit=1)DLMdiag(DLM,"not available",timelimit=timelimit)
-Needed<-function(DLM,timelimit=1)DLMdiag(DLM,"needed",timelimit=timelimit)
+Can<-function(DLM_data,timelimit=1)DLMdiag(DLM_data,"available",timelimit=timelimit)
+Cant<-function(DLM_data,timelimit=1)DLMdiag(DLM_data,"not available",timelimit=timelimit)
+Needed<-function(DLM_data,timelimit=1)DLMdiag(DLM_data,"needed",timelimit=timelimit)
 
 demographic2=function(log.r,M,amat,sigma,K,Linf,to,hR,maxage,a,b){		#switch on and off to use either S or m in MC simulations
   r=exp(log.r)
@@ -289,150 +287,149 @@ proportionMat<-TL<-Wa<-SurvWeiMat<-r<-lx<-logNormDensity<-sumlogNormDen<-NULL
 proportionMat=vector()
 
 
-getQuota<-function(DLM,Meths=NA,reps=100,maxlines=6,perc=NA,xlims=NA){
+TAC<-function(DLM_data,MPs=NA,reps=100,maxlines=6,perc=NA,xlims=NA){
 
-  nm <-deparse(substitute(DLM))
-  PosMeths<-Can(DLM)
-  PosMeths<-PosMeths[PosMeths%in%avail("DLM quota")]
-  DLM@PosMeths<-PosMeths
-  if(!is.na(Meths[1]))DLM@Meths<-Meths[Meths%in%PosMeths]
-  if(is.na(Meths[1]))DLM@Meths<-PosMeths
-  funcs<-DLM@Meths
+  nm <-deparse(substitute(DLM_data))
+  PosMPs<-Can(DLM_data)
+  PosMPs<-PosMPs[PosMPs%in%avail("DLM_output")]
+  DLM_data@PosMPs<-PosMPs
+  if(!is.na(MPs[1]))DLM_data@MPs<-MPs[MPs%in%PosMPs]
+  if(is.na(MPs[1]))DLM_data@MPs<-PosMPs
+  funcs<-DLM_data@MPs
 
   if(length(funcs)==0){
-    stop("None of the methods 'Meths' are possible given the data available")
+    stop("None of the methods 'MPs' are possible given the data available")
   }else{
-    OFLa<-getOFL(DLM,Meths=funcs,reps)
-    DLM@quota<-OFLa
-    return(DLM)
+    TACa<-getTAC(DLM_data,MPs=funcs,reps)
+    DLM_data@TAC<-TACa
+    return(DLM_data)
     #assign(nm,DLM,envir=.GlobalEnv)
   }
 
 }
 
-getOFL<-function(DLM,Meths=NA,reps=100){
+getTAC<-function(DLM_data,MPs=NA,reps=100){
 
-  nsims<-length(DLM@Mort)
-  nmeths<-length(Meths)
-  OFLa<-array(NA,dim=c(nmeths,reps,nsims))
+  nsims<-length(DLM_data@Mort)
+  nMPs<-length(MPs)
+  TACa<-array(NA,dim=c(nMPs,reps,nsims))
 
-  if(!sfIsRunning()|(nmeths<8&nsims<8)){
-    for(ff in 1:nmeths){
-      OFLa[ff,,]<-sapply(1:nsims,Meths[ff],DLM=DLM,reps=reps)
+  if(!sfIsRunning()|(nMPs<8&nsims<8)){
+    for(ff in 1:nMPs){
+      TACa[ff,,]<-sapply(1:nsims,MPs[ff],DLM_data=DLM_data,reps=reps)
     }
   }else{
-    sfExport(list=c("DLM"))
+    sfExport(list=c("DLM_data"))
     if(nsims<8){
-      sfExport(list=c("Meths","reps"))
+      sfExport(list=c("MPs","reps"))
       for(ss in 1:length(nsims)){
-        OFLa[,,ss]<-t(sfSapply(1:length(Meths),parallelMeths,DLM=DLM,reps=reps,Meths=Meths,ss=ss))
+        TACa[,,ss]<-t(sfSapply(1:length(MPs),parallelMPs,DLM_data=DLM_data,reps=reps,MPs=MPs,ss=ss))
       }
 
     }else{
 
-      for(ff in 1:nmeths){
-        OFLa[ff,,]<-sfSapply(1:nsims,Meths[ff],DLM=DLM,reps=reps)
+      for(ff in 1:nMPs){
+        TACa[ff,,]<-sfSapply(1:nsims,MPs[ff],DLM_data=DLM_data,reps=reps)
       }
     }
   }
-  for(ff in 1:nmeths){
-    if(sum(is.na(OFLa[ff,,]))>sum(!is.na(OFLa[ff,,]))){  # only plot if there are sufficient non-NA OFL samples
-      print(paste("Method ",Meths[ff]," produced greater than 50% NA values",sep=""))
+  for(ff in 1:nMPs){
+    if(sum(is.na(TACa[ff,,]))>sum(!is.na(TACa[ff,,]))){  # only plot if there are sufficient non-NA TAC samples
+      print(paste("Method ",MPs[ff]," produced greater than 50% NA values",sep=""))
     }
   }
-  OFLa
+  TACa
 }
 
-parallelMeths<-function(x,DLM,reps,Meths,ss) sapply(ss,Meths[x],DLM,reps=reps)
+parallelMPs<-function(x,DLM_data,reps,MPs,ss) sapply(ss,MPs[x],DLM_data,reps=reps)
 
 # Create a plot method for DLM data objects
 setMethod("plot",
-  signature(x = "DLM"),
-  function(x,funcs=NA,maxlines=6,perc=NA,xlims=NA){
+  signature(x = "DLM_data"),
+  function(x,funcs=NA,maxlines=6,perc=0.5,xlims=NA){
     
-    DLM<-x
+    DLM_data<-x
     cols<-rep(c('black','red','green','blue','orange','brown','purple','dark grey','violet','dark red','pink','dark blue','grey'),4)
     ltys<-rep(1:4,each=13)
     
     
-    if(is.na(funcs[1]))funcs<-DLM@Meths
+    if(is.na(funcs[1]))funcs<-DLM_data@MPs
 
-    nmeths<-length(funcs)
-    nplots<-ceiling(nmeths/maxlines)
-    maxl<-ceiling(nmeths/nplots)
-    mbyp <- split(1:nmeths, ceiling(1:nmeths/maxl))   # assign methods to plots
+    nMPs<-length(funcs)
+    nplots<-ceiling(nMPs/maxlines)
+    maxl<-ceiling(nMPs/nplots)
+    mbyp <- split(1:nMPs, ceiling(1:nMPs/maxl))   # assign methods to plots
 
     if(is.na(xlims[1])|length(xlims)!=2){
-      xlims<-quantile(DLM@quota,c(0.005,0.90),na.rm=T)
+      xlims<-quantile(DLM_data@TAC,c(0.005,0.95),na.rm=T)
       if(xlims[1]<0)xlims[1]<-0
     }
-    if(!NAor0(DLM@Ref)){
-      if(xlims[1]>DLM@Ref)xlims[1]<-max(0,0.98*DLM@Ref)
-      if(xlims[2]<DLM@Ref)xlims[2]<-1.02*DLM@Ref
+    if(!NAor0(DLM_data@Ref)){
+      if(xlims[1]>DLM_data@Ref)xlims[1]<-max(0,0.98*DLM_data@Ref)
+      if(xlims[2]<DLM_data@Ref)xlims[2]<-1.02*DLM_data@Ref
     }
-    ylims<-c(0,-Inf)
+    ylims<-c(0,1)
 
-    for(m in 1:nmeths){
-      if(sum(!is.na(DLM@quota[m,,1]))>2){
-        dens<-density(DLM@quota[m,,1],na.rm=T)
+    #for(m in 1:nMPs){
+     # if(sum(!is.na(DLM_data@TAC[m,,1]))>2){
+       # dens<-density(DLM_data@TAC[m,,1],na.rm=T)
         #print(quantile(dens$y,0.99,na.rm=T))
-        if(quantile(dens$y,0.80,na.rm=T)>ylims[2])ylims[2]<-quantile(dens$y,0.80,na.rm=T)
-      }
-    }
+      #  if(quantile(dens$y,0.9,na.rm=T)>ylims[2])ylims[2]<-quantile(dens$y,0.90,na.rm=T)
+      #}
+    #}
 
     #dev.new2(width=10,height=0.5+7*nplots)
-    par(mfrow=c(nplots,1),mai=c(0.4,0.3,0.01,0.01),omi=c(0.35,0.35,0.35,0.05))
+    par(mfrow=c(ceiling(nplots/2),2),mai=c(0.4,0.4,0.01,0.01),omi=c(0.35,0.35,0.35,0.05))
 
     for(p in 1:nplots){
       m<-mbyp[[p]][1]
       plot(NA,NA,xlim=xlims,ylim=ylims,main="",xlab="",ylab="",col="white",lwd=3,type="l")
       abline(h=0)
-      if(!NAor0(DLM@Ref)){
-        abline(v=DLM@Ref,col="light grey",lwd=2)
-        if(!NAor0(DLM@Ref_type[1]))legend('right',DLM@Ref_type,text.col="grey",bty='n')
+      if(!NAor0(DLM_data@Ref)){
+        abline(v=DLM_data@Ref,col="light grey",lwd=2)
+        if(!NAor0(DLM_data@Ref_type[1]))legend('right',DLM_data@Ref_type,text.col="grey",bty='n')
       }
-      #plot(density(DLM@quota[m,,1],from=0,na.rm=T),xlim=xlims,ylim=ylims,main="",xlab="",ylab="",col=coly[m],lty=ltyy[m],type="l")
+      #plot(density(DLM@TAC[m,,1],from=0,na.rm=T),xlim=xlims,ylim=ylims,main="",xlab="",ylab="",col=coly[m],lty=ltyy[m],type="l")
 
-      if(!is.na(perc[1]))abline(v=quantile(DLM@quota[m,,1],p=perc,na.rm=T),col=cols[m],lty=ltys[m])
+      if(!is.na(perc[1]))abline(v=quantile(DLM_data@TAC[m,,1],p=perc,na.rm=T),col=cols[m],lty=ltys[m])
       #if(length(mbyp[[p]])>0){
         for(ll in 1:length(mbyp[[p]])){
           m<-mbyp[[p]][ll]
-          if(sum(!is.na(DLM@quota[m,,1]))>10){  # only plot if there are sufficient non-NA OFL samples
-            lines(density(DLM@quota[m,,1],from=0,na.rm=T),col=cols[m],lty=ltys[m])
+          if(sum(!is.na(DLM_data@TAC[m,,1]))>10){  # only plot if there are sufficient non-NA TAC samples
+            x<-density(DLM_data@TAC[m,,1],from=0,na.rm=T)$x
+            y<-density(DLM_data@TAC[m,,1],from=0,na.rm=T)$y
+            y<-y/max(y)
+            lines(x,y,col=cols[ll])
           }else{
-            print(paste("Method ",funcs[m]," produced too many NA OFL values for plotting densities",sep=""))
+            print(paste("Method ",funcs[m]," produced too many NA TAC values for plotting densities",sep=""))
           }
-          if(!is.na(perc[1]))abline(v=quantile(DLM@quota[m,,1],p=perc,na.rm=T),col=cols[m],lty=ltys[m])
+          if(!is.na(perc[1]))abline(v=quantile(DLM_data@TAC[m,,1],p=perc,na.rm=T),col=cols[ll],lty=2)
         }
       #}
-    legend('topright',funcs[mbyp[[p]]],text.col=cols[mbyp[[p]]],col=cols[mbyp[[p]]],lty=ltys[mbyp[[p]]],bty='n')
+      cind<-1:length(mbyp[[p]])
+      legend('topright',funcs[mbyp[[p]]],text.col=cols[cind],col=cols[cind],lty=1,bty='n',cex=0.75)
     }
 
-    mtext(paste("OFL (",DLM@Units,")",sep=""),1,outer=T,line=0.5)
-    mtext(paste("Relative frequency",sep=""),2,outer=T,line=0.5)
-    mtext(paste("OFL calculation for ",DLM@Name,sep=""),3,outer=T,line=0.5)
+    mtext(paste("TAC (",DLM_data@Units,")",sep=""),1,outer=T,line=0.5)
+    mtext(paste("Standardized relative frequency",sep=""),2,outer=T,line=0.5)
+    mtext(paste("TAC calculation for ",DLM_data@Name,sep=""),3,outer=T,line=0.5)
 })
 
 condmet<-function(vec)TRUE%in%vec
 
-Sense<-function(DLM,Meth,nsense=6,reps=100,perc=c(0.05,0.5,0.95),ploty=T){
+Sense<-function(DLM_data,MP,nsense=6,reps=100,perc=c(0.05,0.5,0.95),ploty=T){
 
-  DLM2<-DLM
-  nm <-deparse(substitute(DLM2))
-  refOFL<-quantile(getOFL(DLM2,Meth,reps),perc,na.rm=T)
-  
-  PosMeths<-Can(DLM2)
-  ind<-rep(FALSE,length(PosMeths))
-  for(i in 1:length(PosMeths))if(class(get(PosMeths[i]))=="DLM quota")ind[i]<-TRUE
-  PosMeths<-PosMeths[ind]
-  
-  DLM<-DLM2
-  reqs<-Required(Meth)#read.csv(paste(getwd(),"/Data/Data requirements.csv",sep=""),header=T)
-  ind<-(1:nrow(reqs))[reqs[,match(Meth,names(reqs))]=="Y"]
-  for(i in 1:length(reqs))
+  DLM_data2<-DLM_data
+  nm <-deparse(substitute(DLM_data2))
+  refTAC<-quantile(getTAC(DLM_data2,MP,reps),perc,na.rm=T)
+ 
+  DLM_data<-DLM_data2
+  reqs<-Required(MP)#read.csv(paste(getwd(),"/Data/Data requirements.csv",sep=""),header=T)
+  ind<-(1:nrow(reqs))[reqs[,match(MP,names(reqs))]=="Y"]
+  #for(i in 1:length(reqs))
   
  
-  slotsCV<-slotNames('DLM')[grep("CV_",slotNames('DLM'))]  
+  slotsCV<-slotNames('DLM_data')[grep("CV_",slotNames('DLM_data'))]  
   slots<-rep("",length(slotsCV))
   for(i in 1:length(slotsCV))slots[i]<-substr(slotsCV[i],4,nchar(slotsCV[i]))
    
@@ -443,94 +440,99 @@ Sense<-function(DLM,Meth,nsense=6,reps=100,perc=c(0.05,0.5,0.95),ploty=T){
   nslots<-length(slots)
 
   nrep<-nslots*nsense
-  DLM<-replic8(DLM,nrep)
+  DLM_data<-replic8(DLM_data,nrep)
   pss<-seq(0,1,length.out=nsense+2)[2:(nsense+1)]
   vals<-array(NA,dim=c(nslots,nsense))
 
   for(i in 1:nslots){
     ind<-(((i-1)*nsense+1):(i*nsense))
-    mn<-attr(DLM,slots[i])[1]
-    cv<-attr(DLM,slotsCV[i])[1]*2 # twice the CV of the variable specified in the DLM object
-    if(class(attr(DLM,slots[i]))=='numeric'){
+    mn<-attr(DLM_data,slots[i])[1]
+    cv<-attr(DLM_data,slotsCV[i])[1]*2 # twice the CV of the variable specified in the DLM object
+    if(class(attr(DLM_data,slots[i]))=='numeric'){
       if(mn>0){
-        attr(DLM,slots[i])[ind]<-qlnorm(pss,mconv(mn,cv*mn),sdconv(mn,cv*mn))
+        attr(DLM_data,slots[i])[ind]<-qlnorm(pss,mconv(mn,cv*mn),sdconv(mn,cv*mn))
         vals[i,]<-qlnorm(pss,mconv(mn,cv*mn),sdconv(mn,cv*mn))
       }else{
-        attr(DLM,slots[i])[ind]<--qlnorm(pss,mconv(-mn,cv*-mn),sdconv(-mn,cv*-mn))
+        attr(DLM_data,slots[i])[ind]<--qlnorm(pss,mconv(-mn,cv*-mn),sdconv(-mn,cv*-mn))
         vals[i,]<--qlnorm(pss,mconv(-mn,cv*-mn),sdconv(-mn,cv*-mn))
       }
     }else{
-      cv<-attr(DLM,slotsCV[i])[1]
-      attr(DLM,slots[i])[ind,]<-attr(DLM,slots[i])[ind,]*qlnorm(pss,mconv(1,cv),sdconv(1,cv))
+      cv<-attr(DLM_data,slotsCV[i])[1]
+      attr(DLM_data,slots[i])[ind,]<-attr(DLM_data,slots[i])[ind,]*qlnorm(pss,mconv(1,cv),sdconv(1,cv))
       vals[i,]<-qlnorm(pss,mconv(1,cv),sdconv(1,cv))
     }
   }
 
-  OFLa<-getOFL(DLM,Meths=Meth,reps=reps)
-  OFLa<-apply(OFLa,3,quantile,p=perc,na.rm=T)
+  TACa<-getTAC(DLM_data,MPs=MP,reps=reps)
+  TACa<-apply(TACa,3,quantile,p=perc,na.rm=T)
   LB<-((1:nslots)-1)*4+1
-    UB<-(1:nslots)*4
+  UB<-(1:nslots)*4
   sense<-matrix(data=NA,nrow=4*nslots,ncol=nsense+1)
+  
   for(i in 1:nslots){
     ind<-((i-1)*nsense+1):(i*nsense)
-    dat<-OFLa[,ind]
+    dat<-TACa[,ind]
 
     sense[LB[i],2:(nsense+1)]<-vals[i,]
     sense[(LB[i]+1):UB[i],2:(nsense+1)]<-dat
     sense[LB[i],1]<-slots[i]
     sense[(LB[i]+1):UB[i],1]<-perc
   }
-  DLM@Sense<-sense
+  
+  DLM_data2@Sense<-sense
 
   if(ploty){
-   ylimy<-range(OFLa)
+   ylimy<-range(TACa)
    #dev.new2(width=10,height=0.5+3*ceiling(nslots/2))
-   par(mfrow=c(ceiling(nslots/2),2),mai=c(0.35,0.3,0.01,0.01),omi=c(0.4,0.4,0.4,0.01))
+   par(mfrow=c(ceiling(nslots/2),2),mai=c(0.4,0.4,0.01,0.01),omi=c(0.4,0.4,0.4,0.01))
    for(i in 1:nslots){
      ind<-(((i-1)*nsense+1):(i*nsense))
-     dat<-OFLa[,ind]
+     dat<-TACa[,ind]
      xlimy<-range(vals[i,])
-     plot(xlimy,rep(refOFL[2],2),ylim=ylimy,xlim=xlimy,type='l',col="#99999960",main="",xlab="",ylab="")
-     abline(h=refOFL[c(1,3)],col="#99999960",lty=2)
+     plot(xlimy,rep(refTAC[2],2),ylim=ylimy,xlim=xlimy,type='l',col="#99999960",main="",xlab="",ylab="")
+     abline(h=refTAC[c(1,3)],col="#99999960",lty=2)
+     abline(v=slot(DLM_data2,slots[i]),col="#99999960",lty=2)
      lines(vals[i,],dat[2,],col="red",lwd=1.5)
      lines(vals[i,],dat[1,],col="red",lty=2,lwd=1.5)
      lines(vals[i,],dat[3,],col="red",lty=2,lwd=1.5)
      legend('top',legend=sname[i],text.col='blue',bty='n')
    }
 
-   mtext(paste("Output control (",DLM@Units,")",sep=""),2,outer=T,line=0.5)
-   mtext(paste("Parameter / variable input level (marginal)",sep=""),1,outer=T,line=0.5)
-   mtext(paste("Sensitivity analysis for ",DLM@Name,": ",Meth,sep=""),3,outer=T,line=0.5)
+   mtext(paste("Output control (",DLM_data@Units,")",sep=""),2,outer=T,line=0.5)
+   mtext("Parameter / variable input level",1,outer=T,line=0.5)
+   mtext(paste("Sensitivity analysis for ",DLM_data@Name,": ",MP,sep=""),3,outer=T,line=0.5)
   }
   #assign(nm,DLM2,envir=.GlobalEnv)
-  DLM
+  DLM_data2
 }
 
-replic8<-function(DLM,nrep){
+replic8<-function(DLM_data,nrep){
 
-  slotnam<-slotNames(DLM)
+  slotnam<-slotNames(DLM_data)
   slotnam<-slotnam[slotnam!="Ref"&slotnam!="OM"&slotnam!="MaxAge"&slotnam!="CAL_bins"&slotnam!="Year"]
   
   for(sl in 1:length(slotnam)){
-    slt<-attr(DLM,slotnam[sl])
+    slt<-attr(DLM_data,slotnam[sl])
     if(class(slt)=='matrix'){
-      attr(DLM,slotnam[sl])<-matrix(rep(slt,each=nrep),nrow=nrep,ncol=ncol(slt))
+      attr(DLM_data,slotnam[sl])<-matrix(rep(slt,each=nrep),nrow=nrep,ncol=ncol(slt))
     }else if(class(slt)=='numeric'){
-      attr(DLM,slotnam[sl])<-rep(slt,nrep)
+      attr(DLM_data,slotnam[sl])<-rep(slt,nrep)
     }else if(class(slt)=='array'){
-      attr(DLM,slotnam[sl])<-array(rep(slt,each=nrep),dim=c(nrep,dim(slt)[2:3]))
+      attr(DLM_data,slotnam[sl])<-array(rep(slt,each=nrep),dim=c(nrep,dim(slt)[2:3]))
     }
   }
-  DLM
+  DLM_data
 }
 
 
 setMethod("summary",
-          signature(object = "DLM"),
+          signature(object = "DLM_data"),
           function(object){
   
   scols<-c('red','green','blue','orange','brown','purple','dark grey','violet','dark red','pink','dark blue','grey')
+  
   #dev.new2(width=8,height=4.5)
+  par(mai=c(0.35,0.9,0.2,0.01),c(0.3,0,0,0))
   layout(matrix(c(1,2,1,2,1,2,3,3,3,3),nrow=2))
   plot(object@Year,object@Cat[1,],col="blue",type="l",xlab="Year",ylab=paste("Catch (",object@Units,")",sep=""),ylim=c(0,max(object@Cat[1,],na.rm=T)))
   plot(object@Year,object@Ind[1,],col="orange",type="l",xlab="Year",ylab="Relative abundance",ylim=c(0,max(object@Ind[1,],na.rm=T)))
@@ -560,6 +562,7 @@ setMethod("summary",
     for(i in 2:length(slots)) lines(xstore[i,],ystore[i,],col=scols[i])
   }
   legend('topright',legend=namey[ind],text.col=scols[1:length(slots)],bty='n')
+  mtext(paste("Data summary for",deparse(substitute(DLM_data)),sep=" "),3,font=2,line=0.25,outer=T)
 
 })
 
@@ -571,10 +574,11 @@ DLMDataDir<-function(stock=NA){
   }
 }
 
-OneRep<-function(DLM){
-  DLM@CV_Cat=DLM@CV_Dt=DLM@CV_AvC=DLM@CV_Ind=DLM@CV_Mort=DLM@CV_FMSY_M=DLM@CV_BMSY_B0=DLM@CV_Cref=DLM@CV_Bref=DLM@CV_Iref=DLM@CV_Rec=DLM@CV_Dep=DLM@CV_Abun=DLM@CV_vbK=DLM@CV_vbLinf=DLM@CV_vbt0=DLM@CV_AM=DLM@CV_LFC=DLM@CV_LFS=DLM@CV_wla=DLM@CV_wlb=DLM@CV_steep=DLM@sigmaL=tiny
-  DLM
+OneRep<-function(DLM_data){
+  DLM_data@CV_Cat=DLM_data@CV_Dt=DLM_data@CV_AvC=DLM_data@CV_Ind=DLM_data@CV_Mort=DLM_data@CV_FMSY_M=DLM_data@CV_BMSY_B0=DLM_data@CV_Cref=DLM_data@CV_Bref=DLM_data@CV_Iref=DLM_data@CV_Rec=DLM_data@CV_Dep=DLM_data@CV_Abun=DLM_data@CV_vbK=DLM_data@CV_vbLinf=DLM_data@CV_vbt0=DLM_data@CV_AM=DLM_data@CV_LFC=DLM_data@CV_LFS=DLM_data@CV_wla=DLM_data@CV_wlb=DLM_data@CV_steep=DLM_data@sigmaL=tiny
+  DLM_data
 }
+
 
 #dev.new2 <- function(width = 7, height = 7){
 #  platform <- sessionInfo()$platform

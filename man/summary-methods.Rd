@@ -1,7 +1,7 @@
 \name{summary-methods}
 \docType{methods}
 \alias{summary-methods}
-\alias{summary,DLM-method}
+\alias{summary,DLM_data-method}
 \alias{summary,MSE-method}
 \title{ ~~ Methods for Function \code{summary}  ~~}
 \description{

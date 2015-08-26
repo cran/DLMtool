@@ -2,24 +2,24 @@
 \alias{Fratio_ML}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-An FMSY/M ratio method that uses a mean length estimator of recent Z
+An FMSY/M ratio MP that uses a mean length estimator of recent Z
 }
 \description{
 Calculates the OFL based on a fixed ratio of FMSY/M and an estimate of current stock size from a mean-length estimator. 
 }
 \usage{
-Fratio_ML(x, DLM, reps = 100)
+Fratio_ML(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
 A position in data-limited methods data object
 }
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{reps}{
-The number of quota samples
+The number of TAC samples
 }
 }
 \references{

@@ -2,17 +2,17 @@
 \alias{Needed}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Data needed to get DLM methods running
+Data needed to get MPs running
 }
 \description{
-Wrapper function for DLMdiag that lists what data are needed to run data-limited methods that are current not able to run given a DLM data object
+Wrapper function for DLMdiag that lists what data are needed to run data-limited methods that are current not able to run given a DLM_cdata object
 }
 \usage{
-Needed(DLM, timelimit=1)
+Needed(DLM_data, timelimit=1)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{timelimit}{

@@ -8,11 +8,11 @@ Enlarge (replicate) a DLM data object to create an additional dimension for simu
 Replicates position 1 data to multiple positions for sensitivity testing etc 
 }
 \usage{
-replic8(DLM, nrep)
+replic8(DLM_data, nrep)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{DLM}{
+  \item{DLM_data}{
 A data-limited methods data object
 }
   \item{nrep}{
