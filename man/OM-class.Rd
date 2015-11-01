@@ -34,8 +34,6 @@ Objects can be created by calls of the form \code{new("OM", Stock, Fleet, Observ
     \item{\code{AC}:}{Autocorrelation in recruitment deviations rec(t)=AC*rec(t-1)+(1-AC)*sigma(t) (uniform distribution)}
     \item{\code{a}:}{Length-weight parameter alpha (uniform distribution)}
     \item{\code{b}:}{Length-weight parameter beta (uniform distribution)}
-    \item{\code{ageM}:}{age-at-maturity (uniform distribution)}
-    \item{\code{ageMsd}:}{interannual-variability in age-at-maturity}
     \item{\code{D}:}{Current level of stock depletion (Bcurrent/Bunfished) (uniform distribution)}
     \item{\code{Size_area_1}:}{The size of area 1 relative to area 2 (uniform distribution)}
     \item{\code{Frac_area_1}:}{The fraction of the unfished biomass in stock 1 (uniform distribution)}
@@ -43,9 +41,11 @@ Objects can be created by calls of the form \code{new("OM", Stock, Fleet, Observ
     \item{\code{Source}:}{A reference to a website or article form which parameters were taken to define the operating model}
     \item{\code{beta}:}{A parameter controlling hyperstability/hyperdepletion. I^beta therefore values below 1 lead to hyperstability (an index that decreases slower than true abundance) and values above 1 lead to hyperdepletion (an index that decreases more rapidly than true abundance)(uniform distribution)}
     \item{\code{Spat_targ}:}{Distribution of fishing in relation to spatial biomass: F is proportional to B^Spat_targ (uniform distribution) }
-    \item{\code{AFS}:}{Youngest age class that is fully vulnerable to fishing (uniform distribution)}
-    \item{\code{age05}:}{Youngest age at 5 percent vulnerability (uniform distribution)}
-    \item{\code{Vmaxage}:}{The vulnerability of the oldest age class (uniform distribution)}
+    \item{\code{LFS}:}{Shortest length that is fully vulnerable to fishing (uniform distribution)}
+    \item{\code{L5}:}{Shortest length at 5 percent vulnerability (uniform distribution)}
+    \item{\code{Vmaxlen}:}{The vulnerability of the longest (oldes) fish (uniform distribution)}
+    \item{\code{L50}:}{Length at 50 percent maturity (uniform distribution)}
+    \item{\code{L50_95}:}{Length increment from 50 to 95 percent maturity (uniform distribution)}
     \item{\code{Fsd}:}{Inter-annual variability in fishing mortality rate}
     \item{\code{Fgrad}:}{Final historical gradient in fishing mortality rate expressed as percentage change per year (uniform distribution)}
     \item{\code{qinc}:}{Average percentage change in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls)}
@@ -69,9 +69,8 @@ Objects can be created by calls of the form \code{new("OM", Stock, Fleet, Observ
     \item{\code{FMSYcv}:}{Persistent bias in the prescription of FMSY sampled from a log-normal distribution with coefficient of variation (FMSYcv)(uniform distribution)}
     \item{\code{FMSY_Mcv}:}{Persistent bias in the prescription of FMSY/M sampled from a log-normal distribution with coefficient of variation (FMSY_cv)(uniform distribution)}
     \item{\code{BMSY_B0cv}:}{Persistent bias in the prescription of BMsY relative to unfished sampled from a log-normal distribution with coefficient of variation (BMSY_B0cv)(uniform distribution)}
-    \item{\code{ageMcv}:}{Persistent bias in the prescription of age-at-maturity sampled from a log-normal distribution with coefficient of variation (ageMcv)(uniform distribution)}
     \item{\code{rcv}:}{Persistent bias in the prescription of intrinsic rate of increase sampled from a log-normal distribution with coefficient of variation (rcv)(uniform distribution)}
-    \item{\code{A50cv}:}{Persistent bias in the prescription of age at 50 percent vulnerability sampled from a log-normal distribution with coefficient of variation (A50cv)(uniform distribution)}
+    \item{\code{LenMcv}:}{Persistent bias in the prescription of length at 50 percent maturity sampled from a log-normal distribution with coefficient of variation (A50cv)(uniform distribution)}
     \item{\code{Dbiascv}:}{Persistent bias in the prescription of stock depletion sampled from a log-normal distribution with coefficient of variation (Linfcv)(uniform distribution)}
     \item{\code{Dcv}:}{Imprecision in the prescription of stock depletion among years, expressed as a coefficient of variation (uniform distribution)}
     \item{\code{Btbias}:}{Persistent bias in the prescription of current stock biomass sampled from a uniform-log distribution with range (Btbias)(uniform distribution)}

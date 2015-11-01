@@ -17,7 +17,7 @@ avail<-function(classy){
 setClass("DLM_data",representation(Name="character",Year="vector",Cat="matrix",Ind="matrix",Rec="matrix",t="vector",AvC="vector",
                                   Dt="vector",Mort="vector",FMSY_M="vector",BMSY_B0="vector",Cref="vector",
                                   Bref="vector",Iref="vector",
-                                  AM="vector",LFC="vector",LFS="vector",CAA="array",
+                                  L50="vector",L95="vector",LFC="vector",LFS="vector",CAA="array",
                                   Dep="vector",Abun="vector",vbK="vector",vbLinf="vector",
                                   vbt0="vector",wla="vector",wlb="vector",steep="vector",
                                   CV_Cat="vector", CV_Dt="vector",CV_AvC="vector",CV_Ind="vector",CV_Mort="vector",
@@ -25,7 +25,7 @@ setClass("DLM_data",representation(Name="character",Year="vector",Cat="matrix",I
                                   CV_Iref="vector",CV_Rec="vector",
                                   CV_Dep="vector",CV_Abun="vector",
                                   CV_vbK="vector",CV_vbLinf="vector",CV_vbt0="vector",
-                                  CV_AM="vector",CV_LFC="vector",CV_LFS="vector",    
+                                  CV_L50="vector",CV_LFC="vector",CV_LFS="vector",    
                                   CV_wla="vector",CV_wlb="vector",CV_steep="vector",sigmaL="vector",
                                   MaxAge="vector",
                                   Units="character",Ref="numeric",Ref_type="character",
@@ -35,7 +35,8 @@ setClass("DLM_data",representation(Name="character",Year="vector",Cat="matrix",I
                                   TAC="array",TACbias="array",
                                   Sense="array",
                                   CAL_bins="numeric",
-                                  CAL="array",MPrec="vector"))
+                                  CAL="array",MPrec="vector",
+                                  LHYear="numeric"))
 
 setMethod("initialize", "DLM_data", function(.Object,stock="nada"){
   # run an error check here
@@ -58,7 +59,8 @@ setMethod("initialize", "DLM_data", function(.Object,stock="nada"){
     .Object@Cref<-as.numeric(dat[match("Cref",dname),1])
     .Object@Bref<-as.numeric(dat[match("Bref",dname),1])
     .Object@Iref<-as.numeric(dat[match("Iref",dname),1])
-    .Object@AM<-as.numeric(dat[match("Age at 50% maturity",dname),1])
+    .Object@L50<-as.numeric(dat[match("Length at 50% maturity",dname),1])
+    .Object@L95<-as.numeric(dat[match("Length at 95% maturity",dname),1])
     .Object@LFC<-as.numeric(dat[match("Length at first capture",dname),1])
     .Object@LFS<-as.numeric(dat[match("Length at full selection",dname),1])
     .Object@Dep<-as.numeric(dat[match("Current stock depletion",dname),1])
@@ -87,7 +89,7 @@ setMethod("initialize", "DLM_data", function(.Object,stock="nada"){
     .Object@CV_vbK<-as.numeric(dat[match("CV von B. K parameter", dname),1])
     .Object@CV_vbLinf<-as.numeric(dat[match("CV von B. Linf parameter", dname),1])
     .Object@CV_vbt0<-as.numeric(dat[match("CV von B. t0 parameter", dname),1])
-    .Object@CV_AM<-as.numeric(dat[match("CV Age at 50% maturity", dname),1])
+    .Object@CV_L50<-as.numeric(dat[match("CV Length at 50% maturity", dname),1])
     .Object@CV_LFC<-as.numeric(dat[match("CV Length at first capture", dname),1])
     .Object@CV_LFS<-as.numeric(dat[match("CV Length at full selection", dname),1])
     .Object@CV_wla<-as.numeric(dat[match("CV Length-weight parameter a", dname),1])
@@ -109,7 +111,7 @@ setMethod("initialize", "DLM_data", function(.Object,stock="nada"){
     if(!is.na(CAAa)){
       .Object@CAA<-array(as.numeric(as.matrix(dat[CAAy,1:CAAa])),dim=c(1,length(CAAy),CAAa))
     }
-
+    .Object@LHYear<-as.numeric(dat[match("LHYear",dname),1])
     .Object@Units<-dat[match("Units", dname),1]
     .Object@Ref<-as.numeric(dat[match("Reference TAC",dname),1])
     .Object@Ref_type<-dat[match("Reference TAC type",dname),1]
@@ -147,7 +149,7 @@ setMethod("initialize", "DLM_data", function(.Object,stock="nada"){
   if(NAor0(.Object@CV_vbK)).Object@CV_vbK<-0.1
   if(NAor0(.Object@CV_vbLinf)).Object@CV_vbLinf<-0.1
   if(NAor0(.Object@CV_vbt0)).Object@CV_vbt0<-0.1
-  if(NAor0(.Object@CV_AM)).Object@CV_AM<-0.2
+  if(NAor0(.Object@CV_L50)).Object@CV_L50<-0.1
   if(NAor0(.Object@CV_LFC)).Object@CV_LFC<-0.2
   if(NAor0(.Object@CV_LFS)).Object@CV_LFS<-0.2
   if(NAor0(.Object@CV_wla)).Object@CV_wla<-0.1
@@ -170,6 +172,70 @@ NAor0<-function(x){
   if(length(x)>0)return(is.na(x[1]))
 }  
 
+setClass("DLM_fease",representation(Name="character",Case="character",Catch="numeric",
+         Index="numeric",Natural_mortality_rate="numeric",Maturity_at_length="numeric",
+         Growth="numeric",Length_weight_conversion="numeric",Fleet_selectivity="numeric",
+         Catch_at_length="numeric",Catch_at_age="numeric",Recruitment_index="numeric",
+         Stock_recruitment_relationship="numeric",Target_catch="numeric",Target_biomass="numeric",
+         Target_index="numeric",Abundance="numeric"))
+
+setMethod("initialize", "DLM_fease", function(.Object,file="nada",ncases=1){
+  # run an error check here
+  if(file.exists(file)){
+    dat <- read.csv(file,header=F,colClasses="character") # read 1st sheet
+    nr<-nrow(dat)
+    ncases=ncol(dat)-1
+    dname<-dat[,1]
+    if(ncases==1)dat<-array(dat[,2:ncol(dat)],dim=c(nr,ncases))
+    if(ncases>1)dat<-dat[,2:ncol(dat)]
+    .Object@Name<- dat[match("Name", dname),1]
+    .Object@Case<-as.character(dat[match("Case",dname),1:ncases])
+    .Object@Catch<-as.numeric(dat[match("Catch",dname),1:ncases])
+    .Object@Index<-as.numeric(dat[match("Index",dname),1:ncases])
+    .Object@Natural_mortality_rate<-as.numeric(dat[match("Natural_mortality_rate",dname),1:ncases])
+    .Object@Maturity_at_length<-as.numeric(dat[match("Maturity_at_length",dname),1:ncases])
+    .Object@Growth<-as.numeric(dat[match("Growth",dname),1:ncases])
+    .Object@Length_weight_conversion<-as.numeric(dat[match("Length_weight_conversion",dname),1:ncases])
+    .Object@Fleet_selectivity<-as.numeric(dat[match("Fleet_selectivity",dname),1:ncases])
+    .Object@Catch_at_length<-as.numeric(dat[match("Catch_at_length",dname),1:ncases])
+    .Object@Catch_at_age<-as.numeric(dat[match("Catch_at_age",dname),1:ncases])
+    .Object@Recruitment_index<-as.numeric(dat[match("Recruitment_index",dname),1:ncases])
+    .Object@Stock_recruitment_relationship<-as.numeric(dat[match("Stock_recruitment_relationship",dname),1:ncases])
+    .Object@Target_catch<-as.numeric(dat[match("Target_catch",dname),1:ncases])
+    .Object@Target_biomass<-as.numeric(dat[match("Target_biomass",dname),1:ncases])
+    .Object@Target_index<-as.numeric(dat[match("Target_index",dname),1:ncases])
+    .Object@Abundance<-as.numeric(dat[match("Abundance",dname),1:ncases])
+  }else{
+    .Object@Name<-"Blank DLM_Fease"
+    .Object@Case<-"Case 1"
+    .Object@Catch<-0
+    .Object@Index<-0
+    .Object@Natural_mortality_rate<-0
+    .Object@Maturity_at_length<-0
+    .Object@Growth<-0
+    .Object@Length_weight_conversion<-0
+    .Object@Fleet_selectivity<-0
+    .Object@Catch_at_length<-0
+    .Object@Catch_at_age<-0
+    .Object@Recruitment_index<-0
+    .Object@Stock_recruitment_relationship<-0
+    .Object@Target_catch<-0
+    .Object@Target_biomass<-0
+    .Object@Target_index<-0
+    .Object@Abundance<-0
+  }  
+  .Object
+  
+})
+
+setClass("DLM_general",representation(Name="character",data="list"))
+
+setMethod("initialize", "DLM_general", function(.Object){
+  .Object
+})
+
+
+  
 cv<-function(x)  sd(x)/mean(x)
 sdconv<-function(m,sd)(log(1+((sd^2)/(m^2))))^0.5        # get log normal standard deviation from transformed space mean and standard deviation
 mconv<-function(m,sd)log(m)-0.5*log(1+((sd^2)/(m^2)))    # get log normal mean from transformed space mean and standard deviation
@@ -575,8 +641,138 @@ DLMDataDir<-function(stock=NA){
 }
 
 OneRep<-function(DLM_data){
-  DLM_data@CV_Cat=DLM_data@CV_Dt=DLM_data@CV_AvC=DLM_data@CV_Ind=DLM_data@CV_Mort=DLM_data@CV_FMSY_M=DLM_data@CV_BMSY_B0=DLM_data@CV_Cref=DLM_data@CV_Bref=DLM_data@CV_Iref=DLM_data@CV_Rec=DLM_data@CV_Dep=DLM_data@CV_Abun=DLM_data@CV_vbK=DLM_data@CV_vbLinf=DLM_data@CV_vbt0=DLM_data@CV_AM=DLM_data@CV_LFC=DLM_data@CV_LFS=DLM_data@CV_wla=DLM_data@CV_wlb=DLM_data@CV_steep=DLM_data@sigmaL=tiny
+  DLM_data@CV_Cat=DLM_data@CV_Dt=DLM_data@CV_AvC=DLM_data@CV_Ind=DLM_data@CV_Mort=DLM_data@CV_FMSY_M=DLM_data@CV_BMSY_B0=DLM_data@CV_Cref=DLM_data@CV_Bref=DLM_data@CV_Iref=DLM_data@CV_Rec=DLM_data@CV_Dep=DLM_data@CV_Abun=DLM_data@CV_L50=DLM_data@CV_vbK=DLM_data@CV_vbLinf=DLM_data@CV_vbt0=DLM_data@CV_LFC=DLM_data@CV_LFS=DLM_data@CV_wla=DLM_data@CV_wlb=DLM_data@CV_steep=DLM_data@sigmaL=tiny
   DLM_data
+}
+
+# Composition stock reduction analysis 
+CSRA<-function(M,h,Linf,K,t0,AM,a,b,vuln,mat,ML,CAL,CAA,maxage,nyears){ 
+  nsim<-length(M)
+  Dep<-rep(NA,nsim)
+  Fm<-rep(NA,nsim)
+  for(i in 1:nsim){
+    fit<-optimize(CSRAfunc,log(c(0.0001,5)),Mc=M[i],hc=h[i],maxage,nyears,Linfc=Linf[i],Kc=K[i],t0c=t0[i],AMc=AM[i],
+                  ac=a,bc=b,vulnc=vuln[i,],matc=mat[i,],MLc=ML[i],CAL=NA,CAA=NA,opt=T)
+    
+    
+    out<-CSRAfunc(fit$minimum,Mc=M[i],hc=h[i],maxage,nyears,Linfc=Linf[i],Kc=K[i],t0c=t0[i],AMc=AM[i],
+                  ac=a,bc=b,vulnc=vuln[i,],matc=mat[i,],MLc=ML[i],CAL=NA,CAA=NA,opt=3)
+    
+    Dep[i]<-out[1]
+    Fm[i]<-out[2]
+    
+    
+  }
+  cbind(Dep,Fm)
+}
+
+# The function that CSRA operates on
+CSRAfunc<-function(lnF,Mc,hc,maxage,nyears,AFSc,AFCc,Linfc,Kc,t0c,AMc,ac,bc,vulnc,matc,MLc,CAL,CAA,opt=T,meth="ML"){
+  
+  Fm<-exp(lnF)
+  Fc<-vulnc*Fm
+  Lac<-Linfc*(1-exp(-Kc*((1:maxage)-t0c)))
+  Wac<-ac*Lac^bc
+  Lac<-Linfc*(1-exp(-Kc*((1:maxage)-t0c)))
+  Wac<-ac*Lac^bc
+  N<-exp(-Mc*((1:maxage)-1))
+  SSN<-matc*N                                 # Calculate initial spawning stock numbers
+  Biomass<-N*Wac
+  SSB<-SSN*Wac                               # Calculate spawning stock biomass
+  
+  B0<-sum(Biomass)
+  SSB0<-sum(SSB)
+  SSN0<-SSN
+  SSBpR<-sum(SSB)                             # Calculate spawning stock biomass per recruit
+  SSNpR<-SSN
+  Zc<-Fc+Mc
+  CN<-array(NA,dim=c(nyears,maxage))
+  HR<-rep(0,maxage)
+  pen<-0
+  for(y in 1:nyears){
+    VB<-Biomass*vulnc*exp(-Mc)
+    CN[y,]<-N*(1-exp(-Zc))*(Fm/Zc)
+    N[2:maxage]<-N[1:(maxage-1)]*exp(-Zc[1:(maxage-1)])         # Total mortality
+    N[1]<-(0.8*hc*sum(SSB))/(0.2*SSBpR*(1-hc)+(hc-0.2)*sum(SSB))  # Recruitment assuming regional R0 and stock wide steepness
+    Biomass<-N*Wac
+    SSN<-N*matc
+    SSB<-SSN*Wac
+  } # end of year
+  
+  pred<-sum((CN[nyears,]*Lac))/sum(CN[nyears,])
+  fobj<-(pred-MLc)^2 # Currently a least squares estimator. Probably not worth splitting hairs WRT likelihood functions!
+  if(opt==1){return(fobj)
+  }else{c(sum(SSB)/sum(SSB0),Fm)
+  }
+}
+
+# Stochastic inverse growth curve used to back-calculate age at first capture from length at first capture
+getAFC<-function(t0c,Linfc,Kc,LFC,maxage){ 
+  nsim<-length(t0c)
+  agev<-c(0.0001,1:maxage)
+  agearray<-matrix(rep(agev,each=nsim),nrow=nsim)
+  Larray<-Linfc*(1-exp(-Kc*(agearray-t0c)))
+  matplot(agev,t(Larray),type='l')
+  abline(h=LFC,col="#ff000030",lwd=2)
+  AFC<-(log(1-(LFC/Linfc))/-Kc)+t0c
+  abline(v=AFC,col="#0000ff30",lwd=2)
+  AFC
+}  
+
+Fease<-function(feaseobj,outy="table"){
+  
+  if(class(feaseobj)!="DLM_fease")stop("Incorrect format: you need an object of class DLM_fease")
+  
+  sloty<-c("Cat","Ind","AvC","Dt","Rec","CAA","CAL","Mort","L50","L95","vbK",
+           "vbLinf","vbt0","wla","wlb","steep","LFC","LFS","Cref","Bref","Iref","Dep","Abun")
+  
+  type<-c("Catch","Index","Catch","Index","Recruitment_index","Catch_at_age","Catch_at_length",
+          "Natural_mortality_rate","Maturity_at_length","Maturity_at_length","Growth","Growth","Growth",
+          "Length_weight_conversion","Length_weight_conversion","Stock_recruitment_relationship",
+          "Fleet_selectivity","Fleet_selectivity","Target_catch","Target_biomass","Target_index",
+          "Index","Abundance") 
+  
+  ncases<-length(feaseobj@Case)
+  slots<-slotNames(feaseobj)
+  ns<-length(slots)
+  ftab<-array(TRUE,c(ns-2,ncases))
+  for(j in 3:ns)ftab[j-2,]<-as.logical(as.numeric(slot(feaseobj,slots[j])))
+  
+  req<-Required()
+  nMPs<-nrow(req)
+  gridy<-array("",c(nMPs,ncases))
+  for(i in 1:ncases){
+    types<-slotNames(feaseobj)[ftab[,i]]
+    slots<-sloty[type%in%types]
+    for(m in 1:nMPs){
+      brec<-unlist(strsplit(req[m,2],", "))
+      brec<-brec[grep("CV_",brec,invert=T)] #remove CV dependencies (we think we can guess these...)
+      brec<-brec[brec!="Year"&brec!="MaxAge"&brec!="FMSY_M"&brec!="BMSY_B0"&brec!="t"&brec!="OM"&brec!="MPrec"&brec!="CAL_bins"]
+      nr<-length(brec) 
+      if(nr==0){
+        gridy[m,i]<-"Yes"
+      }else{ 
+        cc<-0
+        for(r in 1:nr){ #loop over requirements
+          if(brec[r]%in%slots)cc<-cc+1
+        }
+        if(cc==nr)gridy[m,i]<-"Yes"
+      }
+    }
+  }
+  gridy<-as.data.frame(gridy)
+  row.names(gridy)=req[,1]
+  names(gridy)=feaseobj@Case
+  if(outy=="table")return(gridy)
+  if(outy!="table"&class(outy)!="numeric")return(req[,1][gridy[,1]=="Yes"])
+  if(class(outy)=="numeric"){
+    if(outy<(ncases+1)){
+      return(req[,1][gridy[,as.integer(outy)]=="Yes"])
+    }else{
+      return(req[,1][gridy[,1]=="Yes"])
+    }  
+  }
+  
 }
 
 

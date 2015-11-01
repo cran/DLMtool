@@ -30,10 +30,12 @@ export(
     "DepF",
     "DLMDataDir",
     "DynF",
+    "EDCAC",
     "Fadapt",
     "Fdem",
     "Fdem_CC",
     "Fdem_ML",
+    "Fease",
     "FMSYref",
     "FMSYref50",
     "FMSYref75",
@@ -79,12 +81,17 @@ export(
     "SPSRA_ML",
     "TAC",
     "Tplot",
+    "Tplot2",
+    "CheckConverg",
     "Pplot",
     "Kplot",
     "VOI",
     "YPR",
     "YPR_CC",
-    "YPR_ML"
+    "YPR_ML",
+    "CSRA",
+    "CSRAfunc",
+    "getAFC"
 )
 exportClasses(
     "DLM_data",
@@ -102,10 +109,11 @@ import(
     "methods"
 )
 importFrom("grDevices", "col2rgb", "rainbow", "rgb")
-importFrom("graphics", "axis","abline", "hist", "layout", "legend", "lines",
-      "mtext", "par", "points", "polygon", "text")
-importFrom("stats", "cor", "density", "dlnorm", "dnorm", "lm", "loess",
-      "optim", "optimize", "predict", "qlnorm", "qnorm",
-      "quantile", "rbeta", "rlnorm", "rmultinom", "rnorm",
-      "runif", "sd")
+importFrom("graphics", "abline", "hist", "layout", "legend", "lines",
+               "matplot", "mtext", "par", "points", "text","axis")
+importFrom("stats", "coef", "density", "dlnorm", "dnorm", "lm",
+               "loess", "optim", "optimise", "optimize", "predict",
+               "qlnorm", "quantile", "rbeta", "rlnorm", "rmultinom",
+               "rnorm", "runif", "sd", "uniroot")
 importFrom("utils", "flush.console", "read.csv")
+

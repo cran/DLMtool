@@ -23,7 +23,8 @@ Objects can be created by calls of the form \code{new("DLM_data", stock)}.
     \item{\code{Mort}:}{Natural mortality rate}
     \item{\code{FMSY_M}:}{An assumed ratio of FMSY to M}
     \item{\code{BMSY_B0}:}{The most productive stock size relative to unfished}
-    \item{\code{AM}:}{Age at maturity}
+    \item{\code{L50}:}{Length at 50 percent maturity}
+    \item{\code{L95}:}{Length at 95 percent maturity}
     \item{\code{LFC}:}{Length at first capture}
     \item{\code{LFS}:}{smallest Length at full selection}
     \item{\code{CAA}:}{Catch at Age data}
@@ -47,7 +48,7 @@ Objects can be created by calls of the form \code{new("DLM_data", stock)}.
     \item{\code{CV_vbK}:}{Coefficient of variation in the von Bert. k parameter}
     \item{\code{CV_vbLinf}:}{Coefficient of variation in maximum length}
     \item{\code{CV_vbt0}:}{Coefficient of variation in age at length zero}
-    \item{\code{CV_AM}:}{Coefficient of variation in age at maturity}
+    \item{\code{CV_L50}:}{Coefficient of variation in length at 50 per cent maturity}
     \item{\code{CV_LFC}:}{Coefficient of variation in length at first capture}
     \item{\code{CV_LFS}:}{Coefficient of variation in length at full selection}
     \item{\code{CV_wla}:}{Coefficient of variation in weight-length parameter a}
@@ -78,6 +79,7 @@ Objects can be created by calls of the form \code{new("DLM_data", stock)}.
     \item{\code{CV_Rec}:}{CV for recent recruitment strength}
     \item{\code{Rec}:}{Recent recruitment strength}
     \item{\code{MPrec}:}{The previous recommendation of a management proceedure}
+    \item{\code{LHYear}:}{The last historical year of the simulation (before projection)}
   }
 }
 \section{Methods}{

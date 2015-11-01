@@ -8,7 +8,7 @@ A data-limited method that uses FMSY/M ratio and a naive catch-curve estimate of
 Calculates the OFL based on a fixed ratio of FMSY to M and a catch curve estimate of current stock size.
 }
 \usage{
-Fratio_CC(x, DLM_data, reps = 100)
+Fratio_CC(x, DLM_data, reps = 100, Fmin = 0.005)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -20,6 +20,9 @@ A data-limited methods data object
 }
   \item{reps}{
 The number of TAC samples
+}
+\item{Fmin}{
+Minimum current fishing mortality rate for the catch-curve analysis
 }
 }
 \references{

@@ -8,6 +8,8 @@
 \alias{initialize,OM-method}
 \alias{initialize,Stock-method}
 \alias{initialize,lmmodel-method}
+\alias{initialize,DLM_fease-method}
+\alias{initialize,DLM_general-method}
 \title{ ~~ Methods for Function \code{initialize}  ~~}
 \description{
  ~~ Methods for function \code{initialize}  ~~
@@ -42,6 +44,14 @@
 \item{\code{signature(.Object = "lmmodel")}}{
 %%  ~~describe this method here~~
 }
+
+\item{\code{signature(.Object = "DLM_fease")}}{
+%%  ~~describe this method here~~
+}
+\item{\code{signature(.Object = "DLM_general")}}{
+%%  ~~describe this method here~~
+}
+
 }}
 \keyword{methods}
 \keyword{ ~~ other possible keyword(s) ~~ }

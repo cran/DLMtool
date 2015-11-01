@@ -33,8 +33,8 @@ Objects can be created by calls of the form \code{new("Stock", OM)}.
     \item{\code{AC}:}{Autocorrelation in recruitment deviations rec(t)=AC*rec(t-1)+(1-AC)*sigma(t) (uniform distribution)}
     \item{\code{a}:}{Length-weight parameter alpha (uniform distribution)}
     \item{\code{b}:}{Length-weight parameter beta (uniform distribution)}
-    \item{\code{ageM}:}{age-at-maturity (uniform distribution)}
-    \item{\code{ageMsd}:}{interannual-variability in age-at-maturity}
+    \item{\code{L50}:}{Length-at- 50 percent maturity (uniform distribution)}
+    \item{\code{L50_95}:}{Length increment from 50 percent to 95 percent maturity}
     \item{\code{D}:}{Current level of stock depletion (Bcurrent/Bunfished) (uniform distribution)}
     \item{\code{Perr}:}{Process error, the CV of lognormal recruitment deviations  (uniform distribution)}
     \item{\code{Size_area_1}:}{The size of area 1 relative to area 2 (uniform distribution)}

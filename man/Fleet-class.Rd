@@ -17,9 +17,9 @@ Objects can be created by calls of the form \code{new("Fleet", OM)}.
     \item{\code{Name}:}{Name of the Fleet object}
     \item{\code{nyears}:}{The number of years for the historical simulation}
     \item{\code{Spat_targ}:}{Distribution of fishing in relation to spatial biomass: F is proportional to B^Spat_targ (uniform distribution) }
-    \item{\code{AFS}:}{Youngest age class that is fully vulnerable to fishing (uniform distribution)}
-    \item{\code{age05}:}{Youngest age at 5 percent vulnerability (uniform distribution)}
-    \item{\code{Vmaxage}:}{The vulnerability of the oldest age class (uniform distribution)}
+    \item{\code{LFS}:}{Shortest length that is fully vulnerable to fishing (uniform distribution)}
+    \item{\code{L5}:}{Shortest length corresponding ot 5 percent vulnerability (uniform distribution)}
+    \item{\code{Vmaxlen}:}{The vulnerability of the longest (oldest) fish (uniform distribution)}
     \item{\code{Fsd}:}{Inter-annual variability in fishing mortality rate}
     \item{\code{Fgrad}:}{Final historical gradient in fishing mortality rate expressed as percentage change per year (uniform distribution)}
     \item{\code{qinc}:}{Average percentage change in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls)}
