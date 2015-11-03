@@ -14,9 +14,9 @@
 \begin{document}
 
 %------ Frontmatter ------
-\title{DLMtool: Data-Limited Methods Toolkit (v2.1)}
+\title{DLMtool: Data-Limited Methods Toolkit (v2.1.1)}
 \author{Tom Carruthers\footnote{t.carruthers@fisheries.ubc.ca} and Adrian Hordyk}
-\date{October 2015}
+\date{November 2015}
 \maketitle
 
 \tableofcontents
@@ -32,6 +32,11 @@ DLMtool is a collaboration between the University of British Columbia and the Na
 While DLMtool includes over 55 MPs (e.g. DCAC, DBSRA), it is also designed to be extensible in order to encourage the development and testing of new MPs for informing management of data-limited fish stocks. The package is structured such that the same MP functions that are tested by MSE can be applied to provide management recommendations from real data. Easy incorporation of real data is central advantage of the software and a set of related functions automatically detect what MP can be applied given the available data and what additional data are required to get other MPs working.
 
 DLMtool has been used in setting catch-limits at the Mid-Atlantic Fishery Management Council (US) and is being used to test management procedures in California state fisheries (California Deparment of Fish and Wildlife), the Caribbean (NOAA), and for seafood certification purposes (MSC). 
+
+
+\section{A note on version 2.1.1}
+
+A bug was found in which length at first capture was being sampled from a uniform distribution U(LB,UB*2) rather than U(LB,UB). This has been fixed. 
 
 
 \section{A note on version 2.1}

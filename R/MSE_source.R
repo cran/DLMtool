@@ -258,7 +258,7 @@ runMSE <- function(OM="1", MPs=NA, nsim=48, proyears=28, interval=4, pstar=0.5,
   len95<-apply(len95,1,function(x)x[!is.na(x)][1])
   
   L5 <- runif(nsim, OM@L5[1], OM@L5[2]) * lenM        # length at 0.05% selectivity ascending
-  LFS <- array(runif(nsim*50, OM@LFS[1], OM@LFS[2]*2) * lenM,dim=c(nsim,50))     # first length at 100% selection
+  LFS <- array(runif(nsim*50, OM@LFS[1], OM@LFS[2]) * lenM,dim=c(nsim,50))     # first length at 100% selection
   LFS[LFS/Linf>1]<-NA
   LFS<-apply(LFS,1,function(x)x[!is.na(x)][1])
   Vmaxlen <- runif(nsim,OM@Vmaxlen[1],OM@Vmaxlen[2])   # selectivity at maximum length (change variable name later if needed)

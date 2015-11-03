@@ -1,8 +1,8 @@
-eb5d136defdaec0581c2602cdd89ebb7 *DESCRIPTION
+65b008d30a0c944e30aff5351137eef4 *DESCRIPTION
 c729ab04e86e1d9671eb2bfb8ec1b293 *NAMESPACE
 bf05f4791760d6e1dbe9ec95be0b7c01 *R/DLM_input.R
 096cdefb0dab779017297c7491d33775 *R/DLM_output.R
-c129de3931843a1ea3c966961c9f8a15 *R/MSE_source.R
+b43b597427924343484df54fbae6d825 *R/MSE_source.R
 d90359053009c1641858472710b6a4cf *R/Source.r
 073a3ef19642527ca33caa95f2248557 *build/vignette.rds
 9b58759d962160049f308315aa575882 *data/DLMdat.RData
@@ -14,8 +14,8 @@ f73d273890ee24a4b1127e83851ff8fd *inst/Gulf_blue_tilefish.csv
 880c0f0b44158200b52743cbe8ad3453 *inst/Red_snapper.csv
 861ece053b05d44436a1e311c237bb92 *inst/Simulation_1.csv
 00003839b0186f258371b52f79f41bf6 *inst/doc/DLMtool.R
-b0b45c653e51d03e426b8c2f299afe08 *inst/doc/DLMtool.Rnw
-d3583564d6dcc68dfc49922f0833bfd7 *inst/doc/DLMtool.pdf
+10afd1305424a38ef7486a84648ffff8 *inst/doc/DLMtool.Rnw
+7312aefcc6709e21de0650ab885da01b *inst/doc/DLMtool.pdf
 0607d97e8e5a77ec5fb72f5894dc6d3c *inst/ourReefFish.csv
 9ee34e00d3c29441deb7cfd8b7ece615 *man/BK.Rd
 e3eb969eac283b790523fa1608944015 *man/BK_CC.Rd
@@ -44,7 +44,7 @@ f9f3a6d4475ed80bd7dee6dd6d35dee3 *man/DLMDataDir.Rd
 a764ff484c8d084ea8b35a1a2a317a81 *man/DLM_fease-class.Rd
 ea74a90121e800f897648c761b0654d4 *man/DLM_general-class.Rd
 7fefb5c5fab87885f9358bc4937e7fd1 *man/DLMdat.Rd
-abc0dc62edbb345eed4f1b2bed69680c *man/DLMtool-package.Rd
+0d5435cc9f0dd81e6e5f1d70d0df0f2c *man/DLMtool-package.Rd
 9e6688f914bcb65d32b0764b50a3d454 *man/DepF.Rd
 cfcc384154ed006b2bfc64fb40f013fc *man/DynF.Rd
 2920a696c3dc7a46405ccbc456ef945b *man/EDCAC.Rd
@@ -120,5 +120,5 @@ f6b351eedaf6e54dcecad0c49fae332b *man/replic8.Rd
 3108cccffadfe4403210b6e636e99924 *man/runMSE.Rd
 98d11d02fda8463a84ff2fa89f86566c *man/summary-methods.Rd
 46e08008a1640c28976d73b6f5acd1cb *vignettes/DLMtool-concordance.tex
-b0b45c653e51d03e426b8c2f299afe08 *vignettes/DLMtool.Rnw
+10afd1305424a38ef7486a84648ffff8 *vignettes/DLMtool.Rnw
 7ec15c16d0d66790f28e90343c5434a3 *vignettes/framed.sty
