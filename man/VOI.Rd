@@ -8,7 +8,7 @@ Calculate Value Of Information
 A function that relates operating model parameters and parameters of the observation model to yield (by default). A user can also specific their own utility values (Ut) which is arranged in a matrix of nsim rows and nMP columns. 
 }
 \usage{
-VOI(MSEobj, ncomp = 6, nbins = 10, maxrow = 8, Ut = NA, Utnam = "Utility")
+VOI(MSEobj, ncomp = 6, nbins = 8, maxrow = 8, Ut = NA, Utnam = "Utility")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

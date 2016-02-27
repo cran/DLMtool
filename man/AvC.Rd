@@ -1,14 +1,14 @@
-\name{MCD}
-\alias{MCD}
+\name{AvC}
+\alias{AvC}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Mean Catch Depletion
+An MP where the TAC is average historical catch 
 }
 \description{
-A simple average catch-depletion MP that was included to demonstrate just how informative an estimate of current stock depletion can be. TAC=2*D*AvC
+A simple average catch MP that is included to demonstrate a 'status quo' management option.
 }
 \usage{
-MCD(x, DLM_data, reps = 100)
+AvC(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

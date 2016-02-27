@@ -20,11 +20,14 @@ Objects can be created by calls of the form \code{new("DLM_data", stock)}.
     \item{\code{t}:}{The number of years corresponding to AvC and Dt}
     \item{\code{AvC}:}{Average catch over time t}
     \item{\code{Dt}:}{Depletion over time t e.g. Bnow/Bthen}
+    \item{\code{ML}:}{Mean length time series}
     \item{\code{Mort}:}{Natural mortality rate}
     \item{\code{FMSY_M}:}{An assumed ratio of FMSY to M}
     \item{\code{BMSY_B0}:}{The most productive stock size relative to unfished}
     \item{\code{L50}:}{Length at 50 percent maturity}
     \item{\code{L95}:}{Length at 95 percent maturity}
+    \item{\code{Lbar}:}{Mean length of catches over Lc (modal length)}
+    \item{\code{Lc}:}{Modal length}
     \item{\code{LFC}:}{Length at first capture}
     \item{\code{LFS}:}{smallest Length at full selection}
     \item{\code{CAA}:}{Catch at Age data}
@@ -80,6 +83,7 @@ Objects can be created by calls of the form \code{new("DLM_data", stock)}.
     \item{\code{Rec}:}{Recent recruitment strength}
     \item{\code{MPrec}:}{The previous recommendation of a management proceedure}
     \item{\code{LHYear}:}{The last historical year of the simulation (before projection)}
+    \item{\code{Misc}:}{Optional list which is passed to MPs}
   }
 }
 \section{Methods}{

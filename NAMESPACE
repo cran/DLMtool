@@ -1,4 +1,3 @@
-#exportPattern("^[[:alpha:]]+")
 exportMethods(
     "initialize",
     "plot",
@@ -6,6 +5,7 @@ exportMethods(
 )
 export(
     "avail",
+    "AvC",
     "BK",
     "BK_CC",
     "BK_ML",
@@ -13,6 +13,8 @@ export(
     "Cant",
     "CC1",
     "CC4",
+    "ChooseEffort",
+	"ChooseSelect",
     "CompSRA",
     "CompSRA4010",
     "curE",
@@ -29,6 +31,8 @@ export(
     "DD4010",
     "DepF",
     "DLMDataDir",
+    "DOM",
+	"DoOpt",
     "DynF",
     "EDCAC",
     "Fadapt",
@@ -53,17 +57,35 @@ export(
     "Islope4",
     "Itarget1",
     "Itarget4",
+    "IT5",
+    "IT10",
+    "ITM",
+	"KalmanFilter",
+    "L2A",
+	"LBSPRSim",
+	"LBSPR",
+	"LBSPR_ItTAC",
+	"LBSPR_ItEff",
+	"LBSPR_ItSel",
     "LstepCC1",
     "LstepCC4",
     "Ltarget1",
     "Ltarget4",
-    "matagelim",
+    "matlenlim",
+	"matlenlim2",
     "MCD",
     "MCD4010",
+    "ML2D",
     "MRreal",
     "MRnoreal",
+    "NAor0",
+    "NOAA_plot",
+	"OptFun",
+    "plotOFL",
+	"SetRecruitCycle",
     "SPmod",
     "SPslope",
+    "Sub",
     "movfit",
     "Needed",
     "qopt",
@@ -72,6 +94,7 @@ export(
     "replic8",
     "Required",
     "runMSE",
+	"runInMP",
     "Sam",
     "SBT1",
     "SBT2",
@@ -80,6 +103,7 @@ export(
     "SPSRA",
     "SPSRA_ML",
     "TAC",
+	"TradePlot",
     "Tplot",
     "Tplot2",
     "CheckConverg",
@@ -108,12 +132,13 @@ import(
     "parallel",
     "methods"
 )
-importFrom("grDevices", "col2rgb", "rainbow", "rgb")
+importFrom("grDevices", "col2rgb", "rainbow", "rgb", "xy.coords")
 importFrom("graphics", "abline", "hist", "layout", "legend", "lines",
-               "matplot", "mtext", "par", "points", "text","axis")
+               "matplot", "mtext", "par", "points", "text","axis","identify",
+			   "polygon", "title")
 importFrom("stats", "coef", "density", "dlnorm", "dnorm", "lm",
                "loess", "optim", "optimise", "optimize", "predict",
                "qlnorm", "quantile", "rbeta", "rlnorm", "rmultinom",
-               "rnorm", "runif", "sd", "uniroot")
+               "rnorm", "runif", "sd", "uniroot", "approx", "dbeta", "nlm", "pnorm")
 importFrom("utils", "flush.console", "read.csv")
 

@@ -19,7 +19,7 @@ getn<-function(BMSY_K){               # wrapper for n finder
    optimize(fn,c(0.01,6),BMSY_K=BMSY_K)$minimum #get the optimum
 }
 
-gety<-function(n)  (n^(n/(n-1)))/(n-1) # Mmore DBSRA code: get the y parameter for n
+gety<-function(n)  (n^(n/(n-1)))/(n-1) # More DBSRA code: get the y parameter for n
 
 FMSYref<-function(x,DLM_data,reps=100)trlnorm(reps,DLM_data@OM$A[x]*(1-exp(-DLM_data@OM$FMSY[x])),0.01)
 class(FMSYref)<-"DLM_output"
@@ -29,7 +29,6 @@ class(FMSYref50)<-"DLM_output"
 
 FMSYref75<-function(x,DLM_data,reps=100)trlnorm(reps,DLM_data@OM$A[x]*(1-exp(-DLM_data@OM$FMSY[x]))*0.75,0.01)
 class(FMSYref75)<-"DLM_output"
-
 
 DynF<-function(x,DLM_data,yrsmth=10,gg=2,reps=100){
     
@@ -68,7 +67,6 @@ DynF<-function(x,DLM_data,yrsmth=10,gg=2,reps=100){
   
 }
 class(DynF)<-"DLM_output"
-
 
 Fadapt<-function(x,DLM_data,reps=100,yrsmth=7,gg=1){
   
@@ -113,6 +111,7 @@ class(Fadapt)<-"DLM_output"
 DepF<-function(x,DLM_data,reps=100){
   dependencies="DLM_data@Year, DLM_data@Dep, DLM_data@Mort, DLM_data@FMSY_M, DLM_data@BMSY_B0"
   Frat<-trlnorm(reps,DLM_data@Mort[x],DLM_data@CV_Mort[x])*trlnorm(reps,DLM_data@FMSY_M[x],DLM_data@CV_FMSY_M[x])
+  if (is.na(DLM_data@Dep[x]) | is.na(DLM_data@CV_Dep[x])) return(NA)
   depo<-max(0.01,min(0.99,DLM_data@Dep[x]))  # known depletion is between 1% and 99% - needed to generalise the Dick and MacCall method to extreme depletion scenarios
   Bt_K<-rbeta(reps*100,alphaconv(depo,min(depo*DLM_data@CV_Dep[x],(1-depo)*DLM_data@CV_Dep[x])),betaconv(depo,min(depo*DLM_data@CV_Dep[x],(1-depo)*DLM_data@CV_Dep[x])))  # CV 0.25 is the default for Dick and MacCall mu=0.4, sd =0.1
   Bt_K<-Bt_K[Bt_K>=0.01&Bt_K<=0.99][1:reps] # interval censor (0.01,0.99)  as in Dick and MacCall 2011
@@ -231,7 +230,6 @@ Rcontrol2<-function(x,DLM_data,reps=100,yrsmth=10,gg=2,glim=c(0.5,2)){
 }
 class(Rcontrol2)<-"DLM_output"
 
-
 GB_CC<-function(x,DLM_data,reps=100){
   dependencies="DLM_data@Cref,DLM_data@Cat"
   Catrec<-DLM_data@Cat[x,length(DLM_data@Cat[x,])]
@@ -294,17 +292,17 @@ class(CC4)<-"DLM_output"
 
 
 LstepCC1<-function(x,DLM_data,reps=100,yrsmth=5,xx=0,stepsz=0.05,llim=c(0.96,0.98,1.05)){
-  dependencies="DLM_data@Cat, DLM_data@CV_Cat, DLM_data@CAL, DLM_data@CAL_bins"
-  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year)
-  C_dat<-DLM_data@Cat[x,ind]
-  if(is.na(DLM_data@MPrec[x])){TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
+  dependencies="DLM_data@Cat, DLM_data@CV_Cat, DLM_data@ML"
+  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year) # recent 5 years
+  ylast<-(DLM_data@LHYear-DLM_data@Year[1])+1 #last historical year
+  ind2<-((ylast-(yrsmth-1)):ylast) # historical 5 pre-projection years
+  ind3<-((ylast-(yrsmth*2-1)):ylast) # historical 10 pre-projection years
+  C_dat<-DLM_data@Cat[x,ind2]
+  if(length(DLM_data@Year)==ylast+1) {TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
   }else{TACstar<-rep(DLM_data@MPrec[x],reps)}
   step<-stepsz*TACstar
-  binval<-DLM_data@CAL_bins[1:(length(DLM_data@CAL_bins)-1)]+(DLM_data@CAL_bins[2]-DLM_data@CAL_bins[1])/2
-  CALdat<-DLM_data@CAL[x,,]*rep(binval,each=dim(DLM_data@CAL)[2]) 
-  avCAL<-apply(CALdat,1,sum)/apply(DLM_data@CAL[x,,],1,sum)
-  Lrecent<-mean(avCAL[ind])
-  Lave<-mean(avCAL[(length(DLM_data@Year)-(yrsmth*2-1)):length(DLM_data@Year)])
+  Lrecent<-mean(DLM_data@ML[ind])
+  Lave<-mean(DLM_data@ML[ind3])
   rat<-Lrecent/Lave
   if(rat<llim[1]){TAC<-TACstar-2*step
   }else if(rat<llim[2]){TAC<-TACstar-step
@@ -316,17 +314,17 @@ LstepCC1<-function(x,DLM_data,reps=100,yrsmth=5,xx=0,stepsz=0.05,llim=c(0.96,0.9
 class(LstepCC1)<-"DLM_output"
 
 LstepCC4<-function(x,DLM_data,reps=100,yrsmth=5,xx=0.3,stepsz=0.05,llim=c(0.96,0.98,1.05)){
-  dependencies="DLM_data@Cat, DLM_data@CV_Cat, DLM_data@CAL, DLM_data@CAL_bins"
-  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year)
-  C_dat<-DLM_data@Cat[x,ind]
-  if(is.na(DLM_data@MPrec[x])){TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
+  dependencies="DLM_data@Cat, DLM_data@CV_Cat, DLM_data@ML"
+  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year) # recent 5 years
+  ylast<-(DLM_data@LHYear-DLM_data@Year[1])+1 #last historical year
+  ind2<-((ylast-(yrsmth-1)):ylast) # historical 5 pre-projection years
+  ind3<-((ylast-(yrsmth*2-1)):ylast) # historical 10 pre-projection years
+  C_dat<-DLM_data@Cat[x,ind2]
+  if(length(DLM_data@Year)==ylast+1) {TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
   }else{TACstar<-rep(DLM_data@MPrec[x],reps)}
   step<-stepsz*TACstar
-  binval<-DLM_data@CAL_bins[1:(length(DLM_data@CAL_bins)-1)]+(DLM_data@CAL_bins[2]-DLM_data@CAL_bins[1])/2
-  CALdat<-DLM_data@CAL[x,,]*rep(binval,each=dim(DLM_data@CAL)[2]) 
-  avCAL<-apply(CALdat,1,sum)/apply(DLM_data@CAL[x,,],1,sum)
-  Lrecent<-mean(avCAL[ind])
-  Lave<-mean(avCAL[(length(DLM_data@Year)-(yrsmth*2-1)):length(DLM_data@Year)])
+  Lrecent<-mean(DLM_data@ML[ind])
+  Lave<-mean(DLM_data@ML[ind3])
   rat<-Lrecent/Lave
   if(rat<llim[1]){TAC<-TACstar-2*step
   }else if(rat<llim[2]){TAC<-TACstar-step
@@ -338,16 +336,15 @@ LstepCC4<-function(x,DLM_data,reps=100,yrsmth=5,xx=0.3,stepsz=0.05,llim=c(0.96,0
 class(LstepCC4)<-"DLM_output"
 
 Ltarget1<-function(x,DLM_data,reps=100,yrsmth=5,xx=0,xL=1.05){
-  dependencies="DLM_data@Cat, DLM_data@CV_Cat, DLM_data@CAL, DLM_data@CAL_bins"
-  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year)
-  C_dat<-DLM_data@Cat[x,ind]
+  dependencies="DLM_data@Cat, DLM_data@CV_Cat, DLM_data@ML"
+  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year) # recent 5 years
+  ylast<-(DLM_data@LHYear-DLM_data@Year[1])+1 #last historical year
+  ind2<-((ylast-(yrsmth-1)):ylast) # historical 5 pre-projection years
+  ind3<-((ylast-(yrsmth*2-1)):ylast) # historical 10 pre-projection years
+  C_dat<-DLM_data@Cat[x,ind2]
   TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
-  #step<-stepsz*TACstar
-  binval<-DLM_data@CAL_bins[1:(length(DLM_data@CAL_bins)-1)]+(DLM_data@CAL_bins[2]-DLM_data@CAL_bins[1])/2
-  CALdat<-DLM_data@CAL[x,,]*rep(binval,each=dim(DLM_data@CAL)[2]) 
-  avCAL<-apply(CALdat,1,sum)/apply(DLM_data@CAL[x,,],1,sum)
-  Lrecent<-mean(avCAL[ind])
-  Lave<-mean(avCAL[(length(DLM_data@Year)-(yrsmth*2-1)):length(DLM_data@Year)])
+  Lrecent<-mean(DLM_data@ML[ind])
+  Lave<-mean(DLM_data@ML[ind3])
   L0<-0.9*Lave
   Ltarget<-xL*Lave
   if(Lrecent>L0){TAC<-0.5*TACstar*(1+((Lrecent-L0)/(Ltarget-L0)))
@@ -358,16 +355,15 @@ Ltarget1<-function(x,DLM_data,reps=100,yrsmth=5,xx=0,xL=1.05){
 class(Ltarget1)<-"DLM_output"
 
 Ltarget4<-function(x,DLM_data,reps=100,yrsmth=5,xx=0.2,xL=1.15){
-  dependencies="DLM_data@Cat, DLM_data@CV_Cat, DLM_data@CAL, DLM_data@CAL_bins"
-  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year)
-  C_dat<-DLM_data@Cat[x,ind]
+  dependencies="DLM_data@Cat, DLM_data@CV_Cat, DLM_data@ML"
+  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year) # recent 5 years
+  ylast<-(DLM_data@LHYear-DLM_data@Year[1])+1 #last historical year
+  ind2<-((ylast-(yrsmth-1)):ylast) # historical 5 pre-projection years
+  ind3<-((ylast-(yrsmth*2-1)):ylast) # historical 10 pre-projection years
+  C_dat<-DLM_data@Cat[x,ind2]
   TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
-  #step<-stepsz*TACstar
-  binval<-DLM_data@CAL_bins[1:(length(DLM_data@CAL_bins)-1)]+(DLM_data@CAL_bins[2]-DLM_data@CAL_bins[1])/2
-  CALdat<-DLM_data@CAL[x,,]*rep(binval,each=dim(DLM_data@CAL)[2]) 
-  avCAL<-apply(CALdat,1,sum)/apply(DLM_data@CAL[x,,],1,sum)
-  Lrecent<-mean(avCAL[ind])
-  Lave<-mean(avCAL[(length(DLM_data@Year)-(yrsmth*2-1)):length(DLM_data@Year)])
+  Lrecent<-mean(DLM_data@ML[ind])
+  Lave<-mean(DLM_data@ML[ind3])
   L0<-0.9*Lave
   Ltarget<-xL*Lave
   if(Lrecent>L0){TAC<-0.5*TACstar*(1+((Lrecent-L0)/(Ltarget-L0)))
@@ -377,12 +373,52 @@ Ltarget4<-function(x,DLM_data,reps=100,yrsmth=5,xx=0.2,xL=1.15){
 }  
 class(Ltarget4)<-"DLM_output"
 
+
+Itarget1<-function(x,DLM_data,reps=100,yrsmth=5,xx=0,Imulti=1.5){
+  dependencies="DLM_data@Cat, DLM_data@CV_Cat"
+  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year) # recent 5 years
+  ylast<-(DLM_data@LHYear-DLM_data@Year[1])+1 #last historical year
+  ind2<-((ylast-(yrsmth-1)):ylast) # historical 5 pre-projection years
+  ind3<-((ylast-(yrsmth*2-1)):ylast) # historical 10 pre-projection years
+  C_dat<-DLM_data@Cat[x,ind2] 
+  TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
+  Irecent<-mean(DLM_data@Ind[x,ind])
+  Iave<-mean(DLM_data@Ind[x,ind3])
+  Itarget<-Iave*Imulti
+  I0<-0.8*Iave
+  if(Irecent>I0){TAC<-0.5*TACstar*(1+((Irecent-I0)/(Itarget-I0)))
+  }else{TAC<-0.5*TACstar*(Irecent/I0)^2}
+  TACfilter(TAC)  
+}  
+class(Itarget1)<-"DLM_output"
+
+Itarget4<-function(x,DLM_data,reps=100,yrsmth=5,xx=0.3,Imulti=2.5){
+  dependencies="DLM_data@Cat, DLM_data@CV_Cat"
+  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year) # recent 5 years
+  ylast<-(DLM_data@LHYear-DLM_data@Year[1])+1 #last historical year
+  ind2<-((ylast-(yrsmth-1)):ylast) # historical 5 pre-projection years
+  ind3<-((ylast-(yrsmth*2-1)):ylast) # historical 10 pre-projection years
+  C_dat<-DLM_data@Cat[x,ind2] 
+  TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
+  Irecent<-mean(DLM_data@Ind[x,ind])
+  Iave<-mean(DLM_data@Ind[x,ind3])
+  Itarget<-Iave*Imulti
+  I0<-0.8*Iave
+  if(Irecent>I0){TAC<-0.5*TACstar*(1+((Irecent-I0)/(Itarget-I0)))
+  }else{TAC<-0.5*TACstar*(Irecent/I0)^2}
+  TACfilter(TAC)  
+}  
+class(Itarget4)<-"DLM_output"
+
+
 Islope1<-function(x,DLM_data,reps=100,yrsmth=5,lambda=0.4,xx=0.2){
   dependencies="DLM_data@Year, DLM_data@Cat, DLM_data@CV_Cat, DLM_data@Ind"
   ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year)
+  ylast<-(DLM_data@LHYear-DLM_data@Year[1])+1 #last historical year
   C_dat<-DLM_data@Cat[x,ind]
-  if(is.na(DLM_data@MPrec[x])){TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
+  if(length(DLM_data@Year)==ylast+1) {TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
   }else{TACstar<-rep(DLM_data@MPrec[x],reps)}
+    
   I_hist<-DLM_data@Ind[x,ind]
   yind<-1:yrsmth
   slppar<-summary(lm(I_hist~yind))$coefficients[2,1:2]
@@ -395,8 +431,9 @@ class(Islope1)<-"DLM_output"
 Islope4<-function(x,DLM_data,reps=100,yrsmth=5,lambda=0.2,xx=0.4){
   dependencies="DLM_data@Year, DLM_data@Cat, DLM_data@CV_Cat, DLM_data@Ind"
   ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year)
+  ylast<-(DLM_data@LHYear-DLM_data@Year[1])+1 #last historical year
   C_dat<-DLM_data@Cat[x,ind]
-  if(is.na(DLM_data@MPrec[x])){TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
+  if(length(DLM_data@Year)==ylast+1) {TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
   }else{TACstar<-rep(DLM_data@MPrec[x],reps)}
   I_hist<-DLM_data@Ind[x,ind]
   yind<-1:yrsmth
@@ -407,35 +444,54 @@ Islope4<-function(x,DLM_data,reps=100,yrsmth=5,lambda=0.2,xx=0.4){
 }
 class(Islope4)<-"DLM_output"
 
-Itarget1<-function(x,DLM_data,reps=100,yrsmth=5,xx=0,Imulti=1.5){
-  dependencies="DLM_data@Cat, DLM_data@CV_Cat, DLM_data@CAL, DLM_data@CAL_bins"
-  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year)
-  C_dat<-DLM_data@Cat[x,ind]
-  TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
-  Irecent<-mean(DLM_data@Ind[x,ind])
-  Iave<-mean(DLM_data@Ind[x,(length(DLM_data@Year)-(yrsmth*2-1)):length(DLM_data@Year)])
-  Itarget<-Iave*Imulti
-  I0<-0.8*Iave
-  if(Irecent>I0){TAC<-0.5*TACstar*(1+((Irecent-I0)/(Itarget-I0)))
-  }else{TAC<-0.5*TACstar*(Irecent/I0)^2}
-  TACfilter(TAC)  
-}  
-class(Itarget1)<-"DLM_output"
 
-Itarget4<-function(x,DLM_data,reps=100,yrsmth=5,xx=0.3,Imulti=2.5){
-  dependencies="DLM_data@Cat, DLM_data@CV_Cat, DLM_data@CAL, DLM_data@CAL_bins"
-  ind<-(length(DLM_data@Year)-(yrsmth-1)):length(DLM_data@Year)
-  C_dat<-DLM_data@Cat[x,ind]
-  TACstar<-(1-xx)*trlnorm(reps,mean(C_dat),DLM_data@CV_Cat/(yrsmth^0.5))
-  Irecent<-mean(DLM_data@Ind[x,ind])
-  Iave<-mean(DLM_data@Ind[x,(length(DLM_data@Year)-(yrsmth*2-1)):length(DLM_data@Year)])
-  Itarget<-Iave*Imulti
-  I0<-0.8*Iave
-  if(Irecent>I0){TAC<-0.5*TACstar*(1+((Irecent-I0)/(Itarget-I0)))
-  }else{TAC<-0.5*TACstar*(Irecent/I0)^2}
-  TACfilter(TAC)  
-}  
-class(Itarget4)<-"DLM_output"
+
+
+IT10<-function(x,DLM_data,reps=100,yrsmth=5,mc=0.1){
+  
+  dependencies="DLM_data@Ind, DLM_data@Cat, DLMdata@CV_Ind, DLMdata@Iref"
+  ind<-max(1,(length(DLM_data@Year)-yrsmth+1)):length(DLM_data@Year)
+  
+  
+  
+  deltaI<-mean(DLM_data@Ind[x,ind])/DLM_data@Iref[x]
+  if(deltaI<(1-mc))deltaI<-1-mc
+  if(deltaI>(1+mc))deltaI<-1+mc
+  
+  TAC<-DLM_data@MPrec[x]*deltaI*trlnorm(reps,1,DLM_data@CV_Ind[x])
+  TAC
+}
+class(IT10)<-"DLM_output"
+
+IT5<-function(x,DLM_data,reps=100,yrsmth=5,mc=0.05){
+  
+  dependencies="DLM_data@Ind, DLM_data@Cat, DLMdata@CV_Ind, DLMdata@Iref"
+  ind<-max(1,(length(DLM_data@Year)-yrsmth+1)):length(DLM_data@Year)
+  deltaI<-mean(DLM_data@Ind[x,ind])/DLM_data@Iref[x]
+  if(deltaI<(1-mc))deltaI<-1-mc
+  if(deltaI>(1+mc))deltaI<-1+mc
+  
+  TAC<-DLM_data@MPrec[x]*deltaI*trlnorm(reps,1,DLM_data@CV_Ind[x])
+  TAC
+}
+class(IT5)<-"DLM_output"
+
+ITM<-function(x,DLM_data,reps=100){
+  
+  dependencies="DLM_data@Ind, DLM_data@Cat, DLMdata@CV_Ind, DLMdata@Iref, DLMdata@Mort"
+  mc<-(5+DLM_data@Mort[x]*25)/100
+  if(mc>0.2)mc<-0.2
+  yrsmth<-floor(4*(1/DLM_data@Mort[x])^(1/4))
+  ind<-max(1,(length(DLM_data@Year)-yrsmth+1)):length(DLM_data@Year)
+  
+  deltaI<-mean(DLM_data@Ind[x,ind])/DLM_data@Iref[x]
+  if(deltaI<(1-mc))deltaI<-1-mc
+  if(deltaI>(1+mc))deltaI<-1+mc
+  
+  TAC<-DLM_data@MPrec[x]*deltaI*trlnorm(reps,1,DLM_data@CV_Ind[x])
+  TAC
+}
+class(ITM)<-"DLM_output"
 
 SPmod<-function(x,DLM_data,reps=100,alp=c(0.8,1.2),bet=c(0.8,1.2)){
   dependencies="DLM_data@Cat, DLM_data@Ind, DLM_data@Abun"
@@ -485,7 +541,6 @@ SPslope<-function(x,DLM_data,reps=100,yrsmth=4,alp=c(0.9,1.1),bet=c(1.5,0.9)){
   TACfilter(TAC)
 }
 class(SPslope)<-"DLM_output"
-
 
 SBT1<-function(x,DLM_data,reps=100,yrsmth=10,k1=1.5,k2=3,gamma=1){
   dependencies="DLM_data@Cat, DLM_data@Year, DLM_data@Ind"
@@ -681,6 +736,7 @@ DBSRA<-function(x,DLM_data,reps=100){  # returns a vector of DBSRA estimates of 
   C_hist<-DLM_data@Cat[x,]
   TAC<-rep(NA,reps)
   DBSRAcount<-1
+  if (is.na(DLM_data@Dep[x]) | is.na(DLM_data@CV_Dep[x])) return(NA)
   while(DBSRAcount<(reps+1)){
     depo<-max(0.01,min(0.99,DLM_data@Dep[x]))  # known depletion is between 1% and 99% - needed to generalise the Dick and MacCall method to extreme depletion scenarios
     Bt_K<-rbeta(100,alphaconv(depo,min(depo*DLM_data@CV_Dep[x],(1-depo)*DLM_data@CV_Dep[x])),betaconv(depo,min(depo*DLM_data@CV_Dep[x],(1-depo)*DLM_data@CV_Dep[x])))  # CV 0.25 is the default for Dick and MacCall mu=0.4, sd =0.1
@@ -725,6 +781,7 @@ DBSRA_40<-function(x,DLM_data,reps=100){  # returns a vector of DBSRA estimates 
   C_hist<-DLM_data@Cat[x,]
   TAC<-rep(NA,reps)
   DBSRAcount<-1
+  if (is.na(DLM_data@Dep[x]) | is.na(DLM_data@CV_Dep[x])) return(NA)
   while(DBSRAcount<(reps+1)){
     depo<-0.4
     Bt_K<-rbeta(100,alphaconv(depo,min(depo*DLM_data@CV_Dep[x],(1-depo)*DLM_data@CV_Dep[x])),betaconv(depo,min(depo*DLM_data@CV_Dep[x],(1-depo)*DLM_data@CV_Dep[x])))  # CV 0.25 is the default for Dick and MacCall mu=0.4, sd =0.1
@@ -757,6 +814,7 @@ DBSRA_ML<-function(x,DLM_data,reps=100){
   C_hist<-DLM_data@Cat[x,]
   TAC<-rep(NA,reps)
   DBSRAcount<-1
+  if (is.na(DLM_data@Dep[x]) | is.na(DLM_data@CV_Dep[x])) return(NA)
   while(DBSRAcount<(reps+1)){
     Linfc<-trlnorm(1,DLM_data@vbLinf[x],DLM_data@CV_vbLinf[x])
     Kc<-trlnorm(1,DLM_data@vbK[x],DLM_data@CV_vbK[x])
@@ -800,6 +858,7 @@ DBSRA4010<-function(x,DLM_data,reps=100){  # returns a vector of DBSRA estimates
   C_hist<-DLM_data@Cat[x,]
   TAC<-rep(NA,reps)
   DBSRAcount<-1
+  if (is.na(DLM_data@Dep[x]) | is.na(DLM_data@CV_Dep[x])) return(NA)
   while(DBSRAcount<(reps+1)){
     depo<-max(0.01,min(0.99,DLM_data@Dep[x]))  # known depletion is between 1% and 99% - needed to generalise the Dick and MacCall method to extreme depletion scenarios
     Bt_K<-rbeta(100,alphaconv(depo,min(depo*DLM_data@CV_Dep[x],(1-depo)*DLM_data@CV_Dep[x])),betaconv(depo,min(depo*DLM_data@CV_Dep[x],(1-depo)*DLM_data@CV_Dep[x])))  # CV 0.25 is the default for Dick and MacCall mu=0.4, sd =0.1
@@ -867,6 +926,7 @@ C_tot<-nyearsDCAC<-NULL
 
 DCAC<-function(x,DLM_data,reps=100){
   dependencies="DLM_data@AvC, DLM_data@t, DLM_data@Mort, DLM_data@CV_Mort, DLM_data@Dt, DLM_data@CV_Dt, DLM_data@BMSY_B0, DLM_data@CV_BMSY_B0"
+  if (is.na(DLM_data@BMSY_B0[x]) | is.na(DLM_data@CV_BMSY_B0[x])) return(NA)
   C_tot<-DLM_data@AvC[x]*DLM_data@t[x]
   Mdb<-trlnorm(reps,DLM_data@Mort[x],DLM_data@CV_Mort[x])   # CV of 0.5 as in MacCall 2009
   FMSY_M<-trlnorm(reps,DLM_data@FMSY_M[x],DLM_data@CV_FMSY_M[x]) # standard deviation of 0.2 - referred to as 'standard error' in MacCall 2009
@@ -939,6 +999,7 @@ BK<-function(x,DLM_data,reps=100){   # Beddington and Kirkwood life-history anal
 }  # end of BK
 class(BK)<-"DLM_output"
 
+
 BK_CC<-function(x,DLM_data,reps=100,Fmin=0.005){
   dependencies="DLM_data@LFC, DLM_data@vbLinf, DLM_data@CV_vbLinf, DLM_data@vbK, DLM_data@CV_vbK, DLM_data@CAA, DLM_data@Mort"
   Lc<-trlnorm(reps,DLM_data@LFC[x],0.2)
@@ -984,8 +1045,7 @@ BK_ML<-function(x,DLM_data,reps=100){
 class(BK_ML)<-"DLM_output"
 
 Fratio<-function(x,DLM_data,reps=100){  # FMSY / M ratio method e.g. Gulland ===============================================================================
-  depends="DLM_data@Abun,DLM_data@CV_Abun,DLM_data@FMSY_M,
-          DLM_data@CV_FMSY_M,DLM_data@Mort,DLM_data@CV_Mort"
+  depends="DLM_data@Abun,DLM_data@CV_Abun,DLM_data@FMSY_M, DLM_data@CV_FMSY_M,DLM_data@Mort,DLM_data@CV_Mort"
   Ac<-trlnorm(reps,DLM_data@Abun[x],DLM_data@CV_Abun[x])
   TACfilter(Ac*trlnorm(reps,DLM_data@Mort[x],
             DLM_data@CV_Mort[x])*trlnorm(reps,DLM_data@FMSY_M[x],DLM_data@CV_FMSY_M[x]))
@@ -1685,17 +1745,37 @@ MLne<-function(x,DLM_data,Linfc,Kc,ML_reps=100,MLtype="F"){
   mlbin<-(DLM_data@CAL_bins[1:nlbin]+DLM_data@CAL_bins[2:(nlbin+1)])/2
   nbreaks<-1
   Z<-matrix(NA,nrow=ML_reps,ncol=nbreaks+1)
+  Z2<-rep(NA,nrow=ML_reps)
   for(i in 1:ML_reps){
     mlen<-rep(NA,length(year))
-    for(y in 1:length(year))mlen[y]<-mean(sample(mlbin,ceiling(sum(DLM_data@CAL[x,y,])/2),replace=T,prob=DLM_data@CAL[x,y,]))
-    ss<-ceiling(apply(DLM_data@CAL[x,,],1,sum)/2)
-    Z[i,]<-bhnoneq(year=year,mlen=mlen,ss=ss,K=Kc[i],Linf=Linfc[i],Lc=DLM_data@LFS[x],nbreaks=nbreaks,
-            styrs=ceiling(length(year)*((1:nbreaks)/(nbreaks+1))),stZ=rep(0.05,nbreaks+1),stsigma=20,graph=F)
+     ss<-ceiling(apply(DLM_data@CAL[x,,],1,sum)/2)
+    if(MLtype=="dep"){
+      for(y in 1:length(year)) {
+	    if (sum(DLM_data@CAL[x,y,] > 0) > 0.25 * length(DLM_data@CAL[x,y,])) {
+	      mlen[y]<-mean(sample(mlbin,ceiling(sum(DLM_data@CAL[x,y,])/2),replace=T,prob=DLM_data@CAL[x,y,]), na.rm=TRUE)
+		}  
+	  }
+      Z[i,]<-bhnoneq(year=year,mlen=mlen,ss=ss,K=Kc[i],Linf=Linfc[i],Lc=DLM_data@LFS[x],nbreaks=nbreaks,
+           styrs=ceiling(length(year)*((1:nbreaks)/(nbreaks+1))),stZ=rep(0.05,nbreaks+1),stsigma=20,graph=F)
+    }else{
+      
+      ind<-(which.min(((DLM_data@CAL_bins-DLM_data@LFS[x])^2)^0.5)-1):(length(DLM_data@CAL_bins)-1)
+      for(y in 1:length(year)) {
+	    if (sum(DLM_data@CAL[x,y,] > 0) > 0.25 * length(DLM_data@CAL[x,y,])) {
+		  mlen[y]<-mean(sample(mlbin[ind],ceiling(sum(DLM_data@CAL[x,y,ind])/2),replace=T,prob=DLM_data@CAL[x,y,ind]), na.rm=TRUE)
+		}
+      }		
+      mlen<-mean(mlen[(length(mlen)-2):length(mlen)], na.rm=TRUE)
+      Z2<-bheq(K=Kc[i],Linf=Linfc[i],Lc=DLM_data@LFS[x],Lbar=mlen)
+    }
   }
-  if(MLtype=="F")return(Z[,ncol(Z)])
+  if(MLtype=="F")return(Z2)
   if(MLtype=="dep")return(Z)
 }
 
+bheq<-function(K,Linf,Lc,Lbar){
+  K*(Linf-Lbar)/(Lbar-Lc)
+}
 
 bhnoneq<-function (year = NULL, mlen = NULL, ss = NULL, K = NULL, Linf = NULL,
     Lc = NULL, nbreaks = NULL, styrs = NULL, stZ = NULL, stsigma = NULL,
@@ -1857,22 +1937,6 @@ getr <- function(x,DLM_data,Mvec,Kvec,Linfvec,t0vec,hvec,maxage,r_reps=100){
   r
 }
 
-
-matlenlim<-function(x,DLM_data){ # Knife-edge vulnerability at a multiple of L50 
-  dependencies="DLM_data@L50, DLM_data@MaxAge, DLM_data@vbLinf, DLM_data@vbK, DLM_data@vbt0"
-  Allocate<-1
-  Effort<-1
-  Spatial<-c(1,1)
-  ages <- 1:DLM_data@MaxAge
-  lenAge <- DLM_data@vbLinf[x] * (1-exp(-(DLM_data@vbK[x] * (ages-DLM_data@vbt0[x]))))
-  lenAge <- matrix(lenAge, nrow=x, ncol=length(lenAge), byrow=TRUE)
-  Multi <- 1.15
-  Multi2 <- 1
-  Vuln <- SelectFun(x, DLM_data@L50*Multi2, DLM_data@L50*Multi, MaxSel=rep(1,x), Linfs=DLM_data@vbLinf[x], Lens=lenAge)
-  c(Allocate, Effort, Spatial, Vuln)
-}
-class(matlenlim)<-"DLM_input"
-
 iVB<-function(t0,K,Linf,L)((-log(1-L/Linf))/K+t0) # Inverse Von-B
 
 EDCAC<-function (x, DLM_data, reps = 100) # extended depletion-corrected average catch (Harford and Carruthers 2015)
@@ -1889,3 +1953,79 @@ EDCAC<-function (x, DLM_data, reps = 100) # extended depletion-corrected average
   TACfilter(TAC)
 }
 class(EDCAC)<-"DLM_output"
+
+AvC<-function(x,DLM_data,reps=100)rlnorm(reps,log(mean(DLM_data@Cat[x,],na.rm=T)),0.2)
+class(AvC)<-"DLM_output"
+
+
+LBSPR_ItTAC <- function(x, DLM_data, yrsmth=1,reps=reps) {
+ dependencies="DLM_data@CAL, DLM_data@CAL_bins, DLM_data@vbLinf, DLM_data@vbK, DLM_data@Mort, LM_data@vbK, DLM_data@L50, DLM_data@L95, DLM_data@wlb" 
+  
+  MiscList <- LBSPR(x, DLM_data, yrsmth=yrsmth,reps=reps)
+
+  XX <- 1:4 
+  YY <- MiscList[[2]][(length(MiscList[[2]]) - (max(XX)-1)):length(MiscList[[2]])]
+  
+  EstSPR <- YY[length(YY)]
+  
+  TgSPR <- 0.4
+  h <- DLM_data@steep[x]
+  SPRLim <- -(2*(h-1))/(3*h+1) # SPR that results in 0.5 R0
+  
+  phi1 <- 6
+  phi2 <- 1
+  
+  MaxDw <- -0.3
+  MaxUp <- 0.3
+  
+  minSlope <- 0.01
+  
+  Slope <- coef(lm(YY~XX))[2]  
+  # if (abs(Slope) < minSlope) Slope <- 0 
+  Dist <- EstSPR - TgSPR 
+  
+  # Control Rule #
+  Mod <- 0 
+  Buff <- 0.1
+  Buffer <- c(TgSPR - Buff,  TgSPR + Buff)
+  inBuff <- FALSE
+  belowTG <- FALSE 
+  aboveTG <- FALSE
+  slopeUp <- FALSE
+  slopeDw <- FALSE 
+  belowLim <- FALSE
+  if (Dist < 0) belowTG <- TRUE 
+  if (Dist > 0) aboveTG <- TRUE 
+  if (EstSPR > min(Buffer) & EstSPR < max(Buffer)) inBuff <- TRUE
+  if (Slope <= 0) slopeDw <- TRUE
+  if (Slope > 0) slopeUp <- TRUE
+  if (EstSPR < SPRLim) belowLim <- TRUE
+   
+  # If within buffer zone - only slope
+  if (inBuff) Mod <- phi1 * Slope
+  if (slopeUp & aboveTG) Mod <- phi1 * Slope +  phi2 * Dist
+  if (slopeUp & belowTG) Mod <- phi1 * Slope 
+  
+  if (slopeDw & aboveTG) Mod <- phi1 * Slope 
+  if (slopeDw & belowTG) Mod <- phi1 * Slope +  phi2 * Dist
+  
+  if (belowLim) Mod <- MaxDw
+  
+  Mod[Mod > MaxUp] <- MaxUp
+  Mod[Mod < MaxDw] <- MaxDw
+  Mod <- Mod + 1 
+ 
+  TAC <- DLM_data@MPrec[x] * Mod
+  TAC <- TACfilter(TAC)
+ 
+  Out <- list()
+  Out[[1]] <- TAC 
+  Out[[2]] <- MiscList
+ 
+  return(Out) 
+}
+class(LBSPR_ItTAC)<-"DLM_output"
+
+
+
+

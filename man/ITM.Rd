@@ -1,14 +1,16 @@
-\name{MCD}
-\alias{MCD}
+\name{ITM}
+\alias{ITM}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Mean Catch Depletion
+Index Target based on natural mortality rate
 }
 \description{
-A simple average catch-depletion MP that was included to demonstrate just how informative an estimate of current stock depletion can be. TAC=2*D*AvC
+An index target MP where the TAC is modified according to current index levels (mean index over last yrsmth years) relative to a target level. Maximum fractional annual changes are mc. 
+mc=(5+M*25)/100
+yrsmth=4*(1/M)^(0.25)
 }
 \usage{
-MCD(x, DLM_data, reps = 100)
+ITM(x, DLM_data, reps = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

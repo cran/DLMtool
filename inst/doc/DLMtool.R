@@ -1,201 +1,246 @@
-## ----Prereq_library,echo=TRUE,eval=TRUE----------------------------------
+## ---- echo = FALSE-------------------------------------------------------
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+
+## ----loadlibrary---------------------------------------------------------
 library(DLMtool)
 
-## ----Prereq_assigndat,echo=TRUE,warning=F--------------------------------
+## ----assignObjs----------------------------------------------------------
 for(i in 1:length(DLMdat))assign(DLMdat[[i]]@Name,DLMdat[[i]])
 
-## ----Prerequisites_sfinit,echo=TRUE,warning=F----------------------------
-#sfInit(parallel=T,cpus=2) 
+## ----sfinit, eval=FALSE--------------------------------------------------
+#  sfInit(parallel=TRUE, cpus=2)
+#  
 
-## ----Prerequisites_sfExport,echo=TRUE,warning=F--------------------------
-#sfExportAll()
+## ---- eval=FALSE---------------------------------------------------------
+#  sfExportAll()
 
-## ----Prereq_random_seed,echo=TRUE,warning=F------------------------------
+## ----seed----------------------------------------------------------------
 set.seed(1) 
 
-## ----Demo_operating_model_1,echo=TRUE------------------------------------
-OM<-new('OM',                                        
-        Blue_shark,                                    
-        Generic_fleet,                              
-        Imprecise_Biased)                            
+## ------------------------------------------------------------------------
+OM <- new('OM', Blue_shark, Generic_fleet, Imprecise_Biased)
 
-## ----Demo_operating_model_2,echo=TRUE------------------------------------
+## ------------------------------------------------------------------------
 slotNames(OM)
-class?OM
 
-## ----Demo_methods_1,echo=TRUE--------------------------------------------
+## ---- eval=FALSE---------------------------------------------------------
+#  class?OM
+
+## ------------------------------------------------------------------------
 avail('DLM_output')
-MPs<-c("Fratio",                                  
-           "DCAC",                          
-           "Fdem",    
-           "DD")                                      
 
-## ----Demo_MPs_2,echo=TRUE------------------------------------------------
-?Fratio
-?DBSRA
+## ----MPs-----------------------------------------------------------------
+MPs <- c("Fratio", "DCAC", "Fdem", "DD")    
 
-## ----Demo_MPs_3,echo=TRUE------------------------------------------------
+
+## ---- eval=FALSE---------------------------------------------------------
+#  ?Fratio
+#  ?DBSRA
+
+## ------------------------------------------------------------------------
 Fratio
 
-## ----Demo_MSE_1,echo=TRUE------------------------------------------------
-SnapMSE<-runMSE(OM,MPs,nsim=16,reps=1,proyears=30,interval=5)
+## ----SNAPMSE, eval=FALSE-------------------------------------------------
+#  SnapMSE <- runMSE(OM, MPs, nsim=16, reps=1, proyears=30, interval=10)
 
-## ----Demo_MSE_plot_1,echo=TRUE,fig.width=9,fig.height=6,out.width='0.9\\linewidth',out.height='0.6\\linewidth'----
+## ---- fig.show='asis', fig.width=7, fig.height=7-------------------------
 plot(SnapMSE)
 
-## ----Demo_real_data_slots,echo=TRUE--------------------------------------
+## ------------------------------------------------------------------------
 avail('DLM_data')
-slotNames(China_rockfish)
-class?DLM_data
 
-## ----Demo_real_data_Can_Cant_Needed,echo=TRUE----------------------------
+## ------------------------------------------------------------------------
+slotNames(China_rockfish)
+
+## ---- eval=FALSE---------------------------------------------------------
+#  class?DLM_data
+
+## ------------------------------------------------------------------------
 Can(China_rockfish)
 Cant(China_rockfish)
 Needed(China_rockfish)
 
-## ----Demo_real_getTAC,echo=TRUE------------------------------------------
+## ---- fig.width=7--------------------------------------------------------
 RockReal<-TAC(China_rockfish)
-
-## ----Demo_real_pq,echo=TRUE,out.width='0.7\\linewidth',out.height='0.5\\linewidth'----
 plot(RockReal)
 
-## ----Demo_real_sense,echo=TRUE,out.width='0.5\\linewidth',out.height='0.5\\linewidth'----
-RockReal<-Sense(RockReal,"DCAC")
+## ---- fig.width=7, fig.height=7------------------------------------------
+RockReal <- Sense(RockReal,"DCAC")
 
-## ----Full_MSE_define_stock,echo=TRUE-------------------------------------
+## ------------------------------------------------------------------------
 avail('Stock')
-ourstock<-Snapper
 
-## ----Full_MSE_setup_bio,echo=TRUE----------------------------------------
-ourstock@M<-c(0.2,0.25)
-ourstock@maxage<-18
-ourstock@D<-c(0.05,0.3)
-ourstock@Frac_area_1<-c(0.05,0.15)
-ourstock@Prob_staying<-c(0.4,0.99)
+## ------------------------------------------------------------------------
+ourstock <- Snapper
 
-## ----Full_MSE_setup_fleet,echo=T-----------------------------------------
-ourfleet<-Generic_FlatE
-ourfleet@Vmaxlen<-c(0.5,1)
+## ------------------------------------------------------------------------
+ourstock@M <- c(0.2,0.25)
+ourstock@maxage <- 18
+ourstock@D <- c(0.05,0.3)
+ourstock@Frac_area_1 <- c(0.05,0.15)
+ourstock@Prob_staying <- c(0.4,0.99)
 
-## ----Full_MSE_create_OM,echo=T-------------------------------------------
-ourOM<-new('OM',ourstock,ourfleet,Imprecise_Biased)
+## ------------------------------------------------------------------------
+ourfleet <- Generic_FlatE
+ourfleet@Vmaxlen <- c(0.5, 1)
 
-## ----Full_MSE_runMSE,our_MSE_1,echo=TRUE---------------------------------
-ourMSE<-runMSE(ourOM,proyears=20,interval=5,nsim=16,reps=1)
+## ------------------------------------------------------------------------
+ourOM <- new('OM',ourstock, ourfleet, Imprecise_Biased)
 
-## ----Full_MSE_Tplot,echo=TRUE,out.width='0.8\\linewidth',out.height='0.8\\linewidth'----
+## ----availOut------------------------------------------------------------
+avail("DLM_output")
+
+## ----availIn-------------------------------------------------------------
+avail("DLM_output")
+
+## ----chooseMPs-----------------------------------------------------------
+MPs <- c("BK", "CC1", "CompSRA", "DBSRA", "DBSRA4010", "DCAC", "DCAC4010", "DepF", "DynF",
+         "EDCAC", "Fratio", "Itarget1", "Itarget4", "MCD", "MCD4010", "SBT1")
+
+## ---- eval=FALSE---------------------------------------------------------
+#  ourMSE <- runMSE(ourOM, MPs=MPs, proyears=20, interval=5, nsim=16,reps=1)
+
+## ---- fig.width=7, fig.height=7------------------------------------------
 Tplot(ourMSE)
 
-## ----Full_MSE_subset_targ,echo=TRUE--------------------------------------
-Results<-summary(ourMSE) 
-Results
-Targetted<-subset(Results, Results$Yield>50 & Results$POF<50 & Results$P50<20)
+## ------------------------------------------------------------------------
+Results <- summary(ourMSE) 
+head(Results)
+Targetted <- subset(Results, Results$Yield>30 & Results$POF<50 & Results$P50<20)
 Targetted
 
-## ----Full_MSE_runMSE_2,echo=T--------------------------------------------
-TargMP<-Targetted$MP[grep("FMSYref",Targetted$MP,invert=T)]
-ourMSE2<-runMSE(ourOM,TargMP,proyears=20,interval=5,nsim=32,reps=1)
+## ----ourMSE2, eval=FALSE-------------------------------------------------
+#  TargMP <- Targetted$MP[grep("FMSYref",Targetted$MP,invert=T)]
+#  ourMSE2 <- runMSE(ourOM, TargMP, proyears=20, interval=5, nsim=16, reps=1)
 
-## ----Full_MSE_CheckConverge,echo=T,fig.width=12,fig.height=8,out.width='0.9\\linewidth',out.height='0.65\\linewidth'----
+## ----Sub, eval=TRUE, echo=FALSE------------------------------------------
+TargMP <- Targetted$MP[grep("FMSYref",Targetted$MP,invert=T)]
+ourMSE2 <- Sub(ourMSE, MPs=TargMP)
+
+## ---- fig.width=7, fig.height=5------------------------------------------
 CheckConverg(ourMSE2)
 
-## ----Full_MSE_Pplot,echo=T,fig.width=12,fig.height=8,out.width='0.9\\linewidth',out.height='0.65\\linewidth'----
+## ---- fig.width=7, fig.height=7------------------------------------------
 Pplot(ourMSE2)
 
-## ----Full_MSE_Kplot,echo=T,out.width='0.8\\linewidth',out.height='0.6\\linewidth'----
+## ---- fig.width=7, fig.height=5------------------------------------------
 Kplot(ourMSE2)
 
-## ----Full_MSE_Tplot2,echo=T,out.width='0.7\\linewidth',out.height='0.35\\linewidth'----
+## ---- fig.width=7, fig.height=3.5----------------------------------------
 Tplot2(ourMSE2)
 
-## ----Full_MSE_VOI,echo=T,fig.width=12,fig.height=11,out.width='0.9\\linewidth',out.height='0.85\\linewidth'----
+## ---- TradePlot, fig.width=7, fig.height=6-------------------------------
+TradePlot(ourMSE2, XThresh=c(0,0), YThresh=c(0,0), ShowLabs = TRUE)
+
+## ---- fig.width=7, fig.height=6------------------------------------------
 VOI(ourMSE2)
 
-## ----Full_MSE_realdata_summary,echo=T,fig.width=7,fig.height=3.5,out.width='0.8\\linewidth',out.height='0.4\\linewidth'----
+## ---- fig.width=7, fig.height=3.5----------------------------------------
 summary(ourReefFish)
 
-## ----Full_MSE_realdata_getTAC,echo=T-------------------------------------
-ourReefFish<-TAC(ourReefFish)
+## ----ourReefFish, eval=FALSE---------------------------------------------
+#  ourReefFish <- TAC(ourReefFish)
 
-## ----Full_MSE_realdata_plot_TAC,echo=T,fig.width=6,fig.height=8,out.width='0.7\\linewidth',out.height='0.80\\linewidth'----
+## ----Load, echo=FALSE----------------------------------------------------
+data(ourReefFish)
+
+## ----plotOurReefFish, fig.width=7, fig.height=7--------------------------
 plot(ourReefFish)
 
-## ----Full_MSE_realdata_Bt_bias,echo=T------------------------------------
+## ------------------------------------------------------------------------
 ourOM@Btcv
 ourOM@Btbias
 
-## ----Full_MSE_realdata_Tplot_2_refresh,echo=T,out.width='0.7\\linewidth',out.height='0.35\\linewidth'----
+## ---- fig.width=7, fig.height=7------------------------------------------
 Tplot2(ourMSE2)
 
-## ----Full_MSE_realdata_sense_DD,echo=T,out.width='0.5\\linewidth',out.height='0.7\\linewidth'----
-ourReefFish<-Sense(ourReefFish,'DD')
+## ----sense, fig.width=7, fig.height=7------------------------------------
+ourReefFish <- Sense(ourReefFish,'MCD')
 
-## ----New_methods_basic_run,echo=T----------------------------------------
+## ------------------------------------------------------------------------
 sapply(1,Fdem_CC,Red_snapper,reps=5)
 
-## ----New_MPs_AvC,echo=T--------------------------------------------------
-AvC<-function(x,DLM_data,reps)rlnorm(reps,log(mean(DLM_data@Cat[x,],na.rm=T)),0.1) 
+## ------------------------------------------------------------------------
+AvC <-function(x, DLM_data, reps)rlnorm(reps, log(mean(DLM_data@Cat[x,], na.rm=T)), 0.1) 
 
-## ----New_MPs_AvC_export,echo=T-------------------------------------------
-class(AvC)<-"DLM_output"
-environment(AvC) <- asNamespace('DLMtool')
-#sfExport("AvC")
+## ------------------------------------------------------------------------
+class(AvC) <-"DLM_output"
+environment(AvC) <-asNamespace('DLMtool')
 
-## ----New_MPs_THC,echo=T--------------------------------------------------
-THC<-function(x,DLM_data,reps){
+## ---- eval=FALSE---------------------------------------------------------
+#  sfExport("AvC")
+
+## ------------------------------------------------------------------------
+THC<-function(x,DLM_data, reps){
   rlnorm(reps,log(DLM_data@Cat[x,order(DLM_data@Cat[x,],decreasing=T)[3]]),0.1)
 }
 class(THC)<-"DLM_output"
 environment(THC) <- asNamespace('DLMtool')
-#sfExport("THC")
 
-## ----New_MPs_agelim5,echo=T----------------------------------------------
-agelim5<-function(x,DLM_data){
-  Allocate<-1 # Fraction of effort reallocated to open area
-  Effort<-1  # Fraction of effort in last historical year
-  Spatial<-c(1,1) # Fraction of effort found in each area 
-  Vuln<-c(rep(0,4),rep(1,DLM_data@MaxAge-4)) # Age vulnerability 
-  c(Allocate, Effort, Spatial, Vuln) # Input controls stitched togther
+
+## ---- eval=FALSE---------------------------------------------------------
+#  sfExport("THC")
+
+## ------------------------------------------------------------------------
+matlenlim <- function (x, DLM_data, ...) {
+    dependencies = "DLM_data@LFC, DLM_data@LFS"
+    Allocate <- 1
+    Effort <- 1
+    Spatial <- c(1, 1)
+    newLFC <- DLM_data@L50[x] * 0.95
+    newLFS <- DLM_data@L50[x]
+    Vuln <- c(newLFC, newLFS)
+    c(Allocate, Effort, Spatial, Vuln)
 }
-class(agelim5)<-"DLM_input"
-environment(agelim5) <- asNamespace('DLMtool')
-#sfExport("agelim5")
+class(matlenlim) <- "DLM_input"
+environment(matlenlim) <- asNamespace("DLMtool")
 
-## ----New_MPs_area1_50,echo=T---------------------------------------------
-area1_50<-function(x,DLM_data){ 
+
+## ---- eval=FALSE---------------------------------------------------------
+#  sfExport("matlenlim")
+
+## ------------------------------------------------------------------------
+area1_50<-function(x,DLM_data, ...){ 
   Allocate<-0 # Fraction of effort reallocated to open area
   Effort<-1  # Fraction of effort in last historical year
   Spatial<-c(0.5,1) # Fraction of effort found in each area
-  Vuln<-rep(NA,DLM_data@MaxAge) # Age vulnerability is not specified   
+  Vuln<-rep(NA,2) # Length vulnerability is not specified   
   c(Allocate, Effort, Spatial, Vuln) # Input controls stitched togther
 }
 class(area1_50)<-"DLM_input"
 environment(area1_50) <- asNamespace('DLMtool')
-#sfExport("area1_50")
 
-## ----New_MPs_MSE,echo=T--------------------------------------------------
-new_MPs<-c("AvC","THC","agelim5","area1_50")
-OM<-new('OM',Porgy, Generic_IncE, Imprecise_Unbiased)
-PorgMSE<-runMSE(OM,new_MPs,maxF=1,nsim=20,reps=1,proyears=20,interval=5)     
+## ---- eval=FALSE---------------------------------------------------------
+#  sfExport("area1_50")
 
-## ----New_MPs_MSE_Tplot,echo=T,out.width='0.7\\linewidth',out.height='0.7\\linewidth'----
-Tplot(PorgMSE)                                        
+## ---- eval=FALSE---------------------------------------------------------
+#  new_MPs <- c("AvC","THC","matlenlim","area1_50")
+#  OM <- new('OM',Porgy, Generic_IncE, Imprecise_Unbiased)
+#  PorgMSE <- runMSE(OM,new_MPs,maxF=1,nsim=20,reps=1,proyears=20,interval=5)
 
-## ----New_MPs_MSE_alt_dep,echo=T------------------------------------------
-OM@D
-OM@D<-c(0.05,0.3)
-PorgMSE2<-runMSE(OM,new_MPs,maxF=1,nsim=16,reps=1,proyears=20,interval=5)     
+## ---- fig.width=7, fig.height=7------------------------------------------
+Tplot(PorgMSE)  
 
-## ----New_MPs_MSE_alt_dep_Tplot,echo=T,out.width='0.7\\linewidth',out.height='0.7\\linewidth'----
-Tplot(PorgMSE2)
+## ---- eval=FALSE---------------------------------------------------------
+#  OM@D
+#  OM@D <- c(0.05,0.3)
+#  PorgMSE2 <- runMSE(OM, new_MPs, maxF=1, nsim=20, reps=1, proyears=20, interval=5)
 
-## ----Real_data_slotNames,echo=T------------------------------------------
+## ----SubPorg, eval=TRUE, echo=FALSE--------------------------------------
+ind <- which(PorgMSE@OM$D < 0.3)
+PorgMSE2 <- Sub(PorgMSE, sims=ind)
+
+
+## ---- fig.width=7,fig.height=7-------------------------------------------
+Tplot(PorgMSE2)  
+
+## ----]-------------------------------------------------------------------
 slotNames('DLM_data')
 
-## ----Real_data_DLMDataDir,echo=T-----------------------------------------
+## ------------------------------------------------------------------------
 DLMDataDir()
 
-## ----Real_data_Madeup,echo=T---------------------------------------------
+## ------------------------------------------------------------------------
 Madeup<-new('DLM_data')                             #  Create a blank DLM object
 Madeup@Name<-'Test'                                 #  Name it
 Madeup@Cat<-matrix(20:11*rlnorm(10,0,0.2),nrow=1)   #  Generate fake catch data
@@ -214,20 +259,20 @@ Madeup@L50<-100                                     #  Length at 50% maturity
 Madeup@L95<-120                                     #  Length at 95% maturity
 Madeup@BMSY_B0<-0.35                                #  BMSY relative to unfished
 
-## ----Real_data_summary,echo=T,fig.width=7,fig.height=3.5,out.width='0.8\\linewidth',out.height='0.4\\linewidth'----
+## ---- fig.width=7, fig.height=3.5----------------------------------------
 summary(Atlantic_mackerel)
 
-## ----Real_data_CCNR,echo=T-----------------------------------------------
+## ------------------------------------------------------------------------
 Can(Atlantic_mackerel)
 Cant(Atlantic_mackerel)
 Needed(Atlantic_mackerel)
 
-## ----Real_data_getTAC,echo=T---------------------------------------------
-Atlantic_mackerel<-TAC(Atlantic_mackerel,reps=48)
+## ---- eval=TRUE----------------------------------------------------------
+Atlantic_mackerel <- TAC(Atlantic_mackerel,reps=48)
 
-## ----Real_data_plot_TAC,echo=T,fig.width=6,fig.height=8,out.width='0.6\\linewidth',out.height='0.80\\linewidth'----
+## ---- fig.width=6, fig.height=8------------------------------------------
 plot(Atlantic_mackerel)
 
-## ----sfstop,echo=TRUE,include=FALSE,cache=FALSE--------------------------
-#sfStop()                            
+## ---- echo=FALSE, eval=FALSE---------------------------------------------
+#  sfStop()
 

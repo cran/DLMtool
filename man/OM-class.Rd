@@ -43,11 +43,22 @@ Objects can be created by calls of the form \code{new("OM", Stock, Fleet, Observ
     \item{\code{Spat_targ}:}{Distribution of fishing in relation to spatial biomass: F is proportional to B^Spat_targ (uniform distribution) }
     \item{\code{LFS}:}{Shortest length that is fully vulnerable to fishing (uniform distribution)}
     \item{\code{L5}:}{Shortest length at 5 percent vulnerability (uniform distribution)}
-    \item{\code{Vmaxlen}:}{The vulnerability of the longest (oldes) fish (uniform distribution)}
+    \item{\code{Vmaxlen}:}{The vulnerability of the longest (oldest) fish (uniform distribution)}
+    \item{\code{SelYears}:}{Vector of verticies that index years where historical selectivity pattern changed. Leave empty to ignore}
+    \item{\code{AbsSelYears}:}{vector of absolute year values that correspond to year indices in SelYears. Used only for plotting}
+    \item{\code{L5Lower}:}{Optional vector of values of length SelYears, specifiying lower limits of L5 (use \code{ChooseSelect} function to set these. Overrides L5 above)}
+    \item{\code{L5Upper}:}{Optional vector of values of length SelYears, specifiying upper limits of L5 (use \code{ChooseSelect} function to set these. Overrides L5 above)}
+    \item{\code{LFSLower}:}{Optional vector of values of length SelYears, specifiying lower limits of LFS (use \code{ChooseSelect} function to set these. Overrides LFS above)}
+    \item{\code{LFSUpper}:}{Optional vector of values of length SelYears, specifiying upper limits of LFS (use \code{ChooseSelect} function to set these. Overrides LFS above)}
+    \item{\code{VmaxLower}:}{Optional vector of values of length SelYears, specifiying lower limits of Vmaxlen (use \code{ChooseSelect} function to set these. Overrides Vmaxlen above)}
+    \item{\code{VmaxUpper}:}{Optional vector of values of length SelYears, specifiying upper limits of Vmaxlen (use \code{ChooseSelect} function to set these. Overrides Vmaxlen above)}
     \item{\code{L50}:}{Length at 50 percent maturity (uniform distribution)}
     \item{\code{L50_95}:}{Length increment from 50 to 95 percent maturity (uniform distribution)}
     \item{\code{Fsd}:}{Inter-annual variability in fishing mortality rate}
-    \item{\code{Fgrad}:}{Final historical gradient in fishing mortality rate expressed as percentage change per year (uniform distribution)}
+    \item{\code{EffYears}:}{Vector of verticies, years at which to simulate varying relative effort}
+    \item{\code{EffLower}:}{Lower bound on relative effort corresponding to EffYears (uniform distribution)}
+    \item{\code{EffUpper}:}{Uppper bound on relative effort corresponding to EffYears (uniform distribution)}
+
     \item{\code{qinc}:}{Average percentage change in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls)}
     \item{\code{qcv}:}{Inter-annual variability in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls)}
     \item{\code{Cobs}:}{Log-normal catch observation error expressed as a coefficient of variation (uniform distribution)}
@@ -59,6 +70,8 @@ Objects can be created by calls of the form \code{new("OM", Stock, Fleet, Observ
     \item{\code{CALcv}:}{Lognormal, variability in the length at age (uniform distribution)}
     \item{\code{Iobs}:}{Observation error in the relative abundance indices expressed as a coefficient of variation (uniform distribution)}
     \item{\code{Perr}:}{The extent of inter-annual log-normal recruitment variability (sigma R)(uniform distribution)}
+    \item{\code{Period}:}{Period for cylical recruitment pattern in years (uniform distribution). Leave empty to ignore }
+    \item{\code{Amplitude}:}{Amplitude in deviation from long-term average recruitment during recruitment cycle, both positive and negative (uniform distribution). E.g., a range from 0 to 0.5 means recruitment decreases or increases by up to 50\% each cycle. Leave empty to ignore}
     \item{\code{Mcv}:}{Persistent bias in the prescription of natural mortality rate sampled from a log-normal distribution with coefficient of variation (Mcv)(uniform distribution)}
     \item{\code{Kcv}:}{Persistent bias in the prescription of growth parameter k sampled from a log-normal distribution with coefficient of variation (Kcv)(uniform distribution)}
     \item{\code{t0cv}:}{Persistent bias in the prescription of t0 sampled from a log-normal distribution with coefficient of variation (t0cv)(uniform distribution)}
@@ -80,7 +93,6 @@ Objects can be created by calls of the form \code{new("OM", Stock, Fleet, Observ
     \item{\code{hcv}:}{Persistent bias in steepness (uniform distribution)}
     \item{\code{Icv}:}{Observation error in realtive abundance index expressed as a coefficient of variation (uniform distirbution)}
     \item{\code{maxagecv}:}{Bias in the prescription of maximum age (uniform distribution)}
-    \item{\code{beta}:}{Parameter controlling hyperstability and hyperdepletion in the relative abundance index <1 is hyperstable >1 is hyperdeplete (uniform distribution)}
     \item{\code{Reccv}:}{Bias in the knowledge of recent recruitment strength (uniform distribution)}
     \item{\code{Irefcv}:}{Bias in the knowledge of the relative abundance index at BMSY (uniform distribution)}
     \item{\code{Brefcv}:}{Bias in the knowledge of BMSY (uniform distribution)}

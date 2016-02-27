@@ -8,7 +8,7 @@ Calculate TAC recommendations for more than one MP
 A function that returns the stochastic TAC recommendations from a vector of data-limited MPs (DLM_output) given a data-limited data object DLM_data
 }
 \usage{
-TAC(DLM_data, MPs = NA, reps = 100, maxlines = 6, perc = NA, xlims = NA)
+TAC(DLM_data, MPs = NA, reps = 100, maxlines = 6, perc = NA, xlims = NA, timelimit = 1)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -28,6 +28,9 @@ TAC(DLM_data, MPs = NA, reps = 100, maxlines = 6, perc = NA, xlims = NA)
 %%     ~~Describe \code{perc} here~~
 }
   \item{xlims}{
+%%     ~~Describe \code{xlims} here~~
+}
+  \item{timelimit}{
 %%     ~~Describe \code{xlims} here~~
 }
 }
