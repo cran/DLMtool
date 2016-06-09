@@ -95,7 +95,7 @@ avail("DLM_output")
 
 ## ----chooseMPs-----------------------------------------------------------
 MPs <- c("BK", "CC1", "CompSRA", "DBSRA", "DBSRA4010", "DCAC", "DCAC4010", "DepF", "DynF",
-         "EDCAC", "Fratio", "Itarget1", "Itarget4", "MCD", "MCD4010", "SBT1")
+         "Fratio", "Itarget1", "Itarget4", "MCD", "MCD4010", "SBT1")
 
 ## ---- eval=FALSE---------------------------------------------------------
 #  ourMSE <- runMSE(ourOM, MPs=MPs, proyears=20, interval=5, nsim=16,reps=1)

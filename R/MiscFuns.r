@@ -64,7 +64,7 @@ Fease<-function(feaseobj,outy="table"){
   if(class(feaseobj)!="DLM_fease")stop("Incorrect format: you need an object of class DLM_fease")
   
   sloty<-c("Cat","Ind","AvC","Dt","Rec","CAA","CAL","Mort","L50","L95","vbK",
-           "vbLinf","vbt0","wla","wlb","steep","LFC","LFS","Cref","Bref","Iref","Dep","Abun")
+           "vbLinf","vbt0","wla","wlb","steep","LFC","LFS","Cref","Bref","Iref","Dep","Abun", "ML")
   
   type<-c("Catch","Index","Catch","Index","Recruitment_index","Catch_at_age","Catch_at_length",
           "Natural_mortality_rate","Maturity_at_length","Maturity_at_length","Growth","Growth","Growth",
@@ -87,7 +87,7 @@ Fease<-function(feaseobj,outy="table"){
     for(m in 1:nMPs){
       brec<-unlist(strsplit(req[m,2],", "))
       brec<-brec[grep("CV_",brec,invert=T)] #remove CV dependencies (we think we can guess these...)
-      brec<-brec[brec!="Year"&brec!="MaxAge"&brec!="FMSY_M"&brec!="BMSY_B0"&brec!="t"&brec!="OM"&brec!="MPrec"&brec!="CAL_bins"]
+      brec<-brec[brec!="Year"&brec!="MaxAge"&brec!="FMSY_M"&brec!="BMSY_B0"&brec!="t"&brec!="OM"&brec!="MPrec"&brec!="CAL_bins" &brec!="MPeff" &brec !="LHYear"]
       nr<-length(brec) 
       if(nr==0){
         gridy[m,i]<-"Yes"
@@ -371,7 +371,18 @@ ChooseEffort <- function(FleetObj, Years=NULL) {
 
 # Sketch Historical Selectivity Patterns ---------------------------------------
 ChooseSelect <- function(Fleet, Stock=NULL, FstYr=NULL, SelYears=NULL) {
-  
+  chk <- class(Fleet@isRel)
+  if (chk == "character") {
+    chkrel <- tolower(Fleet@isRel)
+    if (chkrel == "true" | Fleet@isRel == "1") isRel <- TRUE
+	if (chkrel == "false" | Fleet@isRel == "0") isRel <- FALSE
+  }
+  if (chk == "numeric") {
+    if (Fleet@isRel == 1) isRel <- TRUE
+	if (Fleet@isRel == 0) isRel <- FALSE 
+  }
+
+  if ((!isRel) & is.null(Stock)) stop("Require Stock object")
   LastYr <- as.numeric(format(Sys.Date(), format="%Y"))
   if (is.null(FstYr)) {
     message("*****************")
@@ -416,18 +427,26 @@ ChooseSelect <- function(Fleet, Stock=NULL, FstYr=NULL, SelYears=NULL) {
   message("Select selectivity points on plot")
   flush.console()
   for (N in 1:Selnyears) {
-    BlankSelPlot(Stock=Stock, Yr=SelYears[N], N=N)
-    L5Out <- ChooseL5()
+    BlankSelPlot(Stock=Stock, Yr=SelYears[N], N=N, isRel=isRel)
+    L5Out <- ChooseL5(Fleet, Stock, isRel)
     tempL5[N,] <- sort(L5Out[,1])
-    LFSout <- ChooseLFS(L5Out)
+    LFSout <- ChooseLFS(L5Out, Fleet, Stock, isRel)
     tempLFS[N,] <- sort(LFSout[,1])
-    Vmaxout <- ChooseVmaxlen()
+    Vmaxout <- ChooseVmaxlen(Fleet, Stock, isRel)
     tempmaxlen[N,] <- sort(Vmaxout[,2])
-    polygon(x=c(0, max(tempL5[N,]), max(tempLFS[N,]), 3, 
-     rev(c(0, min(tempL5[N,]), min(tempLFS[N,]), 3))),
-	 y= c(0, 0.05, 1, min(tempmaxlen[N,]),
-	 rev(c(0, 0.05, 1, max(tempmaxlen[N,])))), col="grey")
-    par(ask=TRUE)
+	if (isRel) {
+      polygon(x=c(0, max(tempL5[N,]), max(tempLFS[N,]), 3, 
+       rev(c(0, min(tempL5[N,]), min(tempLFS[N,]), 3))),
+	   y= c(0, 0.05, 1, min(tempmaxlen[N,]),
+	   rev(c(0, 0.05, 1, max(tempmaxlen[N,])))), col="grey")
+      par(ask=TRUE)
+	} else {
+      polygon(x=c(0, max(tempL5[N,]), max(tempLFS[N,]), mean(Stock@Linf), 
+       rev(c(0, min(tempL5[N,]), min(tempLFS[N,]), mean(Stock@Linf)))),
+	   y= c(0, 0.05, 1, min(tempmaxlen[N,]),
+	   rev(c(0, 0.05, 1, max(tempmaxlen[N,])))), col="grey")
+      par(ask=TRUE)	
+	}
   }	
   par(set.par)
   # CheckSelect(Fleet, Stock)
@@ -639,29 +658,45 @@ DoOpt <- function(StockPars, LenDat, SizeBins=NULL, mod=c("GTG", "LBSPR")) {
 # Run LBSPR Model for time-series of catch length composition data 
 LBSPR <- function(x, DLM_data, yrsmth=1,reps=reps) {
   # Save other stuff for smoothing estimates
+  if (length(DLM_data@Misc) == 0) DLM_data@Misc <- vector("list", 1)
+  
   TotYears <- nrow(DLM_data@CAL[1,,]) # How many years of length data exist
+  if (is.null(TotYears)) TotYears <- length(DLM_data@CAL[1,,])
+  if(is.null(dim(DLM_data@CAL[1,,]))) TotYears <- 1  
   if (length(DLM_data@Misc[[x]]) == 0) { # Misc List is empty
     # Create Empty List Object
-	MiscList <- rep(list(0), 5) # Create empty list
-	MiscList[[1]] <- rep(NA, TotYears) # SPR ests
-	MiscList[[2]] <- rep(NA, TotYears) # Smoothed SPR ests
-	MiscList[[3]] <- rep(NA, TotYears) # FM ests
-	MiscList[[4]] <- rep(NA, TotYears) # Smoothed FM ests
-	MiscList[[5]] <- list()
+	# MiscList <- rep(list(0), 5) # Create empty list
+	# MiscList[[1]] <- rep(NA, TotYears) # SPR ests
+	# MiscList[[2]] <- rep(NA, TotYears) # Smoothed SPR ests
+	# MiscList[[3]] <- rep(NA, TotYears) # FM ests
+	# MiscList[[4]] <- rep(NA, TotYears) # Smoothed FM ests
+	# MiscList[[5]] <- list()
+	# Create Empty Object
+    MiscList <- rep(list(0), 2) # Create empty list
+	MiscList[[1]] <- matrix(NA, nrow=TotYears, ncol=4)
+	colnames(MiscList[[1]]) <- c("Raw Est SPR", "Smooth Est SPR", 
+	"Raw Est F/M", "Smooth Est F/M")
+	MiscList[[2]] <- list()
   }
   if (length(DLM_data@Misc[[x]]) != 0) MiscList <- DLM_data@Misc[[x]]
   
   # Add Extra Row when needed 
-  if (length(MiscList[[1]]) < TotYears) {
-    Diff <- TotYears - length(DLM_data@Misc[[x]][[1]])
-    MiscList[[1]] <- append(MiscList[[1]], rep(NA,Diff)) 
-	MiscList[[2]] <- append(MiscList[[2]], rep(NA,Diff)) 
-	MiscList[[3]] <- append(MiscList[[3]], rep(NA,Diff)) 
-	MiscList[[4]] <- append(MiscList[[4]], rep(NA,Diff)) 
+  if (length(MiscList[[1]][,1]) < TotYears) {
+    # Diff <- TotYears - length(DLM_data@Misc[[x]][[1]])
+    # MiscList[[1]] <- append(MiscList[[1]], rep(NA,Diff)) 
+	# MiscList[[2]] <- append(MiscList[[2]], rep(NA,Diff)) 
+	# MiscList[[3]] <- append(MiscList[[3]], rep(NA,Diff)) 
+	# MiscList[[4]] <- append(MiscList[[4]], rep(NA,Diff))
+    Diff <- TotYears - nrow(DLM_data@Misc[[x]][[1]])	
+	newmat <- matrix(NA, nrow=Diff, ncol=4)
+	names(newmat) <- names(MiscList[[1]]) 
+	MiscList[[1]] <- rbind(MiscList[[1]], newmat) 
+	# MiscList[[1]] <- as.data.frame(MiscList[[1]])
   }
 
-  NEmpty <- sum(is.na(MiscList[[1]])) # Number of empty spots
-  IsEmpty <- which(is.na(MiscList[[1]]))
+  NEmpty <- sum(is.na(MiscList[[1]][,1])) # Number of empty spots
+  IsEmpty <- which(is.na(MiscList[[1]][,1]))
+
 
  StockPars <- NULL
  StockPars$MK <- DLM_data@Mort[x] / DLM_data@vbK[x]
@@ -671,10 +706,13 @@ LBSPR <- function(x, DLM_data, yrsmth=1,reps=reps) {
  StockPars$L95 <- DLM_data@L95[x]
  StockPars$FecB <- DLM_data@wlb[x]
  StockPars$MaxSD <- 2
+ if(any(is.na(StockPars))) {
+   return(list(NA, paste(names(unlist(StockPars))[which(is.na(StockPars))], "are NA")))
+ }
  
  # yrsmth not implemented here
  LenMatrix <- DLM_data@CAL[x, IsEmpty,]
- 
+ if (TotYears == 1) LenMatrix <- t(as.matrix(LenMatrix))
  binWidth <- DLM_data@CAL_bins[2] - DLM_data@CAL_bins[1]
  CAL_binsmid <- seq(from=0.5*binWidth, by=binWidth, length=length(DLM_data@CAL_bins)-1)
      
@@ -695,7 +733,7 @@ LBSPR <- function(x, DLM_data, yrsmth=1,reps=reps) {
  estSL95 <- sapply(AllOpt[1,], "[[", 3)
  EstSPR <- sapply(AllOpt[1,], "[[", 4)
  EstFM[EstFM > 5] <- 5 
- 
+
  Fails <- which(sapply(AllOpt[3,], "[[", 1))
  if (length(Fails) > 0) {
    EstFM[Fails] <- NA 
@@ -705,19 +743,135 @@ LBSPR <- function(x, DLM_data, yrsmth=1,reps=reps) {
    EstFM[is.na(EstFM)] <- EstFM[which(is.na(EstFM))-1]
    EstSPR[is.na(EstSPR)] <- EstSPR[which(is.na(EstSPR))-1]
  }
- 
- MiscList[[1]][IsEmpty] <- EstSPR # Save estimate of SPR for smoothing
- MiscList[[3]][IsEmpty] <- EstFM # Save estimate of F/M for smoothing 
+ MiscList[[1]][IsEmpty,1] <- EstSPR # Save estimate of SPR for smoothing
+ MiscList[[1]][IsEmpty,3] <- EstFM # Save estimate of F/M for smoothing 
   
   # Smoothed estimates - SPR
-  MiscList[[2]] <- KalmanFilter(RawEsts=MiscList[[1]]) 
-  MiscList[[2]][MiscList[[2]] <0] <- 0.05
-  MiscList[[2]][MiscList[[2]] > 1] <- 0.99
- 
+  MiscList[[1]][,2] <- KalmanFilter(RawEsts=MiscList[[1]][,1]) 
+  MiscList[[1]][,2][MiscList[[1]][,2] < 0 ] <- 0.05
+  MiscList[[1]][,2][MiscList[[1]][,2]  > 1] <- 0.99
+
   # Smoothed estimates - FM
-  MiscList[[4]] <- KalmanFilter(RawEsts=MiscList[[3]])
+  MiscList[[1]][,4] <- KalmanFilter(RawEsts=MiscList[[1]][,3])
   
   return(MiscList)
 }
 
+
+Input <- function(DLM_data, MPs=NA, reps=100, timelimit=10, CheckMPs=TRUE) {
+  print("Checking which MPs can be run")
+  flush.console()
+  if(CheckMPs) PosMPs <- Can(DLM_data, timelimit=timelimit)
+  if(!CheckMPs) PosMPs <- MPs
+  PosMPs <- PosMPs[PosMPs%in%avail("DLM_input")]
+  if(!is.na(MPs[1]))DLM_data@MPs<-MPs[MPs%in%PosMPs]
+  if(is.na(MPs[1]))DLM_data@MPs<-PosMPs
+  funcs<-DLM_data@MPs
+
+  if(length(funcs)==0){
+    stop("None of the methods 'MPs' are possible given the data available")
+  }else{
+    Out <- matrix(NA, nrow=length(funcs), ncol=5)
+	colnames(Out) <- c("Effort", "Area 1",  "Area 2", "SL50", "SL95")
+	rownames(Out) <- funcs
+    for (mm in 1:length(funcs)) {
+	  print(paste("Running", mm, "of", length(funcs), "-", funcs[mm]))
+	  flush.console()
+      runIn <- runInMP(DLM_data,MPs=funcs[mm], reps=reps)[[1]][,,1]
+	  Out[mm,] <- runIn[2:6]
+	  Out[,4:5] <- round(Out[,4:5], 2)
+	}
+  }
+  Out 
+
+}
+
+# Take an OM object and convert it into a almost pefect OM with no 
+# observation error and very little process error 
+makePerf <- function(OMin, except=NULL) {
+    nms <- slotNames(OMin)
+	# exceptions 
+	if (is.null(except)) except <- "EVERYTHING"
+	exclude <- unique(grep(paste(except,collapse="|"), nms, value=FALSE))
+	
+	vars <- c("grad", "cv", "sd", "inc")
+	ind <- unique(grep(paste(vars,collapse="|"), nms, value=FALSE))
+	ind <- ind[(!(nms[ind] %in% exclude ))]
+	for (X in seq_along(ind)) {
+	  n <- length(slot(OMin, nms[ind[X]]))
+	  slot(OMin, nms[ind[X]]) <- rep(0, n)
+	}
+
+	if (!("Cobs" %in% exclude)) OMin@Cobs <- c(0,0)
+	if (!("Perr" %in% exclude)) OMin@Perr <- c(0,0)
+	if (!("Iobs" %in% exclude)) OMin@Iobs <- c(0,0)
+	if (!("AC" %in% exclude)) OMin@AC <- c(0, 0)
+	if (!("Btbias" %in% exclude)) OMin@Btbias <- c(1,1)
+	if (!("CAA_ESS" %in% exclude)) OMin@CAA_ESS <- c(1000, 1000)
+	if (!("CAA_nsamp" %in% exclude)) OMin@CAA_nsamp <- c(2000, 2000)
+	if (!("CAL_ESS" %in% exclude)) OMin@CAL_ESS <- c(1000, 1000)
+	if (!("CAL_nsamp" %in% exclude)) OMin@CAL_nsamp <- c(2000, 2000)
+	if (!("beta" %in% exclude)) OMin@beta <- c(1,1)
+	return(OMin)
+}
+
+
+# runMSE robust
+# A wrapper for runMSE which splits simulations into a series of packets,
+# tests for errors to avoid crashes, and saves out resulting MSE object 
+runMSErobust <- function(OM = "1", MPs = NA, nsim = 200, proyears = 28, interval = 4, 
+    pstar = 0.5, maxF = 0.8, timelimit = 1, reps = 1, custompars = 0, 
+    CheckMPs = TRUE, maxsims=64, name=NULL, maxCrash=10, saveMSE=TRUE, savePack=FALSE){
+
+  packets <- new('list')   # a list of completed MSE objects
+  simsplit <- split(1:nsim, ceiling(seq_along(1:nsim)/maxsims)) # split the runs
+  
+  IsPar <- sfIsRunning() # Is a cluster running?
+  if (!IsPar) stop("You must set up parallel processing to use runMSErobust. 
+  Use: sfInit(parallel=TRUE, cpus=detectCores())")
+  
+  if (is.null(name)) { # make file name for packets if not input
+    st <- as.numeric(regexpr(":", OM@Name))+1
+	nd <- st + 3 # as.numeric(regexpr(" ", OM@Name))-1
+	name <- substr(OM@Name, st, nd)
+    name <- gsub("\\s+","",name)	
+  }	
+  if (nchar(name) < 1) name <- "MyMSE"
+  
+  # name <- paste0(sample(0:9, 1), sample(LETTERS, 1), name)
+ 
+  for (i in 1:length(simsplit)){
+    error <- 1
+	crash <- 0 
+    while(error==1 & crash <= maxCrash){
+      trialMSE <- try(runMSE(OM=OM, MPs=MPs, nsim =length(simsplit[[i]]), 
+	  proyears=proyears, interval=interval, pstar=pstar, maxF=maxF, 
+	  timelimit=timelimit, reps=reps, custompars=custompars, CheckMPs=CheckMPs))
+      crash <- crash + 1 
+      if (crash >= maxCrash) stop("Crashed too many times!")	  
+      if(class(trialMSE)=="MSE"){
+        packets[[i]] <- trialMSE
+		fname <- paste0(name, "pack", i, "MSE.rdata")
+        if (savePack) {
+		  save(trialMSE, file=fname)
+          print(paste("Saving", fname, "to", getwd()))
+          flush.console()		  
+		}  
+        error <- 0
+		crash <- 0 
+      }
+    } 
+    print(paste("Packet", i, "of", 	length(simsplit), "complete"))
+	flush.console()
+  }
+  if (i == 1)  MSEobj <- packets[[1]]
+  if (i > 1) MSEobj <- joinMSE(MSEobjs=packets)
+  if (saveMSE) {
+    fname <- paste0(name, "MSE.rdata")
+	save(MSEobj, file=fname)
+    print(paste("Saving", fname, "to", getwd()))
+    flush.console()
+  }
+  MSEobj
+}
 

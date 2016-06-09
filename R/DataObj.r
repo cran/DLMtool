@@ -9,7 +9,7 @@
 # Tom Carruthers UBC (t.carruthers@fisheries.ubc.ca)
 # Adrian Hordyk (a.hordyk@murdoch.edu.au)
 
-DLMdiag<-function(DLM_data,command="available",reps=5,timelimit=1){
+DLMdiag <- function(DLM_data,command="available",reps=5,timelimit=1){
   funcs1<-c(avail("DLM_output"),avail("DLM_input"))
   good<-rep(TRUE,length(funcs1))
   report<-rep("Worked fine",length(funcs1))
@@ -22,6 +22,7 @@ DLMdiag<-function(DLM_data,command="available",reps=5,timelimit=1){
       suppressWarnings({
         setTimeLimit(timelimit*1.5)
         test[[y]]<-try(do.call(funcs1[y],list(x=1,DLM_data=DLM_data,reps=5)),silent=T)
+		if (class(test[[y]]) == "list") test[[y]] <-  test[[y]][[1]]
         setTimeLimit(Inf)
       })
     }else{
@@ -249,7 +250,7 @@ replic8<-function(DLM_data,nrep){
 TAC<-function(DLM_data,MPs=NA,reps=100,maxlines=6,perc=NA,xlims=NA,timelimit=1){
 
   nm <-deparse(substitute(DLM_data))
-  PosMPs<-Can(DLM_data)
+  PosMPs<-Can(DLM_data,timelimit=timelimit)
   PosMPs<-PosMPs[PosMPs%in%avail("DLM_output")]
   DLM_data@PosMPs<-PosMPs
   if(!is.na(MPs[1]))DLM_data@MPs<-MPs[MPs%in%PosMPs]
@@ -289,17 +290,18 @@ getTAC<-function(DLM_data,MPs=NA,reps=100){
     if(nsims<8){
       sfExport(list=c("MPs","reps"))
       for(ss in 1:nsims){
-	    temp <- t(sfSapply(1:length(MPs),parallelMPs,DLM_data=DLM_data,reps=reps,MPs=MPs,ss=ss))
+	    temp <<- t(sfSapply(1:length(MPs),parallelMPs,DLM_data=DLM_data,reps=reps,MPs=MPs,ss=ss))
 		if (mode(temp) == "numeric") TACa[,,ss] <- temp
 		if (mode(temp) == "list") {
 		  Lens <- unlist(lapply(temp, length))
-		  ind <- which(Lens > 1) # these have Misc objects
 		  for (X in 1:length(Lens)) {
-		    if (any(X == ind)) {
-			  TACa[X,,ss] <- unlist(temp[[1]][1,X])
-			  DLM_data@Misc[[ss]] <- temp[[1]][2,X][[1]]
-			} else {
+		    Classes <- unlist(lapply(temp[,X][[1]], class))
+			if (length(unique(Classes)) == 1) { # no Misc object
 			  TACa[X,,ss] <- unlist(temp[,X])
+			} else { # a Misc object is include 
+			  ind <- which(Classes == "list")
+			  TACa[X,,ss] <- unlist(temp[,X][[1]][1:(ind-1),])
+			  DLM_data@Misc[[ss]] <- temp[,X][[1]][ind,]
 			}
 		  }
 	    } 
@@ -351,15 +353,28 @@ runInMP <- function(DLM_data,MPs=NA,reps=100) {
   nsims<-length(DLM_data@Mort)
   nMPs<-length(MPs)
   # len <- 4 + DLM_data@MaxAge
-  len <- 6
+  len <- 8
   InC <- array(NA, dim=c(len, nsims, nMPs))
-
   if(!sfIsRunning()|(nMPs<8&nsims<8)){
     for(ff in 1:nMPs){
       temp <- sapply(1:nsims,MPs[ff],DLM_data=DLM_data,reps=reps)
-	  if (mode(temp) == "numeric") InC[,,ff] <- temp
+	  if (mode(temp) == "numeric") {
+	    Nrow <- nrow(temp)
+		if (Nrow < len) {
+		  dif <- ( len - Nrow) 
+		  temp <- rbind(temp, matrix(NA, nrow=dif, ncol=ncol(temp)))
+		}	
+	    InC[,,ff] <- temp
+	  }	
 	  if (mode(temp) == "list") {
-  	    InC[,,ff] <- unlist(temp[1,])
+	    temp2 <- unlist(temp[1,])
+		temp2 <- matrix(temp2, ncol=nsims)
+		Nrow <- nrow(temp2)
+		if (Nrow < len) {
+		  dif <- ( len - Nrow) 
+		  temp2 <- rbind(temp2, matrix(NA, nrow=dif, ncol=ncol(temp2)))
+		}
+  	    InC[,,ff] <- temp2
 	    for (x in 1:nsims) DLM_data@Misc[[x]] <- temp[2,x][[1]]
 	  }	
     }
@@ -369,13 +384,27 @@ runInMP <- function(DLM_data,MPs=NA,reps=100) {
       sfExport(list=c("MPs","reps"))
       for(ss in 1:nsims){
 	    temp <- t(sfSapply(1:length(MPs),parallelMPs,DLM_data=DLM_data,reps=reps,MPs=MPs,ss=ss))
-		if (mode(temp) == "numeric") InC[,,ff] <- temp
+		if (mode(temp) == "numeric") {
+	      Nrow <- nrow(temp)
+		  if (Nrow < len) {
+		    dif <- ( len - Nrow) 
+		    temp <- rbind(temp, matrix(NA, nrow=dif, ncol=ncol(temp)))
+		  }	
+	      InC[,,ff] <- temp
+	    }	
 		if (mode(temp) == "list") {
 		  Lens <- unlist(lapply(temp, length))
 		  ind <- which(Lens > 1) # these have Misc objects
 		  for (X in 1:length(Lens)) {
 		    if (any(X == ind)) {
-			  InC[,ss,X] <- unlist(temp[[1]][1,X])
+			  temp2 <- unlist(temp[[1]][1,X])
+			  temp2 <- matrix(temp2, ncol=nsims)
+			  Nrow <- nrow(temp2)
+		      if (Nrow < len) {
+		       dif <- ( len - Nrow) 
+		       temp2 <- rbind(temp2, matrix(NA, nrow=dif, ncol=ncol(temp2)))
+		      }
+			  InC[,ss,X] <- temp2
 			  DLM_data@Misc[[ss]] <- temp[[1]][2,X][[1]]
 			} else {
 			  InC[,ss,X] <- unlist(temp[,X])
@@ -386,9 +415,23 @@ runInMP <- function(DLM_data,MPs=NA,reps=100) {
     }else{
       for(ff in 1:nMPs){
 	    temp <- sfSapply(1:nsims,MPs[ff],DLM_data=DLM_data,reps=reps)
-		if (mode(temp) == "numeric") InC[,,ff] <- temp
+		if (mode(temp) == "numeric") {
+		  Nrow <- nrow(temp)
+		  if (Nrow < len) {
+		    dif <- (len - Nrow) 
+		    temp <- rbind(temp, matrix(NA, nrow=dif, ncol=ncol(temp)))
+		  }	
+	      InC[,,ff] <- temp
+		} 
 	    if (mode(temp) == "list") {
-  	      InC[,,ff] <- unlist(temp[1,])
+		  temp2 <- unlist(temp[1,])
+		  temp2 <- matrix(temp2, ncol=nsims)
+		  Nrow <- nrow(temp2)
+		  if (Nrow < len) {
+		    dif <- ( len - Nrow) 
+		    temp2 <- rbind(temp2, matrix(NA, nrow=dif, ncol=ncol(temp2)))
+		  }
+  	      InC[,,ff] <- temp2
 	      for (x in 1:nsims) DLM_data@Misc[[x]] <- temp[2,x][[1]]
 	    }
       }

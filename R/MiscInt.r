@@ -39,7 +39,14 @@ alphaconv<-function(m,sd)m*(((m*(1-m))/(sd^2))-1)
 
 betaconv<-function(m,sd)(1-m)*(((m*(1-m))/(sd^2))-1)
 
-trlnorm<-function(reps,mu,cv)return(rlnorm(reps,mconv(mu,mu*cv),sdconv(mu,mu*cv)))
+trlnorm<-function(reps,mu,cv) {
+ if (all(is.na(mu))) return(rep(NA, reps))
+ if (all(is.na(cv))) return(rep(NA, reps))
+ return(rlnorm(reps,mconv(mu,mu*cv),sdconv(mu,mu*cv)))
+}
+
+
+tdlnorm<-function(x,mu,cv) return(dlnorm(x,mconv(mu,mu*cv),sdconv(mu,mu*cv)))
 
 condmet<-function(vec)TRUE%in%vec
 
@@ -62,10 +69,11 @@ getEffhist <- function(Esd, nyears, EffYears, EffLower, EffUpper) {
 	}  
 	if (nsim == 1) {
 	  # Effs <- Effs/max(Effs)
-	  effort <- approx(x=refYear, y = Effs,  method = "linear", n=nyears)$y
+	  effort <- matrix(approx(x=refYear, y = Effs,  method = "linear", n=nyears)$y, nrow = 1)
  	}
     
 	effort <- range01(effort)
+	effort[effort == 0] <- 0.01
 	
     Emu <- -0.5*Esd^2
     Eerr <-array(exp(rnorm(nyears*nsim,rep(Emu,nyears),rep(Esd,nyears))),c(nsim,nyears)) # calc error
@@ -145,7 +153,13 @@ FMSYopt<-function(lnF,Mc,hc,Mac,Wac,R0c,Vc,maxage,nyears,proyears,Spat_targc,mov
   if(Opt){
     return(-CBc)
   }else{
-    return(c(CBc,-log(1-(CBc/(sum(VBiomass)+CBc))),sum(SSB)/sum(SSB0)))
+    return(c(
+		MSY=CBc,
+		FMSY=-log(1-(CBc/(sum(VBiomass)+CBc))),
+		SSB=sum(SSB),
+		SSB_SSB0=sum(SSB)/sum(SSB0),
+		B = sum(N * Wac),
+		B_B0 = sum(N * Wac)/B0))
   }
 }
 
@@ -182,21 +196,21 @@ getFhist<-function(nsim,Esd,nyears,dFmin,dFmax,bb){
 }
 
 getFref<-function(x,Marray,Wt_age,Mat_age,Perr,N_s,SSN_s, Biomass_s,VBiomass_s,SSB_s,
-                  Vn,hs,R0a,nyears,proyears,nareas,maxage,mov,SSBpR,aR,bR,SRrel){
+                  Vn,hs,R0a,nyears,proyears,nareas,maxage,mov,SSBpR,aR,bR,SRrel,Spat_targ){
   
   opt<-optimize(doprojPI,log(c(0.001,10)),
                 Mvec=Marray[x,(nyears+1):(nyears+proyears)],Wac=Wt_age[x,,(nyears+1):(nyears+proyears)],Mac=Mat_age[x,],
                 Pc=Perr[x,(nyears+1):(nyears+proyears)],N_c=N_s[x,,],SSN_c=SSN_s[x,,],Biomass_c=Biomass_s[x,,],
-                VBiomass_c=VBiomass_s[x,,],SSB_c=SSB_s[x,,],Vc=Vn[x,],hc=hs[x],R0ac=R0a[x,],proyears,nareas,maxage,movc=mov[x,,],SSBpRc=SSBpR[x],aRc=aR[x,],bRc=bR[x,],SRrelc=SRrel[x])
+                VBiomass_c=VBiomass_s[x,,],SSB_c=SSB_s[x,,],Vc=Vn[x,,],hc=hs[x],R0ac=R0a[x,],proyears,nareas,maxage,movc=mov[x,,],SSBpRc=SSBpR[x],aRc=aR[x,],bRc=bR[x,],SRrelc=SRrel[x], spat_targ=Spat_targ[x])
   # print(exp(opt$minimum))
   return(-opt$objective)
   
 }
 
-doprojPI<-function(lnF,Mvec,Wac,Mac,Pc,N_c,SSN_c,Biomass_c,VBiomass_c,SSB_c,Vc,hc,R0ac,proyears,nareas,maxage,movc,SSBpRc,aRc,bRc,SRrelc){
+doprojPI<-function(lnF,Mvec,Wac,Mac,Pc,N_c,SSN_c,Biomass_c,VBiomass_c,SSB_c,Vc,hc,R0ac,proyears,nareas,maxage,movc,SSBpRc,aRc,bRc,SRrelc, spat_targ){
   
   FF<-exp(lnF)
-  
+ 
   N_P<-array(NA,dim=c(maxage,proyears,nareas))
   Biomass_P<-array(NA,dim=c(maxage,proyears,nareas))
   VBiomass_P<-array(NA,dim=c(maxage,proyears,nareas))
@@ -206,11 +220,13 @@ doprojPI<-function(lnF,Mvec,Wac,Mac,Pc,N_c,SSN_c,Biomass_c,VBiomass_c,SSB_c,Vc,h
   Z_P<-array(NA,dim=c(maxage,proyears,nareas))
   CB_P<-rep(NA,proyears)
   
-  AYR<-as.matrix(expand.grid(1:maxage,1,1:nareas))
+  # AYR<-as.matrix(expand.grid(1:maxage,1,1:nareas))
+  AYR <- as.matrix(expand.grid(1:maxage,1,1:nareas))
   YA<-as.matrix(expand.grid(1,1:maxage))         # Projection year
   Y<-YA[,1]
   A<-YA[,2]
   AY<-YA[,c(2,1)]
+  R <- matrix(AYR[,3])
   
   N_P[AYR]<-N_c#[AYRL]
   SSN_P[AYR]<-SSN_c#SSN[AYRL]
@@ -218,11 +234,14 @@ doprojPI<-function(lnF,Mvec,Wac,Mac,Pc,N_c,SSN_c,Biomass_c,VBiomass_c,SSB_c,Vc,h
   VBiomass_P[AYR]<-VBiomass_c#[AYRL]
   SSB_P[AYR]<-SSB_c#[AYRL]
   
-  FM_P[AYR]<-FF*Vc[A]
-  Z_P[AYR]<-FM_P[A]+Mvec[Y]
+  fishdist<-(apply(VBiomass_P[,1,], 2,sum)^spat_targ)/mean(apply(VBiomass_P[,1,], 2,sum)^spat_targ)  # spatial preference according to spatial biomass
+  fishdist <- matrix(fishdist, ncol=nareas)
+  FM_P[AYR] <- FF*Vc[AY] *fishdist[R] 
+ 
+  # FM_P[AYR]<-FF*Vc[A]
+  Z_P[AYR]<-FM_P[AYR]+Mvec[Y]
   
   for(y in 2:proyears){
-    
     AY1R<-as.matrix(expand.grid(1:maxage,y-1,1:nareas))
     AYR<-as.matrix(expand.grid(1:maxage,y,1:nareas))
     Y<-AYR[,2]
@@ -237,7 +256,7 @@ doprojPI<-function(lnF,Mvec,Wac,Mac,Pc,N_c,SSN_c,Biomass_c,VBiomass_c,SSB_c,Vc,h
     indMov2<-indMov[,c(1,2,3)]
     indMov3<-indMov[,c(3,4)]
     
-    N_P[A2YR]<-N_P[A1YR]*exp(-Z_P[A1Y])         # Total mortality
+    N_P[A2YR] <- N_P[A1YR]*exp(-Z_P[A1YR])         # Total mortality
     
     if(SRrelc==1){
       N_P[1,y,]<-Pc[y]*(0.8*R0ac*hc*apply(SSB_P[,y-1,],2,sum))/(0.2*SSBpRc*R0ac*(1-hc)+(hc-0.2)*apply(SSB_P[,y-1,],2,sum))  # Recruitment assuming regional R0 and stock wide steepness
@@ -248,17 +267,32 @@ doprojPI<-function(lnF,Mvec,Wac,Mac,Pc,N_c,SSN_c,Biomass_c,VBiomass_c,SSB_c,Vc,h
     temp<-array(N_P[indMov2]*movc[indMov3],dim=c(nareas,nareas,maxage))  # Move individuals
     N_P[,y,]<-apply(temp,c(3,1),sum)
     
-    Biomass_P[AYR]<-N_P[AYR]*Wac[AY]                                    # Calculate biomass
+    Biomass_P[AYR]<-N_P[AYR]*Wac[AY]                            # Calculate biomass
     VBiomass_P[AYR]<-Biomass_P[AYR]*Vc[A]                       # Calculate vulnerable biomass
-    SSN_P[AYR] <-N_P[AYR]*Mac[A]                                       # Calculate spawning stock numbers
+    SSN_P[AYR] <-N_P[AYR]*Mac[A]                                # Calculate spawning stock numbers
     SSB_P[AYR]<-SSN_P[AYR]*Wac[AY] # Calculate spawning stock biomass
-    FM_P[AYR]<-FF*Vc[A]
+    
+	fishdist<-(apply(VBiomass_P[,y,], 2,sum)^spat_targ)/mean(apply(VBiomass_P[,y,], 2,sum)^spat_targ)  # spatial preference according to spatial biomass
+    FM_P[AYR] <- FF*Vc[AY]*fishdist[R] 
+	# FM_P[AYR]<-FF*Vc[A]
+	
     Z_P[AYR]<-FM_P[AYR]+Mvec[Y]
     CNtemp<-N_P[,y,]*exp(Z_P[,y,])*(1-exp(-Z_P[,y,]))*(FM_P[,y,]/Z_P[,y,])
-    CB_P[y]<-sum(Biomass_P[,y,]*exp(Z_P[,y,])*(1-exp(-Z_P[,y,]))*(FM_P[,y,]/Z_P[,y,]))
+    CB_P[y] <- sum(Biomass_P[,y,]*exp(Z_P[,y,])*(1-exp(-Z_P[,y,]))*(FM_P[,y,]/Z_P[,y,]))
+	
+	CNtemp <- (FM_P[,y,]/Z_P[,y,] * N_P[,y,]*(1-exp(-Z_P[,y,])))
+	CB_P[y] <- sum(FM_P[,y,]/Z_P[,y,] * Biomass_P[,y,]*(1-exp(-Z_P[,y,])))
+	
+	# temp <- sum(CNtemp*Wac[AY])
+	# print(c(CB_P[y], temp))
 	
 	# CB_P[y] <- sum(CNtemp*Wac[AY]) 
   } # end of year
+  
+  # plot(CB_P, type="l", ylim=c(0, max(CB_P, na.rm=TRUE)))
+  # Biomass_P[,1,]
+  # apply(N_P[,1:6,1:2], c(1,2), sum)
+  
   return(-mean(CB_P[(proyears-min(4,(proyears-1))):proyears],na.rm=T))
   
 }
@@ -388,7 +422,8 @@ getSlopeFun <- function(SD, age50, age95) 0.95 - (1/(1+exp((age50-age95)/(age50*
 SelectFun <- function(i, SL0.05, SL1, MaxSel, Linfs, Lens) {
   s1 <- optimise(getSlope1, interval=c(0, 100), L1=SL1[i], L0.05=SL0.05[i])$minimum
   s2 <- optimise(getSlope2, interval=c(0, 1000), L1=SL1[i], s1=s1, Linf=Linfs[i], MaxSel=MaxSel[i])$minimum 
-  TwoSidedFun(L1=SL1[i], s1=s1, s2=s2, Lens=Lens[i,])
+  if(is.vector(Lens)) TwoSidedFun(L1=SL1[i], s1=s1, s2=s2, Lens=Lens) #nsim = 1
+  else TwoSidedFun(L1=SL1[i], s1=s1, s2=s2, Lens=Lens[i,]) #nsim > 1
 }
 # Selectivity at length function for GTG model 
 SelectFunGTG <- function(i, SL0.05, SL1, MaxSel, Linfs, LenGTG) {
@@ -410,27 +445,40 @@ FitSelect <- function(Pars, V, Linf, Lens) {
 
 
 # BlankSelPlot
-BlankSelPlot <- function(Stock=NULL, Yr=NULL, N=NULL) {
-  Max <- 3 
-  AxCex <- 1.3
-  By <- 0.05 
-  par(mfrow=c(1,1), mai=c(2, 1, .5, .3), oma=c(1,1,1,1))
-  plot(c(0,3), c(0,1), type="n", xlab="", ylab="", axes=FALSE)
-  mtext(side=2, line=3, "Selectivity", cex=AxCex)
-  axis(side=2)
-  Xax <- seq(from=0, to=Max-By, by=2*By)
-  axis(side=1, at=Xax)
-  axis(side=1, at=c(2, Max), labels=c("", "Lmax"), xpd=NA)
-  mtext(side=1, line=3.5, "Relative Length", cex=AxCex)
-  axis(side=1, at=1, line=1.5, labels="L50")
-  if (!is.null(Stock) & class(Stock) == "Stock") {
-    L50 <- mean(Stock@L50) # mean length at maturity
-    MatAx <- L50 * Xax
-    axis(side=1, line=5.5, at=Xax, labels=MatAx)
-    axis(side=1, line=5.5, at=c(2, Max), labels=c("", "Lmax"), xpd=NA)
-    mtext(side=1, line=8.5, "Approx. Length", cex=AxCex)
-    axis(side=1, at=1, line=6.5, labels="Mean L50")
-  } 
+BlankSelPlot <- function(Stock=NULL, Yr=NULL, N=NULL, isRel) {
+  if (isRel) {
+    Max <- 3 
+    AxCex <- 1.3
+    By <- 0.05 
+    par(mfrow=c(1,1), mai=c(2, 1, .5, .3), oma=c(1,1,1,1))
+    plot(c(0,3), c(0,1), type="n", xlab="", ylab="", axes=FALSE)
+    mtext(side=2, line=3, "Selectivity", cex=AxCex)
+    axis(side=2)
+    Xax <- seq(from=0, to=Max-By, by=2*By)
+    axis(side=1, at=Xax)
+    axis(side=1, at=c(2, Max), labels=c("", "Lmax"), xpd=NA)
+    mtext(side=1, line=3.5, "Relative Length", cex=AxCex)
+    axis(side=1, at=1, line=1.5, labels="L50")
+    if (!is.null(Stock) & class(Stock) == "Stock") {
+      L50 <- mean(Stock@L50) # mean length at maturity
+      MatAx <- L50 * Xax
+      axis(side=1, line=5.5, at=Xax, labels=MatAx)
+      axis(side=1, line=5.5, at=c(2, Max), labels=c("", "Lmax"), xpd=NA)
+      mtext(side=1, line=8.5, "Approx. Length", cex=AxCex)
+      axis(side=1, at=1, line=6.5, labels="Mean L50")
+    }
+  } else {
+    Max <- mean(Stock@Linf)
+    AxCex <- 1.3
+    By <- 2.5 
+    par(mfrow=c(1,1), mai=c(2, 1, .5, .3), oma=c(1,1,1,1))
+    plot(c(0,Max), c(0,1), type="n", xlab="", ylab="", axes=FALSE)
+    mtext(side=2, line=3, "Selectivity", cex=AxCex)
+    axis(side=2)
+    Xax <- seq(from=0, to=Max, by=2*By)
+    axis(side=1, at=Xax, labels=Xax)
+    mtext(side=1, line=3.5, "Length", cex=AxCex)
+  }  
   if (N == 1) {
     title(paste("Choose selectivity points for Year", Yr, "(First Year)"))
   } else {
@@ -438,34 +486,65 @@ BlankSelPlot <- function(Stock=NULL, Yr=NULL, N=NULL) {
   }	
 }
 # Choose L5 
-ChooseL5 <- function() {
-  By <- 0.05
-  Xs <-seq(from=0, to=1, by=By)
-  Ys <- rep(0.05, length(Xs))
-  points(Xs, Ys, col="gray", cex=0.5)
-  text(0.5, 0.2, "Choose two points for L5")
-  L5out <- identifyPch(x=Xs, y=Ys, tolerance=0.1, n=2)
+ChooseL5 <- function(Fleet, Stock, isRel) {
+  if (isRel) {
+    By <- 0.05
+    Xs <-seq(from=0, to=1.5, by=By)
+    Ys <- rep(0.05, length(Xs))
+    points(Xs, Ys, col="gray", cex=0.5)
+    text(0.5, 0.2, "Choose two points for L5")
+    L5out <- identifyPch(x=Xs, y=Ys, tolerance=0.1, n=2)
+  } else {
+    By <- 2.5
+    Xs <- seq(from=0, to=max(Stock@L50)*1.5, by=By)
+    Ys <- rep(0.05, length(Xs))
+    points(Xs, Ys, col="gray", cex=0.5)
+    text(Xs[5], 0.2, "Choose two points for L5", pos=4)
+    L5out <- identifyPch(x=Xs, y=Ys, tolerance=0.1, n=2)  
+  }
   L5out
 }
+
 # Choose LFS 
-ChooseLFS <- function(L5out) {
-  Max <- 3
-  By <- 0.05
-  Xs <-seq(from=max(L5out[,1]), to=Max, by=By)
-  Ys <- rep(1, length(Xs))
-  points(Xs, Ys, col="gray", cex=0.5)
-  text(1.5, 0.5, "Choose two points for LFS")
-  LFSout <- identifyPch(x=Xs, y=Ys, tolerance=0.1, n=2)
+ChooseLFS <- function(L5out, Fleet, Stock, isRel) {
+  if (isRel) {
+    Max <- 3
+    By <- 0.05
+    Xs <-seq(from=max(L5out[,1]), to=Max, by=By)
+    Ys <- rep(1, length(Xs))
+    points(Xs, Ys, col="gray", cex=0.5)
+    text(1.5, 0.5, "Choose two points for LFS", pos=4)
+    LFSout <- identifyPch(x=Xs, y=Ys, tolerance=0.1, n=2)
+  } else {
+    Max <- 3
+    By <- 2.5
+    Xs <-seq(from=max(L5out[,1]), to=max(Stock@L50)*2, by=By)
+    Ys <- rep(1, length(Xs))
+    points(Xs, Ys, col="gray", cex=0.5)
+    text(Xs[5], 0.5, "Choose two points for LFS", pos=4)
+    LFSout <- identifyPch(x=Xs, y=Ys, tolerance=0.1, n=2)  
+  }
   LFSout
 }
+
 # Choose Vmaxlen
-ChooseVmaxlen <- function(L5out) {
-  Max <- 3 
-  Ys <- seq(from=0, to=1, by=0.05) 
-  Xs <- rep(Max, length(Ys))
-  points(Xs, Ys, col="gray", cex=0.5)
-  text(2, 0.8, "Choose two points for selectivity\n at maximum length")
-  Vmaxout <- identifyPch(x=Xs, y=Ys, tolerance=0.1, n=2)
+ChooseVmaxlen <- function(Fleet, Stock, isRel) {
+  if (isRel) {
+    Max <- 3 
+    Ys <- seq(from=0, to=1, by=0.05) 
+    Xs <- rep(Max, length(Ys))
+    points(Xs, Ys, col="gray", cex=0.5)
+    text(2, 0.8, "Choose two points for selectivity\n at maximum length")
+    Vmaxout <- identifyPch(x=Xs, y=Ys, tolerance=0.1, n=2)
+  } else {
+    Max <- mean(Stock@Linf)
+	By <- 2.5 
+    Ys <- seq(from=0, to=1, by=0.05) 
+    Xs <- rep(Max, length(Ys))
+    points(Xs, Ys, col="gray", cex=0.5)
+    text(Xs[1], 0.8, "Choose two points for selectivity\n at maximum length", pos=2)
+    Vmaxout <- identifyPch(x=Xs, y=Ys, tolerance=0.1, n=2)
+  }
   Vmaxout
 }
 	

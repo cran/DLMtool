@@ -439,7 +439,6 @@ makeTransparent<-function(someColor, alpha=100){
     blue=curcoldata[3],alpha=alpha, maxColorValue=255)})
 }
 
-
 # Value of information analysis ------------------------------------------------
 # Value of information
 VOI<-function(MSEobj,ncomp=6,nbins=8,maxrow=8,Ut=NA,Utnam="Utility"){
@@ -465,7 +464,8 @@ VOI<-function(MSEobj,ncomp=6,nbins=8,maxrow=8,Ut=NA,Utnam="Utility"){
   onlycor<-c("RefY","A","MSY","Linf","t0","OFLreal","Spat_targ")
   vargood<-(apply(MSEobj@OM,2,sd)/(apply(MSEobj@OM,2,mean)^2)^0.5)>0.005
   # MSEobj@OM<- MSEobj@OM[,(!names(MSEobj@OM)%in%onlycor)&vargood]
-  MSEobj@OM[,which((!names(MSEobj@OM)%in%onlycor)&vargood)]  
+  vargood[grep("qvar", names(MSEobj@OM))] <- FALSE
+  MSEobj@OM<- MSEobj@OM[,which((!names(MSEobj@OM)%in%onlycor)&vargood)]  
   OMp<-apply(MSEobj@OM,2,quantile,p=seq(0,1,length.out=nbins+1))
   Obsp<-apply(MSEobj@Obs,2,quantile,p=seq(0,1,length.out=nbins+1))
   OMv<-array(NA,c(nMPs,ncol(MSEobj@OM),nbins))
@@ -499,8 +499,8 @@ VOI<-function(MSEobj,ncomp=6,nbins=8,maxrow=8,Ut=NA,Utnam="Utility"){
   
   
   # -- Observation model variables
-  slots<-c( "Cat",  "Cat","AvC",  "AvC","CAA",      "CAA",    "CAL",      "CAL",    "Ind","Dep",  "Dep", "Dt",   "Dt", "Mort", "FMSY_M",    "BMSY_B0",     "L50",      "L95",    "LFC",    "LFS",    "Abun",  "Abun","vbK",  "vbt0",  "vbLinf",  "Steep","Iref",    "Cref",    "Bref")
-  Obsnam<-c("Cbias","Csd","Cbias","Csd","CAA_nsamp","CAA_ESS","CAL_nsamp","CAL_ESS","Isd","Dbias","Derr","Dbias","Derr","Mbias","FMSY_Mbias","BMSY_B0bias", "lenMbias","lenMbias","LFCbias","LFSbias","Abias","Aerr","Kbias","t0bias","Linfbias","hbias","Irefbias","Crefbias","Brefbias")
+  slots<-c( "Cat",  "Cat","AvC",  "AvC","CAA",      "CAA",    "CAL",      "CAL",    "Ind","Dep",  "Dep", "Dt",   "Dt", "Mort", "FMSY_M",    "BMSY_B0",     "L50",      "L95",    "LFC",    "LFS",    "Abun",  "Abun","vbK",  "vbt0",  "vbLinf",  "Steep","Iref",    "Cref",    "Bref", "ML")
+  Obsnam<-c("Cbias","Csd","Cbias","Csd","CAA_nsamp","CAA_ESS","CAL_nsamp","CAL_ESS","Isd","Dbias","Derr","Dbias","Derr","Mbias","FMSY_Mbias","BMSY_B0bias", "lenMbias","lenMbias","LFCbias","LFSbias","Abias","Aerr","Kbias","t0bias","Linfbias","hbias","Irefbias","Crefbias","Brefbias", "")
   Obss<-apply(Obsv,1:2,sd,na.rm=T)
   Obsstr<-array("",c(nMPs*2,ncomp+1))
   for(mm in 1:nMPs){
@@ -617,12 +617,12 @@ VOI<-function(MSEobj,ncomp=6,nbins=8,maxrow=8,Ut=NA,Utnam="Utility"){
 # Manipulation of MSE Object ---------------------------------------------------
 # Subset the MSE object by particular MPs (either MP number or name), 
 #  or particular simulations
-Sub <- function(MSEobj, MPs=NULL, sims=NULL) {
+Sub <- function(MSEobj, MPs=NULL, sims=NULL, years=NULL) {
   Class <- class(MPs)
   if(Class == "NULL") subMPs <- MSEobj@MPs
   if(Class == "integer" | Class == "numeric") subMPs <- MSEobj@MPs[as.integer(MPs)]
   if(Class == "character") subMPs <- MPs
-  SubMPs <- which(MSEobj@MPs %in% subMPs)
+  SubMPs <- match(subMPs, MSEobj@MPs ) #  which(MSEobj@MPs %in% subMPs)
   not <- (subMPs %in% MSEobj@MPs) # Check for MPs misspelled
   ind <- which(not == FALSE)
   newMPs <- MSEobj@MPs[SubMPs]
@@ -632,6 +632,7 @@ Sub <- function(MSEobj, MPs=NULL, sims=NULL) {
 	message("Subsetting by MPs: ", paste0(newMPs, " "))
   }
   
+  
   ClassSims <- class(sims)
   if (ClassSims == "NULL") SubIts <- 1:MSEobj@nsim
   if (ClassSims == "integer" | ClassSims == "numeric") {
@@ -639,26 +640,124 @@ Sub <- function(MSEobj, MPs=NULL, sims=NULL) {
 	SubIts <- as.integer(sims)
   }	
   if (ClassSims == "logical") SubIts <- which(sims)
+  nsim <- length(SubIts)
 
-  SubF <- MSEobj@F_FMSY[SubIts,SubMPs,]
-  SubB <- MSEobj@B_BMSY[SubIts,SubMPs,]
+  ClassYrs <- class(years)
+  AllNYears <- MSEobj@proyears
+  if (ClassYrs == "NULL")  Years <- 1:AllNYears
+  if (ClassYrs == "integer" | ClassYrs == "numeric") Years <- years
+  if (max(Years) > AllNYears) stop("years exceeds number of years in MSE")
+  if (min(Years) <= 0) stop("years must be positive")
+  if (min(Years) != 1) {
+    message("Not starting from first year. Are you sure you want to do this?")
+    message("Probably a bad idea!")
+  }
+  if (!all(diff(Years) == 1)) stop("years are not consecutive")
+  if (length(Years) <= 1) stop("You are going to want more than 1 projection year")
+  MSEobj@proyears <- max(Years)
+  
+  SubF <- MSEobj@F_FMSY[SubIts,SubMPs,Years, drop=FALSE]
+  SubB <- MSEobj@B_BMSY[SubIts,SubMPs,Years, drop=FALSE]
+  SubC <- MSEobj@C[SubIts,SubMPs,Years, drop=FALSE]
+  SubBa <- MSEobj@B[SubIts,SubMPs,Years, drop=FALSE]
+  SubFMa <- MSEobj@FM[SubIts,SubMPs,Years, drop=FALSE]
+  SubTACa <- MSEobj@TAC[SubIts,SubMPs,Years, drop=FALSE]
+  
   OutOM <- MSEobj@OM[SubIts,]
   
-  SubResults <- new('MSE',Name=MSEobj@Name, nyears=MSEobj@nyears, proyears=MSEobj@proyears, nMPs=length(SubMPs),
-	MPs=newMPs, nsim=length(SubIts), OMtable=OutOM, Obs=MSEobj@Obs[SubIts,], B_BMSYa=SubB, F_FMSYa=SubF, Ba=MSEobj@B[SubIts,SubMPs,], 
-	FMa=MSEobj@FM[SubIts,SubMPs,], Ca=MSEobj@C[SubIts,SubMPs,], TACa=MSEobj@TAC[SubIts,SubMPs,], SSB_hist=MSEobj@SSB_hist[SubIts,,,],
+  SubResults <- new('MSE',Name=MSEobj@Name, nyears=MSEobj@nyears, 
+    proyears=MSEobj@proyears, nMPs=length(SubMPs), MPs=newMPs, 
+	nsim=length(SubIts), OMtable=OutOM, Obs=MSEobj@Obs[SubIts,], 
+	B_BMSYa=SubB, F_FMSYa=SubF, Ba=SubBa, FMa=SubFMa, Ca=SubC, 
+	TACa=SubTACa, SSB_hist=MSEobj@SSB_hist[SubIts,,,],
 	CB_hist=MSEobj@CB_hist[SubIts,,,], FM_hist=MSEobj@FM_hist[SubIts,,,])
   
  return(SubResults)
 }
 
 
+# Join two or more MSE objects together 
+joinMSE <- function(MSEobjs=NULL){ 
+  # join two or more MSE objects 
+  if (class(MSEobjs) != "list") stop("MSEobjs must be a list")
+  if (length(MSEobjs) < 2) stop("MSEobjs list doesn't contain multiple MSE objects")
+
+  MPNames <- lapply(MSEobjs, getElement, name="MPs") # MPs in each object 
+  allsame <- length(unique(MPNames)) == 1
+  if (!allsame) { # some more work to do - drop the MPs that don't appear in all MSEobjs
+      mpnames <- unlist(MPNames)
+	  npack <- length(MSEobjs)
+	  tab <- table(mpnames)
+	  ind <- tab == npack
+	  commonMPs <- names(tab)[ind]
+	  MSEobjs <- lapply(MSEobjs, Sub, MPs=commonMPs)
+	  print("MPs not in all MSE objects:")
+	  print(names(tab)[!ind])
+	  print("Dropped from final MSE object.") 
+  }
+ 
+  Nobjs <- length(MSEobjs)
+  for (X in 1:Nobjs) {
+	tt <- MSEobjs[[X]]
+	assign(paste0("obj", X), tt)
+ 	if (X > 1) {
+	  tt <- MSEobjs[[X]]
+	  tt2 <- MSEobjs[[X-1]]
+	  if(!all(slotNames(tt) == slotNames(tt2))) stop("The MSE objects don't have the same slots")
+	  if (any(tt@MPs != tt2@MPs)) stop("MPs must be the same for all MSE objects")
+	}
+  }
+  
+  # Check that nyears and proyears are the same for all 
+  chkmat <- matrix(NA, nrow=Nobjs, ncol=2)
+  nms <- NULL
+  for (X in 1:Nobjs) {
+    tt <- get(paste0("obj", X))
+	chkmat[X, ] <- c(tt@nyears, tt@proyears)
+	if (X > 1) if (!any(grepl(tt@Name, nms))) stop("MSE objects have different names")
+	nms <- append(nms, tt@Name)
+  }
+  chk <- all(colSums(chkmat) == chkmat[1,] * Nobjs)
+  if (!chk) stop("The MSE objects have different number of nyears or proyears")
+  
+  # Join them together
+  Allobjs <- mget(paste0("obj", 1:Nobjs))
+  sns <- slotNames(Allobjs[[1]])
+  outlist <- vector("list", length(sns))
+  for (sn in 1:length(sns)) {
+    templs <- lapply(Allobjs, slot, name=sns[sn])
+    if (class(templs[[1]]) == "character") {
+	  outlist[[sn]] <- templs[[1]]
+	}
+	if (class(templs[[1]]) == "numeric" | class(templs[[1]]) == "integer") {
+	  outlist[[sn]] <- do.call(c, templs)
+	}
+	if (class(templs[[1]]) == "matrix" | class(templs[[1]]) == "data.frame") {
+	  outlist[[sn]] <- do.call(rbind, templs)
+	}
+	if (class(templs[[1]]) == "array") {
+	  outlist[[sn]] <- abind(templs, along=1)
+	}
+  }
+  names(outlist) <- sns
+ 
+  newMSE <- new('MSE', Name=outlist$Name,nyears=unique(outlist$nyears),
+    proyears=unique(outlist$proyears), nMP=unique(outlist$nMP), 
+	MPs=unique(outlist$MPs), nsim=sum(outlist$nsim),OM=outlist$OM,
+	Obs=outlist$Obs, B_BMSY=outlist$B_BMSY, F_FMSY=outlist$F_FMSY,
+    outlist$B, outlist$FM, outlist$C, outlist$TAC, 
+	outlist$SSB_hist, outlist$CB_hist, outlist$FM_hist)
+ 
+  newMSE
+}	
+  
 # Evaluate Peformance of MPs ---------------------------------------------------
 # Function examines how consistently an MP outperforms another. 
 DOM <- function(MSEobj, MPtg=NA) {
   if (any(is.na(MPtg))) MPtg <- MSEobj@MPs 
   proyears<-MSEobj@proyears
   nMP <- MSEobj@nMPs
+  nsim <- MSEobj@nsim
   ind <- which(MSEobj@MPs %in%  MPtg)
   MPr <- which(!(MSEobj@MPs %in%  MPtg))
   yind<-max(MSEobj@proyears-4,1):MSEobj@proyears
@@ -701,7 +800,6 @@ DOM <- function(MSEobj, MPtg=NA) {
   out$AAVY <- IAVmat
   return(out)
 }
-
 
 # Trade-Off Plot Function ------------------------------------------------------
 TradePlot <- function(MSEobj, XAxis=c("Overfishing", "Biomass:BMSY"), 
@@ -747,7 +845,7 @@ TradePlot <- function(MSEobj, XAxis=c("Overfishing", "Biomass:BMSY"),
   for(mm in 1:MSEobj@nMPs){  
     PNOF[mm]<-round(sum(MSEobj@F_FMSY[,mm,]<1,na.rm=T)/prod(dim(MSEobj@F_FMSY[,mm,]),na.rm=T)*100,1)
     BMSYref[mm]<-round(sum(MSEobj@B_BMSY[,mm,]>BmsyRef,na.rm=T)/prod(dim(MSEobj@B_BMSY[,mm,]))*100,1)
-	B0ref[mm]<-round(sum((MSEobj@B[,mm,]/MSEobj@B[,mm,1] * MSEobj@OM$Depletion) >B0Ref,na.rm=T)/prod(dim(MSEobj@B_BMSY[,mm,]))*100,1)
+	B0ref[mm]<-round(sum((MSEobj@B_BMSY[,mm,] * MSEobj@OM$BMSY_B0) >B0Ref,na.rm=T)/prod(dim(MSEobj@B_BMSY[,mm,]))*100,1)
     # LTY[mm]<-round(sum(MSEobj@C[,mm,yend]/RefYd>0.5,na.rm=T)/(MSEobj@nsim*length(yend)),3)*100
 	# STY[mm]<-round(sum(MSEobj@C[,mm,ystart]/RefYd>0.5,na.rm=T)/(MSEobj@nsim*length(ystart)),3)*100
 	LTY[mm]<-round(mean(apply(MSEobj@C[,mm,yend],1,mean,na.rm=T)/RefYd,na.rm=T)*100,1)
@@ -874,4 +972,553 @@ tradeoffplot4<-function(x,y,xlab,ylab,labs,cex,vl,hl,
    
 }
 
+wormplot<-function(MSEobj,Bref=0.5,LB=0.25,UB=0.75){
+  
+  if(UB<LB)stop("LB parameter must be lower than UB parameter")
+  if(LB<0|LB>1)stop("LB parameter must be in the range of 0 to 1")
+  if(UB<0|UB>1)stop("UB parameter must be in the range of 0 to 1")
+  
+  ncol<-ceiling(MSEobj@nMPs^0.3)
+  nrow<-ceiling(MSEobj@nMPs/ncol)
+  
+  par(mfcol=c(nrow,ncol),mar=c(0.1,0.1,0.1,0.1),omi=c(0.6,0.25,0.3,0))
+  
+  Bprob<-apply(MSEobj@B_BMSY>Bref,2:3,sum)/MSEobj@nsim
+  
+  ind<-order(apply(Bprob,1,sum),decreasing=T)
+  
+  BLB<-Bprob>LB
+  BUB<-Bprob>UB
+  
+  col<-array('red',dim(Bprob))
+  col[BLB&!BUB]="yellow"
+  col[BUB]="green"
+  
+  for(i in 1:(nrow*ncol)){
+    if(i<(MSEobj@nMPs+1)){
+      MP<-ind[i]
+      plot(c(1,MSEobj@proyears+2),c(-1,1),col='white',axes=F)
+      # abline(h=0)
+    
+      for(ys in 1:MSEobj@proyears){
+        x<-c(ys-1,ys,ys,ys-1)
+        y<-c(rep(Bprob[MP,ys],2),rep(-Bprob[MP,ys],2))
+        pol<-data.frame(x,y)
+        polygon(pol,col=col[MP,ys],border=NA)
+      }
+    
+      legend('top',legend=MSEobj@MPs[MP],bty='n')
+      if((i/nrow)==round(i/nrow,0)) axis(1,pretty(1:MSEobj@proyears),pretty(1:MSEobj@proyears))
+      
+      
+    }else{
+      
+      plot.new()
+ 
+    }
+    
+    if(i==(nrow*ncol)){
+      legend('topright',fill=c("green","red"),
+             legend=c(paste(">",round(UB*100,0),"% prob.",sep=""),
+                      paste("<",round(LB*100,0),"% prob.",sep="")
+             ),
+             bty="n")
+      
+    }
+    
+  }
+  
+  mtext(paste("Probability of biomass above ",round(Bref*100,0),"% BMSY for ",deparse(substitute(MSE)),sep=""),3,outer=T,line=0.5)
+  mtext("Projection year",1,outer=T,line=2.5)
+  mtext(paste("Fraction of simulations above ",round(Bref*100,0),"% BMSY",sep=""),2,outer=T,line=0.25)
+  Bprob
+  
+}
 
+VOI2<-function(MSEobj,ncomp=6,nbins=4,Ut=NA,Utnam="yield",lay=F){
+  
+  objnam<-deparse(substitute(MSEobj))
+  nsim<-MSEobj@nsim
+  
+  if(is.na(Ut[1])){
+    Ut<-array(NA,c(nsim,MSEobj@nMPs))
+    yind<-max(MSEobj@proyears-4,1):MSEobj@proyears
+    RefYd<-MSEobj@OM$RefY
+    
+    for(mm in 1:MSEobj@nMPs){
+      Ut[,mm]<-apply(MSEobj@C[,mm,yind],1,mean,na.rm=T)/RefYd*100
+      #POF[,mm]<-apply(MSEobj@F_FMSY[,mm,]>1,1,sum)/MSEobj@proyears
+      #P10[,mm]<-apply(MSEobj@B_BMSY[,mm,]<0.1,1,sum)/MSEobj@proyears
+    }
+    
+  }
+  
+  MPs<-MSEobj@MPs
+  nMPs<-MSEobj@nMPs
+  
+  # -- Observation model variables
+  slots<-c( "Cat",  "Cat","AvC",  "AvC","CAA",      "CAA",    "CAL",      "CAL",    "Ind","Ind",  "Dep",  "Dep", "Dt",   "Dt", "Mort", "FMSY_M",    "BMSY_B0",     "L50",      "L95",    "LFC",    "LFS",    "Abun",  "Abun","vbK",  "vbt0",  "vbLinf",  "Steep","Iref",    "Cref",    "Bref")
+  Obsnam<-c("Cbias","Csd","Cbias","Csd","CAA_nsamp","CAA_ESS","CAL_nsamp","CAL_ESS","Isd","betas","Dbias","Derr","Dbias","Derr","Mbias","FMSY_Mbias","BMSY_B0bias", "lenMbias","lenMbias","LFCbias","LFSbias","Abias","Aerr","Kbias","t0bias","Linfbias","hbias","Irefbias","Crefbias","Brefbias")
+  
+  
+  Obsnam2<-c("Cbias","Csd","CAA_nsamp","CAA_ESS","CAL_nsamp","CAL_ESS","Isd","betas","Dbias","Derr","Mbias","FMSY_Mbias","BMSY_B0bias", "lenMbias","LFCbias","LFSbias","Abias","Aerr","Kbias","t0bias","Linfbias","hbias","Irefbias","Crefbias","Brefbias")
+  Obsnam3<-c("Catch bias","Catch error","n CAA samples", "CAA ESS","n CAL samples","CAL ESS","Abun. Ind. error","Hyperstability","Depln. bias",
+             "Depln. error","M bias","FMSY/M bias","BMSY/B0 bias","lenMbias","Len 1st Cap bias","Len full sel bias","Cur Abund bias","Cur Abun err","vB K bias","vB t0 bias","vB Linf bias","Steepness bias","Ref index bias","Ref catch bias", "Ref biomass bias")
+  #Types of observation error model   1:lognorm   2:percentile  3:replicates (higher is better) ##4:uniform on log  5:logit space
+  oem<-c(     1,      2,    3,          3,        3,          3,        2,    4,      1,      2,     1,      1,            1,             1,        1,        1,        4,      2,     1,      1,       1,         2,      1,         1,         1)
+  #oem<-c(     2,      2,    3,          3,        3,          3,        2,    4,      2,      2,     2,      2,            2,             2,        2,        2,        4,      2,     2,      2,       2,         2,      1,         1,         1)
+  
+  Obsd<-apply(MSEobj@Obs,2,sd)
+  Obm<-apply(MSEobj@Obs,2,mean)
+  Obmd<-apply(MSEobj@Obs,2,quantile,p=0.5)
+  
+  maxcomp<-length(Obsnam2) 
+  Obsv<-array(NA,c(nMPs,maxcomp,nbins))
+  Obsval<-array(NA,c(nMPs,maxcomp,nbins))
+  Obscost<-array(NA,c(nMPs,maxcomp,nbins))
+  Obsname<-list()
+  
+  div<-seq(1,2,length.out=nbins+1)[2:(nbins+1)] # for distributions
+  percs<-seq(0.5,1,length.out=nbins+1)[1:nbins] # for samples
+  percsCAA<-seq(0,1,length.out=nbins+2)[2:(nbins+1)]
+  percUL<-seq(0,0.25,length.out=nbins+1)[2:(nbins+1)]
+  percUU<-1-percUL
+  for(mm in 1:nMPs){
+    Y1<-Ut[,mm]
+    relobs<-Obsnam[slots%in%unlist(strsplit(Required(MPs[mm])[,2],split=", "))]
+    Obsname[[mm]]<-relobs
+    nr<-length(relobs)
+    if(length(relobs)>0){
+      
+      for(r in 1:nr){
+        oemi<-match(relobs[r],Obsnam2)
+        obsi<-match(relobs[r],names(MSEobj@Obs))
+        for(cc in 1:nbins){
+          if(oem[oemi]==1){ # Redundant SIR code for log-normal biases
+            T1<-tdlnorm(MSEobj@Obs[,obsi],Obm[obsi],Obsd[obsi]/Obm[obsi]) 
+            #plot(MSEobj@Obs[,obsi],T1) # check
+            T2<-tdlnorm(MSEobj@Obs[,obsi],Obm[obsi],Obsd[obsi]/(div[cc]*Obm[obsi])) 
+            W<-T2/T1
+            nrep2<-nsim*20
+            Y2<-sample(Y1,nrep2*5,replace=T,prob=W)
+            Obsv[mm,r,cc]<-(mean(Y2)-mean(Y1))/mean(Y1)*100
+            Obsval[mm,r,cc]<-Obsd[obsi]/(div[cc]*Obm[obsi])
+            Obscost[mm,r,cc]<-div[cc]^2
+          }else if(oem[oemi]==2){
+            refval<-quantile(MSEobj@Obs[,obsi],percs[nbins:1][cc])
+            ind<-MSEobj@Obs[,obsi]<refval
+            Obsv[mm,r,cc]<-(mean(Y1[ind])-mean(Y1))/mean(Y1)*100
+            Obsval[mm,r,cc]<-mean(MSEobj@Obs[ind,obsi])
+            Obscost[mm,r,cc]<-1/(Obsval[mm,r,cc]/mean(MSEobj@Obs[,obsi]))^2
+          }else if(oem[oemi]==3){  
+            refval<-quantile(MSEobj@Obs[,obsi],percsCAA[cc])
+            ind<-MSEobj@Obs[,obsi]>refval
+            Obsv[mm,r,cc]<-(mean(Y1[ind])-mean(Y1))/mean(Y1)*100
+            Obsval[mm,r,cc]<-mean(MSEobj@Obs[ind,obsi])
+            Obscost[mm,r,cc]<-Obsval[mm,r,cc]
+          }else if(oem[oemi]==4){
+            refval<-quantile(MSEobj@Obs[,obsi],percUL[cc])
+            refval2<-quantile(MSEobj@Obs[,obsi],percUU[cc])
+            ind<-(MSEobj@Obs[,obsi]>refval)&(MSEobj@Obs[,obsi]<refval2)
+            Obsv[mm,r,cc]<-(mean(Y1[ind])-mean(Y1))/mean(Y1)*100
+            Obsval[mm,r,cc]<-sd(MSEobj@Obs[ind,obsi])
+            Obscost[mm,r,cc]<-1/(Obsval[mm,r,cc]/sd(MSEobj@Obs[,obsi]))^2
+          }
+          # observation model type
+        } # loop over bins
+      } # loop over r
+    } # observation variables?
+  } # loop over MPs
+  
+  cb<-array(NA,c(MSEobj@nMPs,maxcomp))
+  for(mm in 1:MSEobj@nMPs){
+    if(sum(!is.na(Obscost[mm,,]))>0){
+      for(r in 1:length(Obsname[[mm]])){ 
+        dat<-data.frame(x=Obscost[mm,r,],y=Obsv[mm,r,])
+		if (prod(apply(dat, 2, is.finite)) > 0) {
+        #plot(dat$x,dat$y)
+          cb[mm,r]<-lm(y~x-1,data=dat)$coefficients[1]
+		}  
+      }
+    }
+  } 
+  
+  ncols<-100
+  #colsse<-makeTransparent(rainbow(ncols,start=0,end=0.36),95)[ncols:1]
+  colt<-rainbow(ncols,start=0,end=0.36)[1:ncols]
+  colsse<-makeTransparent(colt,98)
+  
+  cb[cb<0|is.na(cb)]<-0
+  coly<-ceiling((cb/max(cb,na.rm=T))^0.5*ncols)
+  coly[coly==0]<-1
+  
+  ncol<-ceiling(MSEobj@nMPs^0.5)
+  nrow<-ceiling(MSEobj@nMPs/ncol)
+  
+  par(mfrow=c(nrow,ncol),mar=c(2.4,2.4,0.1,0.1),omi=c(0.4,0.35,0.3,0))
+  
+  gcol1<-"#99999960"
+  gcol2<-"#99999940"
+  gcol3<-"#99999920"
+  
+  for(mm in 1:MSEobj@nMPs){
+    if(sum(!is.na(Obscost[mm,,]))>0){
+      
+      plot(c(1,5),range(Obsv,na.rm=T),col='white',main="")
+      legend('topleft',legend=MSEobj@MPs[mm],bty='n',text.font=2,cex=1.4)
+      
+      abline(h=(-20:50)*4,col=gcol2,lwd=1.5)
+      abline(h=(-20:50)*4+2,col=gcol3,lwd=1)
+      
+      abline(v=1:4,col=gcol2,lwd=1.5)
+      abline(v=(1:4)+0.5,col=gcol3,lwd=1)
+      abline(h=0,col=gcol1,lwd=3)
+      
+      
+      no<-length(Obsname[[mm]])
+      ind<-order(cb[mm,1:no],decreasing=T)[1:ncomp]
+      ind<-ind[!is.na(ind)]
+      
+      ind2<-order(Obsv[mm,1:no,nbins])[1:ncomp]
+      ind2<-ind2[!is.na(ind2)]
+      
+      
+      lpos<-Obsv[mm,ind2,nbins]
+      ppos<-seq(min(Obsv,na.rm=T),max(Obsv,na.rm=T),length.out=length(ind2))
+      wt<-(max(Obsv[mm,1:no,nbins],na.rm=T)-min(Obsv[mm,1:no,nbins],na.rm=T))/(max(Obsv,na.rm=T)-min(Obsv,na.rm=T))/(no/ncomp)
+      wt<-wt^0.66
+      nupos<-wt*lpos+(1-wt)*ppos
+      
+      for(r2 in 1:length(ind)){
+        r<-ind2[r2]
+        lines(c(1,Obscost[mm,r,]),c(0,Obsv[mm,r,]),col=colsse[coly[mm,r]],lwd=3)
+        if(!lay){
+          text(4.5,nupos[r2],Obsname[[mm]][r],col=colt[coly[mm,r]],font=2,cex=1.2)
+        }else{
+          text(4.5,nupos[r2],Obsnam3[match(Obsname[[mm]][r],Obsnam2)],col=colt[coly[mm,r]],font=2,cex=1.2)
+        }
+      } # observation quantities (lines)
+      
+      
+      #legend('topleft',legend=Obsname[[mm]][ind],text.col=colt[coly[mm,ind]],text.font=2,cex=1.2,bty='n')
+      
+    } # if there is data to plot
+    
+    
+  } # MPs (plots)
+  
+  
+  mtext("Cost relative to today",1,outer=T,cex=0.9,line=1,font=2)
+  #mtext(paste("Operating model parameters: ",objnam,"@OM",sep=""),3,outer=T,font=2,cex=0.9)
+  mtext(paste("% Change in ",Utnam," relative to today",sep=""),2,outer=T,line=0.6,font=2,cex=0.9)
+  
+  list(Obscost,Obsv,Obsval,cb,Obsname,MSEobj@MPs)
+  
+} # VOI2
+
+
+## Plotting Functions ## (new) 
+# Value of Information 
+VOIplot <- function(MSEobj, MPs=NA, nvars=5, nMP=4, Par=c("Obs", "OM"), 
+  YVar=c("Y", "B"), doPlot=TRUE, incStat=FALSE, availMP=NULL, 
+  acceptMP=NULL, incNames=TRUE, labcex=0.8) {
+  YVar <- match.arg(YVar)
+  nvars <- max(nvars, 2) # maximum number of variables 
+  Par <- match.arg(Par)  # Operating Model or Observation 
+  nMPs <- MSEobj@nMPs # Number of MPs  
+  # Subset to specified MPs 
+  if (any(is.na(MPs))) MPs <- MSEobj@MPs
+  if (class(MPs) == "numeric" | class(MPs) == "integer") MPs <- MSEobj@MPs[MPs]
+  if (length(MPs) < 1) stop("No MPss found")
+  nMPss <- length(MPs)
+  if (nMP > nMPs) nMP <- nMPs 
+  if (!all(MSEobj@MPs %in% MPs)) {
+    mse <- Sub(MSEobj, MPs=MPs)
+	nMPs <- mse@nMPs
+  } else {
+    mse <- MSEobj 
+  }
+  
+  # Calculate MSE sensitivities per MP 
+  if (length(MPs) > 1)  senseDat <- sapply(1:nMPs, calcMSESense, MSEobj=mse, YVar=YVar)
+  if (length(MPs) == 1) senseDat <- calcMSESense(MP=MPs, MSEobj=mse, YVar=YVar)
+  
+  # Y Variable    
+  if (nMPs> 1) yvals <- senseDat["YVar",]
+  if (nMPs == 1) yvals <- senseDat$YVar
+  
+  # Operating Model or Observation Statistics 
+  if (nMPs > 1) {
+    if (Par == "OM") {
+      xvals <- senseDat["OMVals",1]
+	  stat <- senseDat["OMStat",]
+	  smth <- senseDat["OMSmooth",]
+	  varNames <- colnames(senseDat["OMVals",1][[1]])
+    } else {
+      xvals <- senseDat["OBVals",1]
+	  stat <- senseDat["OBStat",]
+	  smth <- senseDat["OBSmooth",]
+	  varNames <- colnames(senseDat["OBVals",1][[1]])
+	
+    }
+  }
+  if (nMPs == 1) {
+    if (Par == "OM") {
+      xvals <- senseDat$OMVals
+	  stat <- senseDat$OMStat
+	  smth <- senseDat$OMSmooth
+	  varNames <- names(stat)
+    } else {
+      xvals <- senseDat$OBVals
+	  stat <- senseDat$OBStat
+	  smth <- senseDat$OBSmooth
+	  varNames <- names(stat)
+    }    
+  }
+  
+  # Check what MPs used what variables 
+  used <- matrix(FALSE, nrow=length(varNames), ncol=nMPs) 
+  if (Par == "OM") {
+    used <- matrix(TRUE, nrow=length(varNames), ncol=nMPs) # all OM parameters used 
+	Obsnam <- varNames
+	LnName <- c("Reference yield", "Natural mortality", "Depletion", "Abundance",  
+    "BMSY/B0", "FMSY/M", "M gradient", "Inter-annual variability M",
+    "Recruitment variability", "Inter-annual variability effort",        
+    "Final effort", "MSY", "Average change in catchability", 
+    "Inter-annual variabilility in catchability", "FMSY", "von Bert. Linf", 
+    "von Bert. K", "von Bert. t0", "Steepness", "Linf gradient", "K gradient", 
+    "Inter-annual variability in Linf", "Recruitment gradient", 
+    "Inter-annual variability in K", "Age at maturity", "Length at 5% selection", 
+    "Length at full selection", "Length at first capture", "True MSY", "Size Area 1",                               
+    "Prob. Movement", "Auto-correlation recruitment", "Length 50% maturity", "Length 95% maturity", "Relative Length at Capture")
+	# cbind(Obsnam, LnName) 
+  }
+  if (Par == "Obs") {
+     slots <- c("Cat", "Cat", "AvC", "AvC", "CAA", "CAA", "CAL", "CAL", "Ind", "Ind", "Dep",
+     "Dep", "Dt", "Dt", "Mort", "FMSY_M", "BMSY_B0", "L50", "L95", "LFC", "LFS", 
+     "Abun", "Abun", "vbK", "vbt0", "vbLinf", "Steep", "Iref", "Cref", "Bref", "ML", "ML")
+	 Obsnam <- c("Cbias", "Csd", "Cbias", "Csd", "CAA_nsamp", "CAA_ESS", "CAL_nsamp", "CAL_ESS",    
+     "Isd", "betas", "Dbias", "Derr", "Dbias", "Derr", "Mbias", "FMSY_Mbias",
+     "BMSY_B0Bias", "lenMbias", "lenMbias", "LFCbias", "LFSbias", "Abias", "Aerr",
+     "Kbias", "t0bias", "Linfbias", "hbias", "Irefbias", "Crefbias", "Brefbias", "CAL_nsamp", "CAL_ESS")
+	 LnName <- c("Catch bias", "Catch error", "Catch bias", "Catch error", "n CAA samples",
+     "CAA effective sample size", "n CAL samples", "CAL effective sample size",
+     "Index Abundance error", "Hyperstability/hyperdepletion", "Depletion bias", 
+     "Depletion error", "Depletion bias", "Depletion error", "M bias", "FMSY/M bias",
+     "BMSY/B0 bias", "Length maturity bias", "Length maturity bias", 
+     "Length first capture bias", "Length full capture bias", 
+     "Current abundance bias", "Current abundance error", "vB K bias",            
+     "vB t0 bias", "vB Linf bias",  "Steepness bias", "Reference index bias",
+     "Reference catch bias", "Reference biomass bias", "Mean length", "Mean length")
+	# cbind(slots, Obsnam, LnName) 
+    for (mm in 1:nMPs) {
+      ids <- Obsnam[slots%in%unlist(strsplit(Required(MPs[mm])[,2],split=", "))]
+	  used[match(ids, varNames),mm] <- TRUE
+    }
+  }
+  colnames(used) <- MPs 
+  rownames(used) <- varNames
+  
+ 
+  # Find the highest Stat for each variable 
+  Stat <- matrix(unlist(stat), ncol=nMPs) * used
+  if (max(Stat, na.rm=TRUE) > 100) Stat <- Stat/100
+  rownames(Stat) <- varNames
+  statord <- apply(Stat, 2, order, decreasing=TRUE)
+  
+  topStat <- statord[1:nvars,] # highest nvars for each MP
+  Out <- list()
+  if (Par == "Obs") {
+    Out$xvals <- xvals
+    Out$stat <- Stat 
+    Out$topStat <- topStat
+    Out$smth <- smth
+    Out$varNames <- varNames
+	Out$MPs <- MPs
+  }
+   
+  if(doPlot) {
+    ## Create Plotting Space ##
+	Ncol <- nvars 
+	if (nMPs < 2) Ncol <- min(sum(used[,MPs]), nvars)
+	if (nMPs > 1) {
+	  temp <- apply(used[,MPs], 2, sum)
+	  if (all(temp<nvars)) Ncol <- max(temp)
+	}
+	Nrow <- min(nMP, sum(apply(used, 2, sum) > 0 ))
+	if (sum(apply(used, 2, sum) > 0) == 0) print(paste("No", Par, "used for these MPs"))
+   
+    mat <- matrix(1:(Nrow*Ncol), nrow=Nrow, byrow=TRUE)  
+    par(mfrow=c(Nrow, Ncol), oma=c(3,6,2,0), mar=c(3,2,2,1))
+    if (Par == "OM") Title <- "Operating Model Parameters"
+    if (Par == "Obs") Title <- "Observation Parameters"
+    
+    # Colors and Controls
+    ncols <- nrow(Stat) * ncol(Stat)
+    Cols <- colorRampPalette(c("green", "red"))(ncols)
+	# rev(rainbow(ncols,start=0,end=0.36))
+	highest <- max(Stat)
+    pch <- 18 
+    LWD <- 3 
+    LCol <- "black"
+    count <- 1 
+	mm <- 1
+	AxCex <- 1.15
+	doneMP <- 1 
+
+	# Make MP colors for Available, Acceptable, and Not-Acceptable 
+	availCol <- "green"
+	acceptCol <- "black"
+	nonAAcol <- "darkgray"
+	mpcol <- "black" # default
+	mpCols <- data.frame(MPs=MPs, col=rep(mpcol, nMPs), stringsAsFactors=FALSE)
+	if (is.null(acceptMP)) acceptMP <- MPs 
+	if (!is.null(availMP) & (!is.null(acceptMP))) {
+	  mpCols[,2] <- nonAAcol
+	  mpCols[MPs %in% acceptMP, 2] <- acceptCol
+	  mpCols[MPs %in% acceptMP & MPs %in% availMP, 2] <- availCol
+	}
+    
+	AllMPs <- 1:nMPs
+	AllMPs <- AllMPs[apply(used, 2, sum) > 0] # only include MPs which use the parameter 
+	AllMPs <- AllMPs[1:Nrow] # first nMPs 
+	if (YVar == "Y") YLim <- c(0, 100)
+	if (YVar == "B") YLim <- c(0, 3)
+	for (mm in AllMPs) { # Loop along MPs 
+	  for (vr in 1:Ncol) { # Loop along variables
+	    if (nMPs > 1) varind <- topStat[vr,mm] # Variable index 
+		if (nMPs == 1) varind <- topStat[vr]
+		varSN <- varNames[varind]
+		varLN <- LnName[match(varSN,  Obsnam)]
+		if (nMPs > 1) {
+		  xs <- xvals[[1]][,varind]
+	  	  ys <- yvals[[mm]]
+		} else {
+		  xs <- xvals[,varind]
+		  ys <- yvals
+        }	
+		if (used[varSN, MPs[mm]]) { # variable is used
+		  Col <- Cols[ceiling(Stat[varind,MPs[mm]]/highest * ncols)]
+		  plot(xs, ys, col=Col, pch=pch, bty="n", axes=FALSE, xlab="", ylab="", ylim=YLim)
+	  	  if (vr == 1) {
+			MyCol <- mpCols[match(MPs[mm], mpCols[,1]),2]
+	  	    axis(side=2, las=1, cex.axis=AxCex)
+			mtext(side=2, MPs[mm], line=2.75, cex=1.4, col=MyCol)	
+  	      }		  
+		  if (vr != 1) axis(side=2, labels=FALSE)
+	  	  axis(side=1, cex.axis=AxCex)
+	  	  if(incStat) text(max(xs), 0.05*max(ys), round(Stat[varind,MPs[mm]],2), pos=2)		  
+	      # Smoother line 
+	      if (nMPs > 1) {
+	  	    smX <- smth[[mm]][[varind]]$x
+	  	    smY <- smth[[mm]][[varind]]$y		
+		  } else {
+		    smX <- smth[[varind]]$x
+		    smY <- smth[[varind]]$y
+		  }
+          lines(smX, smY, lwd=LWD, col=LCol)
+	      # Variable Name
+		  if (!incNames) mtext(side=1, varSN, cex=1, line=2.5)	
+		  if (incNames) mtext(side=1, varLN, cex=labcex, line=2.5)	
+		  
+		} else {
+          plot(c(0,1), axes=FALSE, type="n", xlab="", ylab="")
+        }	
+      }
+	}  
+	mtext(side=3, outer=TRUE, Title, cex=1.5)
+    if (YVar == "Y") mtext(side=2, outer=TRUE, "Long-term yield relative to MSY (%)", cex=1.25, line=3)
+	if (YVar == "B") mtext(side=2, outer=TRUE, "B/BMSY in last 5 years", cex=1.25, line=3)
+  }
+ invisible(Out)
+}
+
+calcStat <- function(rr, evalbreaks) { # supporting function for above
+  ind <- as.integer(evalbreaks/2)
+  ind2 <- as.integer(0.1 * evalbreaks)
+  ind3 <- as.integer(0.9 * evalbreaks)
+  if (all(rr$x == 0)) return(0)
+  sum((rr$y - mean(rr$y, na.rm=TRUE))^2)
+}
+
+
+calcMSESense <- function(MP=1, MSEobj, YVar=c("Y", "B")) { # supporting function for above 
+  YVar <- match.arg(YVar)
+  # Calculate for a single MP 
+  if(length(MP) > 1) stop("Only one MP")
+  nMPs <- MSEobj@nMPs 
+  MPs <- MSEobj@MPs 
+  if (class(MP) == "character")  mm <- which(MPs %in% MP)
+  if (class(MP) == "numeric" | class(MP) == "integer") {
+    mm <- MP
+	MP <- MPs[mm]
+  }
+  nsims <- MSEobj@nsim
+  RefYd <- MSEobj@OM$RefY
+  yind <- max(MSEobj@proyears-4,1):MSEobj@proyears
+  evalbreaks <- as.integer(nsims/4) # number of breaks for loess smoother
+  if (YVar == "Y") {
+    if (length(dim(MSEobj@C)) > 2) {
+      yout <- apply(MSEobj@C[,mm,yind],1,mean,na.rm=T)/RefYd*100 
+    } else {
+      yout <- apply(MSEobj@C[,yind],1,mean,na.rm=T)/RefYd*100 
+    }
+  }	
+  if (YVar == "B") {
+    if (length(dim(MSEobj@B_BMSY)) > 2) {
+      yout <- apply(MSEobj@B_BMSY[,mm,yind],1,mean,na.rm=T)
+    } else {
+      yout <- apply(MSEobj@B_BMSY[,yind],1,mean,na.rm=T)
+    }
+  }
+  
+  # Operating Model names to include 
+  MSEobj@OM$Lm_SL <- MSEobj@OM$LFS/MSEobj@OM$lenM
+  varnames <- names(MSEobj@OM)
+  vars <- MSEobj@OM
+  vargood <- (apply(vars,2,sd, na.rm=TRUE)/(apply(vars,2,mean, na.rm=TRUE)^2)^0.5)>0.005
+  vargood[grep("qvar", varnames)] <- FALSE
+  vargood[is.na(vargood)] <- TRUE
+  varnames <- varnames[vargood] 
+  
+  omvals <- MSEobj@OM[,varnames]
+  
+  # Ignore these parameters from VOI plot
+  omvals$RefY <- 0
+  omvals$A <- 0
+  omvals$OFLreal <- 0 
+  omvals$FMSY <- 0 
+  omvals$MSY <- 0 
+  omvals$dFfinal <- 0 
+  omvals[is.na(omvals)] <- 0
+
+  # Apply loess smoother to Operating Model parameters
+  OMSmooth <- suppressWarnings(apply(as.matrix(omvals), 2, loess.smooth, y=yout))
+  
+  # Calculate stat for OM curve
+  OMStat <- unlist(lapply(OMSmooth, calcStat, evalbreaks=evalbreaks))
+  
+  # Observation Parameters
+  varnames <- names(MSEobj@Obs)
+  vars <- MSEobj@Obs 
+  vargood <- (apply(vars,2,sd)/(apply(vars,2,mean)^2)^0.5)>0.005
+  varnames <- varnames[vargood]
+  obvals <- MSEobj@Obs[,varnames]
+ 
+  # Apply loess smoother to Operating Model parameters
+  OBSmooth <- suppressWarnings(apply(as.matrix(obvals), 2, loess.smooth, y=yout))
+
+  # Calculate stat for OM curve
+  OBStat <- unlist(lapply(OBSmooth, calcStat, evalbreaks=evalbreaks)) 
+   
+  Out <- list()
+  Out$OMVals <- omvals
+  Out$OMSmooth <- OMSmooth
+  Out$OMStat <- OMStat 
+  Out$OBVals <- obvals
+  Out$OBSmooth <- OBSmooth
+  Out$OBStat <-OBStat
+  Out$YVar <- yout
+  Out$MP <- MP
+  Out
+}
