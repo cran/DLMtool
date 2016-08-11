@@ -664,17 +664,25 @@ Sub <- function(MSEobj, MPs=NULL, sims=NULL, years=NULL) {
   SubTACa <- MSEobj@TAC[SubIts,SubMPs,Years, drop=FALSE]
   
   OutOM <- MSEobj@OM[SubIts,]
+  # check if slot exists
+  tt <- try(slot(MSEobj, "Effort"), silent=TRUE)
+  if (class(tt) == "try-error") slot(MSEobj, "Effort") <- array(NA)
+  if (all(is.na(MSEobj@Effort))) {
+    SubEffort <- array(NA)
+  } else {
+    SubEffort <- MSEobj@Effort[SubIts,SubMPs,Years, drop=FALSE]
+  }
   
   SubResults <- new('MSE',Name=MSEobj@Name, nyears=MSEobj@nyears, 
     proyears=MSEobj@proyears, nMPs=length(SubMPs), MPs=newMPs, 
-	nsim=length(SubIts), OMtable=OutOM, Obs=MSEobj@Obs[SubIts,], 
+	nsim=length(SubIts), OMtable=OutOM, Obs=MSEobj@Obs[SubIts, , drop=FALSE], 
 	B_BMSYa=SubB, F_FMSYa=SubF, Ba=SubBa, FMa=SubFMa, Ca=SubC, 
 	TACa=SubTACa, SSB_hist=MSEobj@SSB_hist[SubIts,,,],
-	CB_hist=MSEobj@CB_hist[SubIts,,,], FM_hist=MSEobj@FM_hist[SubIts,,,])
+	CB_hist=MSEobj@CB_hist[SubIts,,,,drop=FALSE], 
+	FM_hist=MSEobj@FM_hist[SubIts,,, ,drop=FALSE], Effort=SubEffort)
   
  return(SubResults)
 }
-
 
 # Join two or more MSE objects together 
 joinMSE <- function(MSEobjs=NULL){ 
@@ -684,7 +692,7 @@ joinMSE <- function(MSEobjs=NULL){
 
   MPNames <- lapply(MSEobjs, getElement, name="MPs") # MPs in each object 
   allsame <- length(unique(MPNames)) == 1
-  if (!allsame) { # some more work to do - drop the MPs that don't appear in all MSEobjs
+  if (!allsame) { # drop the MPs that don't appear in all MSEobjs
       mpnames <- unlist(MPNames)
 	  npack <- length(MSEobjs)
 	  tab <- table(mpnames)
@@ -746,7 +754,7 @@ joinMSE <- function(MSEobjs=NULL){
 	MPs=unique(outlist$MPs), nsim=sum(outlist$nsim),OM=outlist$OM,
 	Obs=outlist$Obs, B_BMSY=outlist$B_BMSY, F_FMSY=outlist$F_FMSY,
     outlist$B, outlist$FM, outlist$C, outlist$TAC, 
-	outlist$SSB_hist, outlist$CB_hist, outlist$FM_hist)
+	outlist$SSB_hist, outlist$CB_hist, outlist$FM_hist, outlist$Effort)
  
   newMSE
 }	
@@ -1521,4 +1529,20 @@ calcMSESense <- function(MP=1, MSEobj, YVar=c("Y", "B")) { # supporting function
   Out$YVar <- yout
   Out$MP <- MP
   Out
+}
+
+
+# Update the MSE object 
+updateMSE <- function(MSEobj) {
+  slots <- slotNames(MSEobj)
+  for (X in seq_along(slots)) {
+    classDef <- getClassDef(class(MSEobj))
+    slotTypes <- classDef@slots
+    tt <- try(slot(MSEobj, slots[X]), silent=TRUE)
+   if (class(tt) == "try-error") {
+     fun <- get(as.character(slotTypes[X]))
+     slot(MSEobj, slots[X]) <- fun(NA)
+   }
+ }
+ MSEobj
 }

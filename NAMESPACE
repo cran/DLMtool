@@ -141,7 +141,8 @@ export(
 	"VOIplot",
 	"OM_xl",
 	"Fease_xl",
-	"writeCSV"
+	"writeCSV",
+	"updateMSE"
 )
 exportClasses(
     "DLM_data",
