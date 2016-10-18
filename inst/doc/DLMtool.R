@@ -141,10 +141,11 @@ summary(ourReefFish)
 ## ----ourReefFish, eval=FALSE---------------------------------------------
 #  ourReefFish <- TAC(ourReefFish)
 
-## ----Load, echo=FALSE----------------------------------------------------
-data(ourReefFish)
+## ----plotOurReefFish, eval=FALSE-----------------------------------------
+#  plot(ourReefFish)
 
-## ----plotOurReefFish, fig.width=7, fig.height=7--------------------------
+## ----Load, echo=FALSE, eval=TRUE, fig.height=7, fig.width=7--------------
+data(ourReefFish)
 plot(ourReefFish)
 
 ## ------------------------------------------------------------------------
