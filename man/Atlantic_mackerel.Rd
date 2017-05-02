@@ -3,12 +3,12 @@
 \docType{data}
 \name{Atlantic_mackerel}
 \alias{Atlantic_mackerel}
-\title{Atlantic_mackerel DLM_data}
-\format{An object of class \code{DLM_data} of length 1.}
+\title{Atlantic_mackerel Data}
+\format{An object of class \code{Data} of length 1.}
 \usage{
 Atlantic_mackerel
 }
 \description{
-An object of class DLM_data
+An object of class Data
 }
 \keyword{datasets}

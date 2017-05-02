@@ -50,15 +50,13 @@ Converge <- function(MSEobj, thresh = 2, Plot = TRUE) {
   # CumlP100[is.nan(CumlP100)] <- 1
 
   if (Plot) {	  
-    old_par <- par(no.readonly = TRUE)
-    on.exit(par(list = old_par), add = TRUE)
-
-    par(mfrow = c(2, 3), cex.axis = 1.5, cex.lab = 1.7, oma = c(1, 1, 0, 0), mar = c(5, 5, 1, 1), bty = "l")
+    op <- par(mfrow = c(2, 3), cex.axis = 1.5, cex.lab = 1.7, oma = c(1, 1, 0, 0), mar = c(5, 5, 1, 1), bty = "l")
     matplot(t(CumlYd), type = "l", xlab = "Iteration", ylab = "Rel. Yield")
     matplot(t(CumlPOF), type = "l", xlab = "Iteration", ylab = "Prob. F/FMSY > 1")
     matplot(t(CumlP10), type = "l", xlab = "Iteration", ylab = "Prob. B/BMSY < 0.1")
     matplot(t(CumlP50), type = "l", xlab = "Iteration", ylab = "Prob. B/BMSY < 0.5")
     matplot(t(CumlP100), type = "l", xlab = "Iteration", ylab = "Prob. B/BMSY < 1")
+    
   }
   
   Chk <- function(X) {
@@ -113,6 +111,7 @@ Converge <- function(MSEobj, thresh = 2, Plot = TRUE) {
     message("All MPs appear to have converged in ", nsim, " iterations (threshold = ", 
       thresh, "%)")
   }
+  par(op)
 }
 
 
@@ -167,17 +166,14 @@ CheckConverg <- function(MSEobj, thresh = 2, Plot = TRUE) {
   # CumlP10[is.nan(CumlP10)] <- 1 CumlP50[is.nan(CumlP50)] <- 1
   # CumlP100[is.nan(CumlP100)] <- 1
   if (Plot) {
-    old_par <- par(no.readonly = TRUE)
-    on.exit(par(list = old_par), add = TRUE)
-
-    par(mfrow = c(2, 3), cex.axis = 1.5, cex.lab = 1.7, oma = c(1, 
-
-      1, 0, 0), mar = c(5, 5, 1, 1), bty = "l")
+    op <- par(mfrow = c(2, 3), cex.axis = 1.5, cex.lab = 1.7, oma = c(1, 1, 0, 0), 
+              mar = c(5, 5, 1, 1), bty = "l")
     matplot(t(CumlYd), type = "l", xlab = "Iteration", ylab = "Rel. Yield")
     matplot(t(CumlPOF), type = "l", xlab = "Iteration", ylab = "Prob. F/FMSY > 1")
     matplot(t(CumlP10), type = "l", xlab = "Iteration", ylab = "Prob. B/BMSY < 0.1")
     matplot(t(CumlP50), type = "l", xlab = "Iteration", ylab = "Prob. B/BMSY < 0.5")
     matplot(t(CumlP100), type = "l", xlab = "Iteration", ylab = "Prob. B/BMSY < 1")
+    
   }
   
   Chk <- function(X) {
@@ -232,6 +228,7 @@ CheckConverg <- function(MSEobj, thresh = 2, Plot = TRUE) {
     message("All MPs appear to have converged in ", nsim, " iterations (threshold = ", 
       thresh, "%)")
   }
+  par(op)
 }
 
 
@@ -251,9 +248,6 @@ CheckConverg <- function(MSEobj, thresh = 2, Plot = TRUE) {
 #' @author T. Carruthers
 #' @export Tplot
 Tplot <- function(MSEobj, nam = NA) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
-
   FMSYr <- quantile(MSEobj@F_FMSY, c(0.001, 0.9), na.rm = T)
   BMSYr <- quantile(MSEobj@B_BMSY, c(0.001, 0.975), na.rm = T)
   
@@ -289,8 +283,8 @@ Tplot <- function(MSEobj, nam = NA) {
   }
   
   # dev.new2(width=7,height=7)
-  par(mfrow = c(2, 2), mai = c(0.9, 1, 0.1, 0.1), omi = c(0.1, 0.1, 0.4, 
-    0))
+  old_par <- par(mfrow = c(2, 2), mai = c(0.9, 1, 0.1, 0.1), 
+    omi = c(0.1, 0.1, 0.4, 0))
   
   tradeoffplot(POF, Yd, "Prob. of overfishing (%)", "Relative yield", 
     MSEobj@MPs[1:MSEobj@nMPs], vl = 50, hl = 100)
@@ -307,6 +301,7 @@ Tplot <- function(MSEobj, nam = NA) {
     mtext(MSEobj@Name, 3, outer = T, line = 0.3, font = 2)
   if (!is.na(nam) & is.character(nam)) 
     mtext(nam, 3, outer = T, line = 0.3, font = 2)
+  par(old_par)
 }
 
 
@@ -329,9 +324,6 @@ Tplot <- function(MSEobj, nam = NA) {
 #' @author T. Carruthers
 #' @export Tplot2
 Tplot2 <- function(MSEobj, nam = NA) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
-
   LTY <- rep(NA, MSEobj@nMPs)
   STY <- rep(NA, MSEobj@nMPs)
   VY <- rep(NA, MSEobj@nMPs)
@@ -352,7 +344,7 @@ Tplot2 <- function(MSEobj, nam = NA) {
     B10[mm] <- round(sum(MSEobj@B_BMSY[, mm, ] > 0.1, na.rm = T)/prod(dim(MSEobj@B_BMSY[, 
       mm, ])), 3) * 100
   }
-  par(mfrow = c(1, 2), mai = c(1.5, 1.5, 0.1, 0.1), omi = c(0.1, 0.1, 
+  op <- par(mfrow = c(1, 2), mai = c(1.5, 1.5, 0.1, 0.1), omi = c(0.1, 0.1, 
     0.4, 0))
   tradeoffplot(STY, LTY, "P(Short term yield over half FMSY)", "P(Long term yield over half FMSY)", 
     MSEobj@MPs[1:MSEobj@nMPs], vl = 1, hl = 1)
@@ -362,6 +354,7 @@ Tplot2 <- function(MSEobj, nam = NA) {
     mtext(deparse(substitute(MSEobj)), 3, outer = T, line = 0.3, font = 2)
   if (!is.na(nam)) 
     mtext(MSEobj@Name, 3, outer = T, line = 0.3, font = 2)
+  par(op)
 }
 
 
@@ -384,9 +377,6 @@ Tplot2 <- function(MSEobj, nam = NA) {
 #' @author T. Carruthers
 #' @export NOAA_plot
 NOAA_plot <- function(MSEobj, nam = NA, type = NA, panel = T) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
-  
   Yd <- rep(NA, MSEobj@nMPs)
   B50 <- rep(NA, MSEobj@nMPs)
   PNOF <- rep(NA, MSEobj@nMPs)
@@ -427,6 +417,7 @@ NOAA_plot <- function(MSEobj, nam = NA, type = NA, panel = T) {
     tradeoffplot3(B50, VY, "Prob. biomass above half BMSY (%)", "Prob. AAVY less than 15%", 
       MSEobj@MPs[1:MSEobj@nMPs], vl = 80, hl = 50, xlim = c(75, 105), 
       ylim = c(45, 105))
+  
   }
   
   # if(is.na(nam))mtext(deparse(substitute(MSEobj)),3,outer=T,line=0.3,font=2)
@@ -434,8 +425,8 @@ NOAA_plot <- function(MSEobj, nam = NA, type = NA, panel = T) {
   # !is.character(nam))mtext(MSEobj@Name,3,outer=T,line=0.3,font=2)
   # if(!is.na(nam) &
   # is.character(nam))mtext(nam,3,outer=T,line=0.3,font=2)
-  par(op)
   
+  if (panel) par(op)
   temp <- data.frame(PNOF, B50, LTY, VY)
   row.names(temp) <- MSEobj@MPs[1:MSEobj@nMPs]
   temp
@@ -455,9 +446,7 @@ NOAA_plot <- function(MSEobj, nam = NA, type = NA, panel = T) {
 #' @author T. Carruthers 
 #' @export Pplot
 Pplot <- function(MSEobj, nam = NA) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
-  
+
   FMSYr <- quantile(MSEobj@F_FMSY, c(0.001, 0.9), na.rm = T)
   BMSYr <- quantile(MSEobj@B_BMSY, c(0.001, 0.975), na.rm = T)
   
@@ -506,7 +495,7 @@ Pplot <- function(MSEobj, nam = NA) {
         1) * 2] <- ((c - 1) * nr) + r
     }
   }
-  par(mfcol = c(nr, nc), mai = c(0.2, 0.35, 0.3, 0.01), omi = c(0.5, 
+  op <- par(mfcol = c(nr, nc), mai = c(0.2, 0.35, 0.3, 0.01), omi = c(0.5, 
     0.4, 0.4, 0.05))
   layout(temp)
   # dev.new2(width=nc*3,height=nr*3)
@@ -543,6 +532,7 @@ Pplot <- function(MSEobj, nam = NA) {
     mtext(deparse(substitute(MSEobj)), 3, outer = T, line = 0.3, font = 2)
   if (!is.na(nam)) 
     mtext(MSEobj@Name, 3, outer = T, line = 0.3, font = 2)
+  par(op)
 }
 
 
@@ -594,8 +584,7 @@ Pplot2 <- function(MSEobj, YVar = c("B_BMSY", "F_FMSY"), MPs = NA, sims = NULL,
   incLeg = TRUE, cex.leg = 1.5, legPos = "topleft", yline = NULL, parOR = FALSE, 
   xaxis = TRUE, yaxis = TRUE, ...) {
   YVars <- c("SSB_SSB0", "B_BMSY", "F_FMSY", "Yield")
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
+
   YVar <- match.arg(YVar, choices = YVars, several.ok = TRUE)
   
   if (!is.null(YLab) & length(YLab) != length(YVar)) 
@@ -855,8 +844,6 @@ Pplot2 <- function(MSEobj, YVar = c("B_BMSY", "F_FMSY"), MPs = NA, sims = NULL,
 #' @export Kplot
 Kplot <- function(MSEobj, maxsim = 60, MPs = NA, sims = NULL, maxMP = 9, 
   nam = NA, cex.leg = 1.5) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
 
   # png('Kplot.png')
   
@@ -891,11 +878,10 @@ Kplot <- function(MSEobj, maxsim = 60, MPs = NA, sims = NULL, maxMP = 9,
   # par(mfrow=c(nr,nc),mai=c(0.45,0.45,0.45,0.01),omi=c(0.45,0.3,0.35,0.01))
   # par(mfcol=c(nr,nc),mai=c(0.2,0.35,0.3,0.01),omi=c(0.5,0.4,0.4,0.05))
   if (is.na(nam)) 
-    par(mfrow = c(nr, nc), mar = c(2, 2, 3, 1), oma = c(3, 3.5, 1.2, 
+    op <- par(mfrow = c(nr, nc), mar = c(2, 2, 3, 1), oma = c(3, 3.5, 1.2, 
       0))
   if (!is.na(nam)) 
-    par(mfrow = c(nr, nc), mar = c(2, 2, 3, 1), oma = c(3, 3.5, 3, 
-      0))
+    op <- par(mfrow = c(nr, nc), mar = c(2, 2, 3, 1), oma = c(3, 3.5, 3, 0))
   colsse <- rainbow(MSEobj@proyears, start = 0.63, end = 0.95)[1:MSEobj@proyears]
   colsse <- makeTransparent(colsse, 95)
   
@@ -957,7 +943,7 @@ Kplot <- function(MSEobj, maxsim = 60, MPs = NA, sims = NULL, maxMP = 9,
     x1 <- as.vector(MSEobj@B_BMSY[, mm, y1])
     y0 <- as.vector(MSEobj@F_FMSY[, mm, y])
     y1 <- as.vector(MSEobj@F_FMSY[, mm, y1])
-    segments(x0, y0, x1, y1, col = colsse)
+    segments(x0, y0, x1, y1, col = rep(colsse,each=nsim))
     
     rng <- 1:min(maxsim, MSEobj@nsim)
     points(MSEobj@B_BMSY[rng, mm, 1], MSEobj@F_FMSY[rng, mm, 1], pch = 19, 
@@ -990,14 +976,12 @@ Kplot <- function(MSEobj, maxsim = 60, MPs = NA, sims = NULL, maxMP = 9,
   if (!is.na(nam)) 
     mtext(nam, 3, outer = TRUE, line = 0.25, font = 2, cex = TitleCex)
   # dev.off()
+  par(op)
 }
 
 
 # A simulation by simulation approach to plotting results
 comp <- function(MSEobj, MPs = NA) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
-  
   if (is.na(MPs)) 
     MPs <- MSEobj@MPs
   notm <- MPs[!(MPs %in% MSEobj@MPs)]
@@ -1046,8 +1030,7 @@ comp <- function(MSEobj, MPs = NA) {
   MSEcols <- c("red", "green", "blue", "orange")
   
   # dev.new2(width=7,height=7)
-  par(mfrow = c(2, 2), mai = c(0.85, 0.7, 0.1, 0.1), omi = rep(0.01, 
-    4))
+  op <- par(mfrow = c(2, 2), mai = c(0.85, 0.7, 0.1, 0.1), omi = rep(0.01, 4))
   
   tradeoffplot2(POF, Yd, "Prob. of overfishing (%)", "Relative yield", 
     vl = 50, hl = 100, coly = MSEcols, leg = NA)
@@ -1057,7 +1040,7 @@ comp <- function(MSEobj, MPs = NA) {
     vl = 50, hl = 100, coly = MSEcols, leg = NA)
   tradeoffplot2(P10, Yd, "Prob. biomass < 0.1BMSY (%)", "Relative yield", 
     vl = 50, hl = 100, coly = MSEcols, leg = NA)
-  
+  par(op)
 }
 
 
@@ -1138,9 +1121,6 @@ makeTransparent <- function(someColor, alpha = 100) {
 #' @author T. Carruthers
 #' @export VOI
 VOI <- function(MSEobj, ncomp = 6, nbins = 8, maxrow = 8, Ut = NA, Utnam = "Utility") {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
-
   objnam <- deparse(substitute(MSEobj))
   nsim <- MSEobj@nsim
   
@@ -1244,7 +1224,7 @@ VOI <- function(MSEobj, ncomp = 6, nbins = 8, maxrow = 8, Ut = NA, Utnam = "Util
   
   for (pp in 1:length(mbyp)) {
     
-    par(mfrow = c(length(mbyp[[pp]]), ncomp), mai = c(0.15, 0.1, 0.15, 
+    op <- par(mfrow = c(length(mbyp[[pp]]), ncomp), mai = c(0.15, 0.1, 0.15, 
       0.05), omi = c(0.1, 0.9, 0.3, 0.05))
     
     for (mm in mbyp[[pp]]) {
@@ -1293,7 +1273,7 @@ VOI <- function(MSEobj, ncomp = 6, nbins = 8, maxrow = 8, Ut = NA, Utnam = "Util
       
       for (pp in 1:length(mbyp)) {
         
-        par(mfrow = c(length(mbyp[[pp]]), ncomp), mai = c(0.15, 
+        op <- par(mfrow = c(length(mbyp[[pp]]), ncomp), mai = c(0.15, 
           0.1, 0.15, 0.05), omi = c(0.1, 0.9, 0.3, 0.05))
         
         for (mm in mbyp[[pp]]) {
@@ -1343,7 +1323,7 @@ VOI <- function(MSEobj, ncomp = 6, nbins = 8, maxrow = 8, Ut = NA, Utnam = "Util
         
       }  # Plots
     }  # if there is data to plot
-  
+  par(op)
   list(OMstr, Obsstr)
   
 }  # VOI
@@ -1480,8 +1460,35 @@ Sub <- function(MSEobj, MPs = NULL, sims = NULL, years = NULL) {
   } else {
     SubVB <- MSEobj@VB[SubIts, SubMPs, Years, drop = FALSE]
   }
+
+  # check if slot exists
+  tt <- try(slot(MSEobj, "PAA"), silent = TRUE)
+  if (class(tt) == "try-error") slot(MSEobj, "PAA") <- array(NA)
+  if (all(is.na(MSEobj@PAA))) {
+    SubPAA <- array(NA)
+  } else {
+    SubPAA <- MSEobj@PAA[SubIts, SubMPs, , drop = FALSE]
+  }  
+
+  # check if slot exists
+  tt <- try(slot(MSEobj, "CAL"), silent = TRUE)
+  if (class(tt) == "try-error") slot(MSEobj, "CAL") <- array(NA)
+  if (all(is.na(MSEobj@CAL))) {
+    SubCAL <- array(NA)
+  } else {
+    SubCAL <- MSEobj@CAL[SubIts, SubMPs, , drop = FALSE]
+  } 
   
- 
+  # check if slot exists
+  tt <- try(slot(MSEobj, "CAA"), silent = TRUE)
+  if (class(tt) == "try-error") slot(MSEobj, "CAA") <- array(NA)
+  if (all(is.na(MSEobj@CAA))) {
+    SubCAA <- array(NA)
+  } else {
+    SubCAA <- MSEobj@CAA[SubIts, SubMPs, , drop = FALSE]
+  } 
+  
+  CALbins <- MSEobj@CALbins 
   
   SubResults <- new("MSE", Name = MSEobj@Name, nyears = MSEobj@nyears, 
     proyears = MSEobj@proyears, nMPs = length(SubMPs), MPs = newMPs, 
@@ -1491,7 +1498,7 @@ Sub <- function(MSEobj, MPs = NULL, sims = NULL, years = NULL) {
 	TAC = SubTACa, SSB_hist = MSEobj@SSB_hist[SubIts, , , , drop = FALSE], 
 	CB_hist = MSEobj@CB_hist[SubIts, , , , drop = FALSE], 
 	FM_hist = MSEobj@FM_hist[SubIts, , , , drop = FALSE], 
-    Effort = SubEffort)
+    Effort = SubEffort, PAA=SubPAA, CAL=SubCAL, CAA=SubCAA , CALbins=CALbins)
   
   return(SubResults)
 }
@@ -1510,10 +1517,8 @@ Sub <- function(MSEobj, MPs = NULL, sims = NULL, years = NULL) {
 #' @export joinMSE
 joinMSE <- function(MSEobjs = NULL) {
   # join two or more MSE objects
-  if (class(MSEobjs) != "list") 
-    stop("MSEobjs must be a list")
-  if (length(MSEobjs) < 2) 
-    stop("MSEobjs list doesn't contain multiple MSE objects")
+  if (class(MSEobjs) != "list") stop("MSEobjs must be a list")
+  if (length(MSEobjs) < 2) stop("MSEobjs list doesn't contain multiple MSE objects")
   
   lapply(MSEobjs, checkMSE) # check that MSE objects contains all slots 
   
@@ -1559,8 +1564,7 @@ joinMSE <- function(MSEobjs = NULL) {
     nms <- append(nms, tt@Name)
   }
   chk <- all(colSums(chkmat) == chkmat[1, ] * Nobjs)
-  if (!chk) 
-    stop("The MSE objects have different number of nyears or proyears")
+  if (!chk) stop("The MSE objects have different number of nyears or proyears")
   
   # Join them together
   Allobjs <- mget(paste0("obj", 1:Nobjs))
@@ -1572,29 +1576,30 @@ joinMSE <- function(MSEobjs = NULL) {
       outlist[[sn]] <- templs[[1]]
     }
     if (class(templs[[1]]) == "numeric" | class(templs[[1]]) == "integer") {
-      outlist[[sn]] <- do.call(c, templs)
+      if (sns[sn] == "CALbins") {
+        tempInd <- which.max(unlist(lapply(templs, length)))
+        CALbins <- templs[[tempInd]]
+      } else {
+        outlist[[sn]] <- do.call(c, templs)
+      }
     }
     if (class(templs[[1]]) == "matrix" | class(templs[[1]]) == "data.frame") {
       outlist[[sn]] <- do.call(rbind, templs)
     }
     if (class(templs[[1]]) == "array") {
+      if (sns[sn] == "CAL") { # hack for different sized CAL arrays 
+        tempVal <- lapply(templs, dim)
+        nBins <- sapply(tempVal, function(x) x[3])
+        nsims <- sapply(tempVal, function(x) x[1])
+        nMPs <- sapply(tempVal, function(x) x[2])
+        if (!mean(nBins) == nBins[1]) { # not all same size 
+          Max <- max(nBins)
+          index <- which(nBins < Max)
+          for (kk in index) templs[[kk]] <-  abind::abind(templs[[kk]], array(0, dim=c(nsims[kk], nMPs[kk])), along=3)
+        }
+      }
       outlist[[sn]] <- abind::abind(templs, along = 1)
     }
-	# if (class(templs[[1]]) == "list") {
-	  # diffs <- diff(unlist(lapply(templs, length)))
-	  # if (any(diffs != 0))
-	    # stop("Length of slot Extra is not identical for each MSE object", call.=FALSE)
-	  # OutList <- templs[[1]]
-	  # for (N in 2:Nobjs) {
-	    # for (xx in 1:length(templs[[1]])) {
-	      # OutList[[xx]] <- append(unlist(OutList[[xx]]), unlist(templs[[N]][[xx]]))
-		# }
-	  # }
-	  # ind <- unlist(lapply(lapply(OutList, is.finite), prod))
-	  # ind2 <- which (ind == 0)
-	  # if (length(ind2) > 0) OutList[ind2] <- NULL
-	  # outlist[[sn]] <- OutList
-	# }
   }
 
   names(outlist) <- sns
@@ -1604,8 +1609,9 @@ joinMSE <- function(MSEobjs = NULL) {
     MPs = unique(outlist$MPs), nsim = sum(outlist$nsim), OM = outlist$OM, 
     Obs = outlist$Obs, B_BMSY = outlist$B_BMSY, F_FMSY = outlist$F_FMSY, 
     outlist$B, outlist$SSB, outlist$VB,
-	outlist$FM, outlist$C, outlist$TAC, outlist$SSB_hist, 
-    outlist$CB_hist, outlist$FM_hist, outlist$Effort)
+	  outlist$FM, outlist$C, outlist$TAC, outlist$SSB_hist, 
+    outlist$CB_hist, outlist$FM_hist, outlist$Effort, outlist$PAA,
+	  outlist$CAA, outlist$CAL, CALbins)
   
   newMSE
 }
@@ -1736,6 +1742,7 @@ TradePlot <- function(MSEobj, XAxis = c("Overfishing", "Biomass:BMSY"),
   ShowLabs = FALSE, ShowCols = TRUE) {
   PMs <- c("Long-term Yield", "Short-term Yield", "Overfishing", "Biomass:BMSY", 
     "Biomass:B0", "AnnualVar")
+  op <- par()
   # Error Checks
   if (prod(XAxis %in% PMs) != 1) {
     message("Available Performance Metrics")
@@ -1778,7 +1785,6 @@ TradePlot <- function(MSEobj, XAxis = c("Overfishing", "Biomass:BMSY"),
     PNOF[mm] <- round(sum(MSEobj@F_FMSY[, mm, ] <= 1, na.rm = T)/prod(dim(MSEobj@F_FMSY[, 
       mm, ]), na.rm = T) * 100, 1)
     BMSYref[mm] <- round(sum(MSEobj@B_BMSY[, mm, ] > BmsyRef, na.rm = T)/prod(dim(MSEobj@B_BMSY[, mm, ])) * 100, 1)
-	
     B0ref[mm] <- round(sum((MSEobj@B_BMSY[, mm, ] * MSEobj@OM$SSBMSY_SSB0) > 
       B0Ref, na.rm = T)/prod(dim(MSEobj@B_BMSY[, mm, ])) * 100, 1)
     # LTY[mm]<-round(sum(MSEobj@C[,mm,yend]/RefYd>0.5,na.rm=T)/(MSEobj@nsim*length(yend)),3)*100
@@ -1839,6 +1845,7 @@ TradePlot <- function(MSEobj, XAxis = c("Overfishing", "Biomass:BMSY"),
   }
   
   print(OutList)
+  par(op)
   invisible(OutList)
   
 }
@@ -1940,9 +1947,7 @@ tradeoffplot4 <- function(x, y, xlab, ylab, labs, cex, vl, hl, ShowLabs = FALSE,
 #' @author T. Carruthers
 #' @export wormplot
 wormplot <- function(MSEobj, Bref = 0.5, LB = 0.25, UB = 0.75) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
-  
+ 
   if (UB < LB) 
     stop("LB parameter must be lower than UB parameter")
   if (LB < 0 | LB > 1) 
@@ -1953,7 +1958,7 @@ wormplot <- function(MSEobj, Bref = 0.5, LB = 0.25, UB = 0.75) {
   ncol <- ceiling(MSEobj@nMPs^0.3)
   nrow <- ceiling(MSEobj@nMPs/ncol)
   
-  par(mfcol = c(nrow, ncol), mar = c(0.1, 0.1, 0.1, 0.1), omi = c(0.6, 
+  op <- par(mfcol = c(nrow, ncol), mar = c(0.1, 0.1, 0.1, 0.1), omi = c(0.6, 
     0.25, 0.3, 0))
   
   Bprob <- apply(MSEobj@B_BMSY > Bref, 2:3, sum)/MSEobj@nsim
@@ -2006,6 +2011,7 @@ wormplot <- function(MSEobj, Bref = 0.5, LB = 0.25, UB = 0.75) {
   mtext("Projection year", 1, outer = T, line = 2.5)
   mtext(paste("Fraction of simulations above ", round(Bref * 100, 0), 
     "% BMSY", sep = ""), 2, outer = T, line = 0.25)
+  par(op)  
   invisible(Bprob)
   
 }
@@ -2037,9 +2043,8 @@ wormplot <- function(MSEobj, Bref = 0.5, LB = 0.25, UB = 0.75) {
 #' @export VOI2
 VOI2 <- function(MSEobj, ncomp = 6, nbins = 4, Ut = NA, Utnam = "yield", 
   lay = F) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
-  
+  op <- par(no.readonly=TRUE)
+  on.exit(par(op))
   objnam <- deparse(substitute(MSEobj))
   nsim <- MSEobj@nsim
   
@@ -2192,7 +2197,7 @@ VOI2 <- function(MSEobj, ncomp = 6, nbins = 4, Ut = NA, Utnam = "yield",
   ncol <- ceiling(MSEobj@nMPs^0.5)
   nrow <- ceiling(MSEobj@nMPs/ncol)
   
-  par(mfrow = c(nrow, ncol), mar = c(2.4, 2.4, 0.1, 0.1), omi = c(0.4, 
+  op <- par(mfrow = c(nrow, ncol), mar = c(2.4, 2.4, 0.1, 0.1), omi = c(0.4, 
     0.35, 0.3, 0))
   
   gcol1 <- "#99999960"
@@ -2260,7 +2265,7 @@ VOI2 <- function(MSEobj, ncomp = 6, nbins = 4, Ut = NA, Utnam = "yield",
   # ',objnam,'@OM',sep=''),3,outer=T,font=2,cex=0.9)
   mtext(paste("% Change in ", Utnam, " relative to today", sep = ""), 
     2, outer = T, line = 0.6, font = 2, cex = 0.9)
-  
+  par(op)
   list(Obscost, Obsv, Obsval, cb, Obsname, MSEobj@MPs)
   
 }  # VOI2
@@ -2452,7 +2457,7 @@ MPStats <- function(MSEobj, PMRefs = list(B_BMSY = 0.5, SSB_SSB0 = 0.2, F_FMSY =
   
   lastYr <- temp[, , Nyears, drop = FALSE]
   lastYr2 <- replicate(Pyears, lastYr)
-  Yield <- abind(lastYr, MSEobj@C[, , , drop = FALSE]/RefYd, along = 3)
+  Yield <- abind::abind(lastYr, MSEobj@C[, , , drop = FALSE]/RefYd, along = 3)
   # dim(Yield)
   
   # totC <- abind(temp, MSEobj@C[,,, drop=FALSE]/RefYd, along=3)
@@ -2488,8 +2493,6 @@ MPStats <- function(MSEobj, PMRefs = list(B_BMSY = 0.5, SSB_SSB0 = 0.2, F_FMSY =
 barplot.MSE <- function(height, MSEobj = NULL, PMs = list(B_BMSY = 0.5, 
   SSB_SSB0 = 0.2), PLim = 0.8, lastYrs = 10, maxMP = 14, MPs = NA, Title = NULL, 
   sims = NULL, msg = TRUE, cex.names = 1.3, incRef = FALSE, ...) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
 
   MSEobj <- match.arg(MSEobj)
   if (is.null(MSEobj)) 
@@ -2600,7 +2603,7 @@ barplot.MSE <- function(height, MSEobj = NULL, PMs = list(B_BMSY = 0.5,
   tempmat <- matrix(1:(Ncol * Nrow), nrow = Nrow, byrow = TRUE)
   bspace <- max(nchar(MPs)) - 1
   
-  par(mfrow = c(Nrow, Ncol), oma = c(2.5, 1, 5, 2), mar = c(3, bspace, 
+  op <- par(mfrow = c(Nrow, Ncol), oma = c(2.5, 1, 5, 2), mar = c(3, bspace, 
     0, 0))
   if (nplots == 1) {
     barplot(Probs, beside = TRUE, horiz = TRUE, names = MPnames, las = 1, 
@@ -2681,6 +2684,7 @@ barplot.MSE <- function(height, MSEobj = NULL, PMs = list(B_BMSY = 0.5,
   MPclass <- sapply(1:length(MP), function(X) class(get(MP[X])))
   ind <- grep("ref", MP)
   MPclass[ind] <- "Reference"
+  par(op)
   invisible(data.frame(MP = MP, Pout, Pass = Pass, MPClass = MPclass, 
     stringsAsFactors = FALSE))
 }
@@ -2711,8 +2715,6 @@ boxplot.MSE <- function(x, MPs = NA, maxMP = 8, PMRefs = list(B_BMSY = 1,
   SSB_SSB0 = 0.2, F_FMSY = 1, AAVY = 30, AAVE = 30), lastYrs = 10, cex.lab = 1.2, 
   cex.PM = 0.75, canMPs = NULL, cols = TRUE, outline = FALSE, CexName = 1.25, 
   incLine = TRUE, incref = FALSE, Names = TRUE, ...) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
 
   MSEobj <- x
   if (!all(is.na(MPs))) {
@@ -2742,18 +2744,18 @@ boxplot.MSE <- function(x, MPs = NA, maxMP = 8, PMRefs = list(B_BMSY = 1,
     "(last", lastYrs, "years)")
   
   MPtype <- perfdat$MPtype
-  outmps <- perfdat[MPtype == "DLM_output", ]$MP
-  inmps <- perfdat[MPtype == "DLM_input", ]$MP
+  outmps <- perfdat[MPtype == "Output", ]$MP
+  inmps <- perfdat[MPtype == "Input", ]$MP
   nOut <- ceiling(nmp/2)
   nIn <- floor(nmp - nOut)
   if (nMPs > nmp) {
-    outDist <- perfdat[MPtype == "DLM_output", ]$Dist
-    OutMPs <- perfdat[MPtype == "DLM_output", ]$MP[order(outDist)[1:nOut]]
-    inDist <- perfdat[MPtype == "DLM_input", ]$Dist
-    InMPs <- perfdat[MPtype == "DLM_input", ]$MP[order(inDist)[1:nIn]]
+    outDist <- perfdat[MPtype == "Output", ]$Dist
+    OutMPs <- perfdat[MPtype == "Output", ]$MP[order(outDist)[1:nOut]]
+    inDist <- perfdat[MPtype == "Input", ]$Dist
+    InMPs <- perfdat[MPtype == "Input", ]$MP[order(inDist)[1:nIn]]
   } else {
-    OutMPs <- perfdat[MPtype == "DLM_output", ]$MP
-    InMPs <- perfdat[MPtype == "DLM_input", ]$MP
+    OutMPs <- perfdat[MPtype == "Output", ]$MP
+    InMPs <- perfdat[MPtype == "Input", ]$MP
   }
   
   mseobj <- Sub(MSEobj, MPs = c(OutMPs, InMPs))
@@ -2792,10 +2794,10 @@ boxplot.MSE <- function(x, MPs = NA, maxMP = 8, PMRefs = list(B_BMSY = 1,
   # apply(AAVE, 2, mean, na.rm=TRUE)
   
   # Colors - to make the plot a bit more cheerful
-  inputs <- which(MPtype == "DLM_input")
-  outputs <- which(MPtype == "DLM_output")
+  inputs <- which(MPtype == "Input")
+  outputs <- which(MPtype == "Output")
   fonts <- rep(2, nmp)
-  fonts[MPtype == "DLM_input"] <- 4
+  fonts[MPtype == "Input"] <- 4
   NameCol <- rep("black", nmp)
   NameCol[MPs %in% canMPs] <- "green"
   index <- grep("ref", MPs)
@@ -2822,7 +2824,7 @@ boxplot.MSE <- function(x, MPs = NA, maxMP = 8, PMRefs = list(B_BMSY = 1,
   topcex <- cex.PM
   ncharmp <- max(nchar(MPs)) - 1.5
   multi <- 1.15
-  par(mfrow = c(2, 3), bty = "n", oma = c(4, ncharmp, 2, 0), mar = c(3, 
+  op <- par(mfrow = c(2, 3), bty = "n", oma = c(4, ncharmp, 2, 0), mar = c(3, 
     2, 4, 3))
   # if (class(Title) == 'character') par(mfrow=c(2,3), bty='n',
   # oma=c(4,ncharmp,2,0), mar=c(3,2,4,3)) if (class(Title) !=
@@ -2987,7 +2989,7 @@ boxplot.MSE <- function(x, MPs = NA, maxMP = 8, PMRefs = list(B_BMSY = 1,
   axis(side = 2, at = inputs, labels = FALSE)
   if (incLine && refs[5] > 0) 
     abline(v = refs[4], lty = 2, lwd = 2, col = "darkgray")
-  
+  par(op)
   
 }
 
@@ -3025,9 +3027,7 @@ Jplot <- function(MSEobj, PLim = 0.8, YVar = c("LTY", "STY", "avgSSB_SSB0",
   "avgB_BMSY"), PMRefs = list(B_BMSY = 0.5, SSB_SSB0 = 0.2), UseMean = TRUE, 
   lastYrs = 10, AvailMPs = NULL, XLim = NULL, ShowCols = TRUE, ShowLabs = FALSE, 
   All = TRUE) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
-  
+
   nsim <- MSEobj@nsim
   nMPs <- MSEobj@nMPs
   MPs <- MSEobj@MPs
@@ -3111,7 +3111,7 @@ Jplot <- function(MSEobj, PLim = 0.8, YVar = c("LTY", "STY", "avgSSB_SSB0",
       " years)"), avgB_BMSY = paste0("Median B/BMSY (%) (last ", 
       lastYrs, " years)"), avgSSB_SSB0 = paste0("Median B/B0 (%) (last ", 
       lastYrs, " years)"))
-  par(mfrow = c(1, 1), mar = c(4, 4, 1, 1), oma = c(1, 1, 0, 6))
+  op <- par(mfrow = c(1, 1), mar = c(4, 4, 1, 1), oma = c(1, 1, 0, 6))
   plot(NA, xlim = XLim, ylim = YLim, xlab = xlab, ylab = ylab, bty = "l", 
     las = 1, cex.lab = 1.25)
   
@@ -3151,7 +3151,7 @@ Jplot <- function(MSEobj, PLim = 0.8, YVar = c("LTY", "STY", "avgSSB_SSB0",
   
   MPtype <- sapply(1:nMPs, function(X) class(get(MPs[X])))
   fonts <- rep(2, nMPs)
-  fonts[MPtype == "DLM_input"] <- 4
+  fonts[MPtype == "Input"] <- 4
   Cex <- 1.5
   if (!ShowLabs) 
     points(x, y, bg = coly, pch = Pch, cex = Cex, col = "black")
@@ -3185,6 +3185,7 @@ Jplot <- function(MSEobj, PLim = 0.8, YVar = c("LTY", "STY", "avgSSB_SSB0",
     abline(h = 100, col = "#99999940", lwd = 2)
   if (YVar == "SSB_SSB0m") 
     abline(h = 50, col = "#99999940", lwd = 2)
+  par(op)
   DF <- data.frame(MPs = MPs, Yield = y, Prob = x, Pass = x >= vl, stringsAsFactors = FALSE)
   invisible(DF[order(DF$Prob, decreasing = TRUE), ])
 }
@@ -3216,8 +3217,6 @@ Jplot <- function(MSEobj, PLim = 0.8, YVar = c("LTY", "STY", "avgSSB_SSB0",
 Splot <- function(MSEobj = NULL, MPs = NA, All = TRUE, Var = c("B_BMSY", 
   "SSB_SSB0"), lastYrs = 10, Fref = 1, BMSYref = 1, B0ref = 0.4, cex.MP = 1, 
   Fbg = FALSE, Bbg = FALSE, Props = FALSE, TP = FALSE) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
 
   Var <- match.arg(Var)
   if (!any(is.na(MPs))) 
@@ -3249,7 +3248,7 @@ Splot <- function(MSEobj = NULL, MPs = NA, All = TRUE, Var = c("B_BMSY",
   Bref <- switch(Var, SSB_SSB0 = B0ref, B_BMSY = BMSYref)
   
   ColVec <- colorRampPalette(c("green", "orange", "red"))(nsim)
-  par(mfrow = c(Nrow, Ncol), mar = c(1, 1, 2, 0), oma = c(4, 5, 2, 1))
+  op <- par(mfrow = c(Nrow, Ncol), mar = c(1, 1, 2, 0), oma = c(4, 5, 2, 1))
   
   pmat <- matrix(NA, nrow = Ncol, ncol = Nrow)
   pmat[1:nMPs] <- 1:nMPs
@@ -3334,7 +3333,7 @@ Splot <- function(MSEobj = NULL, MPs = NA, All = TRUE, Var = c("B_BMSY",
   Years <- paste("Years", (MSEobj@proyears - lastYrs) + 1, "-", MSEobj@proyears, 
     "(last", lastYrs, "years)")
   mtext(side = 3, Years, cex = 1.25, outer = TRUE)
-  
+  par(op)
 }
 
 # Compare median biomass and yield in first year and last 5 years of
@@ -3361,9 +3360,6 @@ Splot <- function(MSEobj = NULL, MPs = NA, All = TRUE, Var = c("B_BMSY",
 #' @export Cplot
 Cplot <- function(MSEobj, MPs = NA, lastYrs = 5, XMin = NULL, YMin = NULL, 
   ShowLabs = FALSE) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
-
   if (!all(is.na(MPs))) 
     MSEobj <- Sub(MSEobj, MPs = MPs)
   nsim <- MSEobj@nsim
@@ -3391,7 +3387,7 @@ Cplot <- function(MSEobj, MPs = NA, lastYrs = 5, XMin = NULL, YMin = NULL,
   YMin <- ifelse(is.null(YMin), 0, YMin)
   XLim <- c(YMin, ceiling(max(RelBio)/0.5) * 0.5) * c(0.95, 1.05)
   YLim <- c(XMin, ceiling(max(RelYield)/0.5) * 0.5) * c(0.95, 1.05)
-  par(mfrow = c(1, 1), oma = c(3, 5, 1, 1), mar = c(2, 2, 0, 0))
+  op <- par(mfrow = c(1, 1), oma = c(3, 5, 1, 1), mar = c(2, 2, 0, 0))
   plot(RelBio, RelYield, xlim = XLim, ylim = YLim, type = "n", bty = "l", 
     xlab = "", ylab = "", xaxs = "i", yaxs = "i", las = 1)
   if (ShowLabs) 
@@ -3404,7 +3400,7 @@ Cplot <- function(MSEobj, MPs = NA, lastYrs = 5, XMin = NULL, YMin = NULL,
     "years)\n relative to current"), cex = 1.25)
   mtext(side = 2, line = 3, paste("Median Yield (last", lastYrs, "years)\n relative to current"), 
     cex = 1.25)
-  
+  par(op)
   DF <- data.frame(MP = MSEobj@MPs, Biomass = RelBio, Catch = RelYield, 
     stringsAsFactors = FALSE)
   invisible(DF)
@@ -3457,8 +3453,6 @@ calcStat <- function(rr, evalbreaks) {
 VOIplot <- function(MSEobj, MPs = NA, nvars = 5, nMP = 4, Par = c("Obs", 
   "OM"), YVar = c("Y", "B"), doPlot = TRUE, incStat = FALSE, availMP = NULL, 
   acceptMP = NULL, incNames = TRUE, labcex = 0.8, quants = c(0.05, 0.95)) {
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(list = old_par), add = TRUE)
 
   YVar <- match.arg(YVar)
   nvars <- max(nvars, 2)  # maximum number of variables 
@@ -3575,8 +3569,7 @@ VOIplot <- function(MSEobj, MPs = NA, nvars = 5, nMP = 4, Par = c("Obs",
       print(paste("No", Par, "used for these MPs"))
     
     mat <- matrix(1:(Nrow * Ncol), nrow = Nrow, byrow = TRUE)
-    par(mfrow = c(Nrow, Ncol), oma = c(3, 6, 2, 0), mar = c(3, 2, 2, 
-      1))
+    op <- par(mfrow = c(Nrow, Ncol), oma = c(3, 6, 2, 0), mar = c(3, 2, 2, 1))
     if (Par == "OM") 
       Title <- "Operating Model Parameters"
     if (Par == "Obs") 
@@ -3675,7 +3668,7 @@ VOIplot <- function(MSEobj, MPs = NA, nvars = 5, nMP = 4, Par = c("Obs",
       mtext(side = 2, outer = TRUE, "B/BMSY in last 5 years", cex = 1.25, 
         line = 3)
   }
-  
+  par(op)
   # invisible(Out)
   
 }

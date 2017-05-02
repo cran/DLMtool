@@ -5,7 +5,7 @@
 \alias{ourReefFish}
 \alias{ourReefFish}
 \title{Example data object}
-\format{An object of class \code{DLM_data} of length 1.}
+\format{An object of class \code{Data} of length 1.}
 \usage{
 data('ourReefFish')
 
@@ -15,7 +15,7 @@ ourReefFish
 Example data object with a number of output control MPs run on it, and
 includes resulting distributions of TACs
 
-An object of class DLM_data
+An object of class Data
 }
 \examples{
 \dontrun{ 

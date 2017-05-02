@@ -16,7 +16,7 @@ The component of the operating model that controls fishing dynamics
 
 \item{\code{Spat_targ}}{Distribution of fishing in relation to spatial biomass: F is proportional to B^Spat_targ (uniform distribution)}
 
-\item{\code{Fsd}}{Inter-annual variability in fishing mortality rate}
+\item{\code{Esd}}{Inter-annual variability in fishing mortality rate}
 
 \item{\code{EffYears}}{Vector of verticies, years at which to simulate varying relative effort}
 
@@ -51,6 +51,8 @@ The component of the operating model that controls fishing dynamics
 \item{\code{qcv}}{Inter-annual variability in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls)}
 
 \item{\code{isRel}}{Are the selectivity parameters relative to size-of-maturity? TRUE or FALSE}
+
+\item{\code{CurrentYr}}{The current calendar year (final year) of the historical simulations (e.g. 2011)}
 }}
 
 \section{Objects from the Class}{

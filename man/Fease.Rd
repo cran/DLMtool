@@ -7,7 +7,7 @@
 Fease(feaseobj,outy='table')
 }
 \arguments{
-\item{feaseobj}{An object of class 'DLM_fease'}
+\item{feaseobj}{An object of class 'Fease'}
 
 \item{outy}{Determines whether you would like a full table or some column of
 the table for a specific case of the feasibility object. When set equal to

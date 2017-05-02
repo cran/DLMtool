@@ -3,12 +3,12 @@
 \docType{data}
 \name{Red_snapper}
 \alias{Red_snapper}
-\title{Red_snapper DLM_data}
-\format{An object of class \code{DLM_data} of length 1.}
+\title{Red_snapper Data}
+\format{An object of class \code{Data} of length 1.}
 \usage{
 Red_snapper
 }
 \description{
-An object of class DLM_data
+An object of class Data
 }
 \keyword{datasets}

@@ -1,14 +1,14 @@
 
 
-#' Class \code{'DLM_data'}
+#' Class \code{'Data'}
 #' 
 #' An object for storing data for analysis using data-limited methods
 #' 
 #' 
-#' @name DLM_data-class
+#' @name Data-class
 #' @docType class
 #' @section Objects from the Class: Objects can be created by calls of the form
-#' \code{new('DLM_data', stock)} 
+#' \code{new('Data', stock)} 
 #' @slot Name The name of the case-study
 #' @slot Year A vector of years that correspond to catch and relative abundance data
 #' @slot Cat Total annual catches
@@ -87,9 +87,9 @@
 #' @keywords classes
 #' @examples
 #' 
-#' newdata<-new('DLM_data')
+#' newdata<-new('Data')
 #' 
-setClass("DLM_data", representation(Name = "character", Year = "vector", 
+setClass("Data", representation(Name = "character", Year = "vector", 
   Cat = "matrix", Ind = "matrix", Rec = "matrix", t = "vector", AvC = "vector", 
   Dt = "vector", Mort = "vector", FMSY_M = "vector", BMSY_B0 = "vector", 
   Cref = "vector", Bref = "vector", Iref = "vector", L50 = "vector", 
@@ -108,9 +108,9 @@ setClass("DLM_data", representation(Name = "character", Year = "vector",
   CAL = "array", MPrec = "vector", MPeff = "vector", ML = "array", Lbar = "array", 
   Lc = "array", LHYear = "numeric", Misc = "list"))
 
-# initialize DLM_data
-setMethod("initialize", "DLM_data", function(.Object, stock = "nada") {
-  # .Object }) .Object<-new('DLM_data') run an error check here
+# initialize Data
+setMethod("initialize", "Data", function(.Object, stock = "nada") {
+  # .Object }) .Object<-new('Data') run an error check here
   if (file.exists(stock)) {
     dat <- read.csv(stock, header = F, colClasses = "character")  # read 1st sheet
     dname <- dat[, 1]
@@ -291,16 +291,16 @@ setMethod("initialize", "DLM_data", function(.Object, stock = "nada") {
 
 
 
-#' Class \code{'DLM_fease'}
+#' Class \code{'Fease'}
 #' 
 #' An object for storing information about what data are available or might be
 #' available
 #' 
 #' 
-#' @name DLM_fease-class
+#' @name Fease-class
 #' @docType class
 #' @section Objects from the Class: Objects can be created by calls of the form
-#' \code{new('DLM_fease', stock)}
+#' \code{new('Fease', stock)}
 #'
 #' @slot Name The name of the data feasibility object
 #' @slot Case The names of the data feasibility cases
@@ -324,9 +324,9 @@ setMethod("initialize", "DLM_data", function(.Object, stock = "nada") {
 #' @keywords classes
 #' @examples
 #' 
-#' newdata<-new('DLM_fease')
+#' newdata<-new('Fease')
 #' 
-setClass("DLM_fease", representation(Name = "character", Case = "character", 
+setClass("Fease", representation(Name = "character", Case = "character", 
   Catch = "numeric", Index = "numeric", Natural_mortality_rate = "numeric", 
   Maturity_at_length = "numeric", Growth = "numeric", Length_weight_conversion = "numeric", 
   Fleet_selectivity = "numeric", Catch_at_length = "numeric", Catch_at_age = "numeric", 
@@ -334,8 +334,8 @@ setClass("DLM_fease", representation(Name = "character", Case = "character",
   Target_catch = "numeric", Target_biomass = "numeric", Target_index = "numeric", 
   Abundance = "numeric"))
 
-# initialize DLM_fease
-setMethod("initialize", "DLM_fease", function(.Object, file = "nada", ncases = 1) {
+# initialize Fease
+setMethod("initialize", "Fease", function(.Object, file = "nada", ncases = 1) {
   # run an error check here
   if (file.exists(file)) {
     Ncol <- max(unlist(lapply(strsplit(readLines(file), ","), length)))
@@ -414,7 +414,7 @@ setMethod("initialize", "DLM_fease", function(.Object, file = "nada", ncases = 1
 #' @slot Name Name of the Fleet object
 #' @slot nyears The number of years for the historical simulation
 #' @slot Spat_targ Distribution of fishing in relation to spatial biomass: F is proportional to B^Spat_targ (uniform distribution) 
-#' @slot Fsd Inter-annual variability in fishing mortality rate
+#' @slot Esd Inter-annual variability in fishing mortality rate
 #' @slot EffYears Vector of verticies, years at which to simulate varying relative effort
 #' @slot EffLower Lower bound on relative effort corresponding to EffYears (uniform distribution)
 #' @slot EffUpper Uppper bound on relative effort corresponding to EffYears (uniform distribution)
@@ -432,6 +432,7 @@ setMethod("initialize", "DLM_fease", function(.Object, file = "nada", ncases = 1
 #' @slot qinc Average percentage change in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls)
 #' @slot qcv Inter-annual variability in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls)
 #' @slot isRel Are the selectivity parameters relative to size-of-maturity? TRUE or FALSE
+#' @slot CurrentYr The current calendar year (final year) of the historical simulations (e.g. 2011)
 #'
 #' @author T. Carruthers
 #' @keywords classes
@@ -440,11 +441,11 @@ setMethod("initialize", "DLM_fease", function(.Object, file = "nada", ncases = 1
 #' showClass('Fleet')
 #' 
 setClass("Fleet", slots = c(Name = "character", nyears = "numeric", Spat_targ = "numeric", 
-  Fsd = "numeric", qinc = "numeric", qcv = "numeric", EffYears = "numeric", 
+  Esd = "numeric", qinc = "numeric", qcv = "numeric", EffYears = "numeric", 
   EffLower = "numeric", EffUpper = "numeric", SelYears = "numeric", AbsSelYears = "numeric", 
   L5 = "numeric", LFS = "numeric", Vmaxlen = "numeric", L5Lower = "numeric", 
   L5Upper = "numeric", LFSLower = "numeric", LFSUpper = "numeric", VmaxLower = "numeric", 
-  VmaxUpper = "numeric", isRel = "character"))
+  VmaxUpper = "numeric", isRel = "character",CurrentYr="numeric"))
 
 # initialize Fleet
 setMethod("initialize", "Fleet", function(.Object, file = NA) {
@@ -458,9 +459,14 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
       
       .Object@Name <- dat[match("Name", dname), 1]
       .Object@nyears <- as.numeric(dat[match("nyears", dname), 1])
+      
+      .Object@CurrentYr <- as.numeric(dat[match("CurrentYr", dname), 1])
+      if(is.na(.Object@CurrentYr)).Object@CurrentYr<-.Object@nyears
+      
       .Object@Spat_targ <- as.numeric(dat[match("Spat_targ", dname), 
         1:2])
-      .Object@Fsd <- as.numeric(dat[match("Fsd", dname), 1:2])
+      .Object@Esd <- as.numeric(dat[match("Esd", dname), 1:2])
+	  .Object@Esd <- as.numeric(dat[match("Fsd", dname), 1:2])
       # .Object@Fgrad<-as.numeric(dat[match('Fgrad',dname),1:2])
       nEffYears <- ncol(dat[match("EffYears", dname), ])
       oldw <- getOption("warn")
@@ -533,10 +539,10 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
 #' 
 #' 
 #' @name initialize-methods
-#' @aliases initialize-methods initialize,DLM_data-method
-#' initialize,Fleet-method initialize,MSE-method initialize,Observation-method
+#' @aliases initialize-methods initialize,Data-method
+#' initialize,Fleet-method initialize,MSE-method initialize,Obs-method
 #' initialize,OM-method initialize,Stock-method initialize,lmmodel-method
-#' initialize,DLM_fease-method initialize,DLM_general-method
+#' initialize,Fease-method initialize,DLM_general-method
 #' @docType methods
 #' @section Methods: \describe{
 #' 
@@ -549,7 +555,7 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
 #' \item{list('signature(.Object = \'MSE\')')}{ %% ~~describe this method
 #' here~~ }
 #' 
-#' \item{list('signature(.Object = \'Observation\')')}{ %% ~~describe this
+#' \item{list('signature(.Object = \'Obs\')')}{ %% ~~describe this
 #' method here~~ }
 #' 
 #' \item{list('signature(.Object = \'OM\')')}{ %% ~~describe this method here~~
@@ -561,7 +567,7 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
 #' \item{list('signature(.Object = \'lmmodel\')')}{ %% ~~describe this method
 #' here~~ }
 #' 
-#' \item{list('signature(.Object = \'DLM_fease\')')}{ %% ~~describe this method
+#' \item{list('signature(.Object = \'Fease\')')}{ %% ~~describe this method
 #' here~~ } \item{list('signature(.Object = \'DLM_general\')')}{ %% ~~describe
 #' this method here~~ }
 #' 
@@ -693,7 +699,10 @@ setMethod("initialize", "lmmodel", function(.Object,Name,models){
 #' @slot CB_hist Stored historical catches in weight (historical simulations - an array with dimensions nsim, nages, nyears, nareas)
 #' @slot FM_hist Stored historical fishing mortality rate (historical simulations - an array with dimensions nsim, nages, nyears, nareas)
 #' @slot Effort Stored relative fishing effort in the projection years
-#' @slot Extra A list for additional information
+#' @slot PAA Population at age in last projection year (an array with dimensions nsim, nMPs, nages)
+#' @slot CAA Catch at age in last projection year (an array with dimensions nsim, nMPs, nages)
+#' @slot CAL Catch at length in last projection year (an array with dimensions nsim, nMPs, nCALbins)
+#' @slot CALbins Mid-points of the catch-at-length bins
 #'
 #' @author T. Carruthers
 #' @keywords classes
@@ -702,12 +711,13 @@ setClass("MSE", representation(Name = "character", nyears = "numeric",
   OM = "data.frame", Obs = "data.frame", B_BMSY = "array", F_FMSY = "array", 
   B = "array", SSB="array", VB="array", FM = "array", C = "array", 
   TAC = "array", SSB_hist = "array", 
-  CB_hist = "array", FM_hist = "array", Effort = "array"))
+  CB_hist = "array", FM_hist = "array", Effort = "array", PAA= "array", CAA= "array", 
+  CAL= "array", CALbins="numeric"))
 
   
 setMethod("initialize", "MSE", function(.Object, Name, nyears, proyears, 
   nMPs, MPs, nsim, OM, Obs, B_BMSY, F_FMSY, B, SSB, VB, FM, C, TAC, 
-  SSB_hist, CB_hist, FM_hist, Effort = array()) {
+  SSB_hist, CB_hist, FM_hist, Effort = array(), PAA,  CAA, CAL, CALbins) {
   .Object@Name <- Name
   .Object@nyears <- nyears
   .Object@proyears <- proyears
@@ -728,6 +738,11 @@ setMethod("initialize", "MSE", function(.Object, Name, nyears, proyears,
   .Object@CB_hist <- CB_hist
   .Object@FM_hist <- FM_hist
   .Object@Effort <- Effort
+  .Object@PAA <- PAA
+  .Object@CAA <- CAA
+  .Object@CAL <- CAL
+  .Object@CALbins <- CALbins
+	  
   .Object
 })
 
@@ -756,12 +771,12 @@ setMethod("initialize", "MSE", function(.Object, Name, nyears, proyears,
 # })
 
 
-#' Class \code{'Observation'}
+#' Class \code{'Obs'}
 #' 
 #' An operating model component that controls the observation model
 #' 
 #' 
-#' @name Observation-class
+#' @name Obs-class
 #' @docType class
 #' @note Its questionable whether the hyperstability/hyperdepletion should be
 #' categorised as an observation model characteristic as it is most often
@@ -769,7 +784,7 @@ setMethod("initialize", "MSE", function(.Object, Name, nyears, proyears,
 #' well its here and you might want to make it hyperstable beta < 1 or
 #' hyperdeplete beta > 1, only.
 #' @section Objects from the Class: Objects can be created by calls of the form
-#' \code{new('Observation', OM)} 
+#' \code{new('Obs', OM)} 
 #' @slot Name The name of the observation model object 
 #' @slot Cobs Log-normal catch observation error expressed as a coefficient of variation (uniform distribution) 
 #' @slot Cbiascv A coefficient of variation controlling the sampling of bias in catch observations for each simulation (uniform distribution) 
@@ -810,9 +825,9 @@ setMethod("initialize", "MSE", function(.Object, Name, nyears, proyears,
 #' @keywords classes
 #' @examples
 #' 
-#' showClass('Observation')
+#' showClass('Obs')
 #' 
-setClass("Observation", representation(Name = "character", LenMcv = "numeric", 
+setClass("Obs", representation(Name = "character", LenMcv = "numeric", 
   Cobs = "numeric", Cbiascv = "numeric", CAA_nsamp = "numeric", CAA_ESS = "numeric", 
   CAL_nsamp = "numeric", CAL_ESS = "numeric", CALcv = "numeric", Iobs = "numeric", 
   Mcv = "numeric", Kcv = "numeric", t0cv = "numeric", Linfcv = "numeric", 
@@ -823,8 +838,8 @@ setClass("Observation", representation(Name = "character", LenMcv = "numeric",
   Reccv = "numeric", Irefcv = "numeric", Crefcv = "numeric", Brefcv = "numeric", 
   beta = "numeric"))
 
-# initialize Observation
-setMethod("initialize", "Observation", function(.Object, file = NA) {
+# initialize Obs
+setMethod("initialize", "Obs", function(.Object, file = NA) {
   if (!is.na(file)) {
     if (file.exists(file)) {
       Ncol <- max(unlist(lapply(strsplit(readLines(file), ","), length)))
@@ -893,7 +908,7 @@ setMethod("initialize", "Observation", function(.Object, file = NA) {
 #' Class \code{'OM'}
 #' 
 #' An object containing all the parameters needed to control the MSE which can
-#' be build from component Stock, Fleet and Observation objects. Almost all of
+#' be build from component Stock, Fleet and Obs objects. Almost all of
 #' these inputs are a vector of length 2 which describes the upper and lower
 #' bounds of a uniform distribution from which to sample the parameter.
 #' 
@@ -901,9 +916,12 @@ setMethod("initialize", "Observation", function(.Object, file = NA) {
 #' @name OM-class
 #' @docType class
 #' @section Objects from the Class: Objects can be created by calls of the form
-#' \code{new('OM', Stock, Fleet, Observation)}. 
+#' \code{new('OM', Stock, Fleet, Obs, Imp)}. 
 
 #' @slot Name Name of the operating model
+#' @slot nsim The number of simulations
+#' @slot proyears The number of projected years
+
 #' @slot nyears The number of years for the historical simulation 
 #' @slot maxage The maximum age of individuals that is simulated (there is no 'plus group': individuals die off beyone the maximum age so there isn't a huge cost to simulating more older age classes) 
 #' @slot R0 The magnitude of unfished recruitment. This is normally fixed to some arbitrary value since it simply scales the simulated numbers) 
@@ -927,7 +945,7 @@ setMethod("initialize", "Observation", function(.Object, file = NA) {
 #' @slot Size_area_1 The size of area 1 relative to area 2 (uniform distribution) 
 #' @slot Frac_area_1 The fraction of the unfished biomass in stock 1 (uniform distribution) 
 #' @slot Prob_staying The probability of inviduals in area 1 remaining in area 1 over the course of one year 
-#' @slot Source A reference to a website or article form which parameters were taken to define the operating model 
+
 #' @slot beta A parameter controlling hyperstability/hyperdepletion. I^beta therefore values below 1 lead to hyperstability (an index that decreases slower than true abundance) and values above 1 lead to hyperdepletion (an index that decreases more rapidly than true abundance)(uniform distribution) 
 #' @slot Spat_targ Distribution of fishing in relation to spatial biomass: F is proportional to B^Spat_targ (uniform distribution)  
 #' @slot LFS Shortest length that is fully vulnerable to fishing (uniform distribution) 
@@ -944,13 +962,14 @@ setMethod("initialize", "Observation", function(.Object, file = NA) {
 #' @slot isRel Are the selectivity parameters relative to size-of-maturity? TRUE or FALSE 
 #' @slot L50 Length at 50 percent maturity (uniform distribution) 
 #' @slot L50_95 Length increment from 50 to 95 percent maturity (uniform distribution) 
-#' @slot Fsd Inter-annual variability in fishing mortality rate 
+#' @slot Esd Inter-annual variability in fishing mortality rate 
 #' @slot EffYears Vector of verticies, years at which to simulate varying relative effort 
 #' @slot EffLower Lower bound on relative effort corresponding to EffYears (uniform distribution) 
 #' @slot EffUpper Uppper bound on relative effort corresponding to EffYears (uniform distribution) 
-
 #' @slot qinc Average percentage change in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls) 
 #' @slot qcv Inter-annual variability in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls) 
+#' @slot CurrentYr The current calendar year (final year) of the historical simulations (e.g. 2011)
+
 #' @slot Cobs Log-normal catch observation error expressed as a coefficient of variation (uniform distribution) 
 #' @slot Cbiascv A coefficient of variation controlling the sampling of bias in catch observations for each simulation (uniform distribution) 
 #' @slot CAA_nsamp Number of catch-at-age observation per time step (uniform distribution) 
@@ -987,6 +1006,18 @@ setMethod("initialize", "Observation", function(.Object, file = NA) {
 #' @slot Irefcv Bias in the knowledge of the relative abundance index at BMSY (uniform distribution) 
 #' @slot Brefcv Bias in the knowledge of BMSY (uniform distribution) 
 #' @slot Crefcv Bias in the knowledge of MSY(uniform distribution) 
+
+#' @slot cpars A list of custom parameters (single parameters are a vector nsim long, time series are a matrix nsim rows by nyears columns)
+#' @slot seed A random seed to ensure users can reproduce results exactly
+#' @slot Source A reference to a website or article form which parameters were taken to define the operating model 
+
+#' @slot TACSD lognormal standard deviation in fraction of TAC taken (uniform distribution) 
+#' @slot TACFrac Mean fraction of TAC taken (uniform distribution) (can be an improper fraction greater than 1)
+#' @slot ESD lognormal standard deviation in fraction of TAE taken(uniform distribution)
+#' @slot EFrac Mean fraction of recommended effort taken (uniform distribution)
+#' @slot SizeLimSD lognormal error in size limit implementation (uniform distribution)
+#' @slot SizeLimFrac Mean fraction of the size limit (uniform distribution) (can be an improper fraction greater than 1)
+#' @slot DiscMort Discard mortality rate (uniform distribution) (can be an improper fraction greater than 1)
 #' 
 #' @author T. Carruthers
 #' @keywords classes
@@ -994,7 +1025,8 @@ setMethod("initialize", "Observation", function(.Object, file = NA) {
 #' 
 #' showClass('OM')
 #' 
-setClass("OM", representation(Name = "character", nyears = "numeric", maxage = "numeric", 
+setClass("OM", representation(Name = "character", nsim="numeric",proyears="numeric",
+  nyears = "numeric", maxage = "numeric", 
   R0 = "numeric", M = "numeric", Msd = "numeric", Mgrad = "numeric", 
   h = "numeric", SRrel = "numeric", Linf = "numeric", K = "numeric", 
   t0 = "numeric", Ksd = "numeric", Kgrad = "numeric", Linfsd = "numeric", 
@@ -1004,9 +1036,10 @@ setClass("OM", representation(Name = "character", nyears = "numeric", maxage = "
   AbsSelYears = "numeric", L5 = "numeric", LFS = "numeric", Vmaxlen = "numeric", 
   L5Lower = "numeric", L5Upper = "numeric", LFSLower = "numeric", LFSUpper = "numeric", 
   VmaxLower = "numeric", VmaxUpper = "numeric", isRel = "character", 
-  beta = "numeric", Spat_targ = "numeric", Fsd = "numeric", Period = "numeric", 
-  Amplitude = "numeric", EffYears = "numeric", EffLower = "numeric", 
+  beta = "numeric", Spat_targ = "numeric", Esd = "numeric",
+  Period = "numeric", Amplitude = "numeric", EffYears = "numeric", EffLower = "numeric", 
   EffUpper = "numeric", qinc = "numeric", qcv = "numeric", AC = "numeric", 
+  
   Cobs = "numeric", Cbiascv = "numeric", CAA_nsamp = "numeric", CAA_ESS = "numeric", 
   CAL_nsamp = "numeric", CAL_ESS = "numeric", CALcv = "numeric", Iobs = "numeric", 
   Perr = "numeric", Mcv = "numeric", Kcv = "numeric", t0cv = "numeric", 
@@ -1015,25 +1048,46 @@ setClass("OM", representation(Name = "character", nyears = "numeric", maxage = "
   rcv = "numeric", Dbiascv = "numeric", Dcv = "numeric", Btbias = "numeric", 
   Btcv = "numeric", Fcurbiascv = "numeric", Fcurcv = "numeric", hcv = "numeric", 
   Icv = "numeric", maxagecv = "numeric", Reccv = "numeric", Irefcv = "numeric", 
-  Crefcv = "numeric", Brefcv = "numeric"))
+  Crefcv = "numeric", Brefcv = "numeric",
+  
+  TACSD = "numeric", TACFrac = "numeric", 
+  ESD = "numeric", EFrac = "numeric",
+  SizeLimSD = "numeric", SizeLimFrac="numeric",
+  DiscMort = "numeric", 
+  
+  cpars="list",seed="numeric",CurrentYr="numeric"))
+
+
+Generic_fleet<-NULL
+Generic_obs<-NULL
+Perfect_Imp<-NULL
+
+
 
 # initialize OM
-setMethod("initialize", "OM", function(.Object, Stock, Fleet, Observation) {
+setMethod("initialize", "OM", function(.Object, Stock=NULL, Fleet=Generic_fleet, Obs=Generic_obs, Imp=Perfect_Imp, nsim=48, proyears=50) {
+  if (is.null(Stock)) {
+    message("No Stock object found. Returning a blank OM object") 
+    return(makePerf(.Object))
+  }
+
   if (class(Stock) != "Stock") 
     print(paste("Could not build operating model:", deparse(substitute(Stock)), 
       "not of class Stock"))
   if (class(Fleet) != "Fleet") 
     print(paste("Could not build operating model:", deparse(substitute(Fleet)), 
       "not of class Fleet"))
-  if (class(Observation) != "Observation") 
-    print(paste("Could not build operating model:", deparse(substitute(Observation)), 
-      "not of class Observation"))
-  if (class(Stock) != "Stock" | class(Fleet) != "Fleet" | class(Observation) != 
-    "Observation") 
-    stop()
+  if (class(Obs) != "Obs") 
+    print(paste("Could not build operating model:", deparse(substitute(Obs)), 
+      "not of class Obs"))
+  if (class(Imp) != "Imp") 
+    print(paste("Could not build operating model:", deparse(substitute(Imp)), 
+                "not of class Imp"))
+  if (class(Stock) != "Stock" | class(Fleet) != "Fleet" | 
+      class(Obs) != "Obs"  | class(Imp) != "Imp") stop()
   
   .Object@Name <- paste("Stock:", Stock@Name, "  Fleet:", Fleet@Name, 
-    "  Observation model:", Observation@Name, sep = "")
+    "  Obs model:", Obs@Name, "  Imp model:", Imp@Name, sep = "")
   # Now copy the values for stock, fleet and observation slots to same
   # slots in the Sim object
   Sslots <- slotNames(Stock)
@@ -1048,15 +1102,28 @@ setMethod("initialize", "OM", function(.Object, Stock, Fleet, Observation) {
     if (tt) 
       slot(.Object, Fslots[i]) <- slot(Fleet, Fslots[i])
   }
-  Oslots <- slotNames(Observation)
+  Oslots <- slotNames(Obs)
   for (i in 2:length(Oslots)) {
-    tt <- .hasSlot(Observation, Oslots[i])
+    tt <- .hasSlot(Obs, Oslots[i])
     if (tt) 
-      slot(.Object, Oslots[i]) <- slot(Observation, Oslots[i])
+      slot(.Object, Oslots[i]) <- slot(Obs, Oslots[i])
   }
+  Islots <- slotNames(Imp)
+  for (i in 2:length(Islots)) {
+    tt <- .hasSlot(Imp, Islots[i])
+    if (tt) 
+      slot(.Object, Islots[i]) <- slot(Imp, Islots[i])
+  }
+  
+  # Default MSE parameters
+  .Object@nsim <- nsim       
+  .Object@proyears <- proyears
+  
+  if(length(.Object@CurrentYr)==0).Object@CurrentYr=.Object@nyears
+  
+  .Object@seed=1
   .Object
 })
-
 
 
 
@@ -1082,29 +1149,29 @@ NULL
 
 
 
-#' Plot DLM_data object
+#' Plot Data object
 #'
-#' @rdname plot-DLM_data 
-#' @param x object of class DLM_data
+#' @rdname plot-Data 
+#' @param x object of class Data
 #' @param funcs MPs 
 #' @param maxlines maximum number of lines
 #' @param perc percentile of TAC recommendation
 #' @param xlims limits of x-axis
 #' @export
 setMethod("plot",
-  signature(x = "DLM_data"),
+  signature(x = "Data"),
   function(x,funcs=NA,maxlines=6,perc=0.5,xlims=NA){
    
     old_par <- par(no.readonly = TRUE)
     on.exit(par(list = old_par), add = TRUE)
 	  
-    DLM_data<-x
-	if (class(DLM_data) != "DLM_data") stop("Must supply object of class DLM_data")
-	if (all(is.na(DLM_data@TAC))) stop("No TAC data found")
+    Data<-x
+	if (class(Data) != "Data") stop("Must supply object of class Data")
+	if (all(is.na(Data@TAC))) stop("No TAC data found")
     cols<-rep(c('black','red','green','blue','orange','brown','purple','dark grey','violet','dark red','pink','dark blue','grey'),4)
     ltys<-rep(1:4,each=13)
     
-    if(is.na(funcs[1]))funcs<-DLM_data@MPs
+    if(is.na(funcs[1]))funcs<-Data@MPs
 
     nMPs<-length(funcs)
     nplots<-ceiling(nMPs/maxlines)
@@ -1112,18 +1179,18 @@ setMethod("plot",
     mbyp <- split(1:nMPs, ceiling(1:nMPs/maxl))   # assign methods to plots
 
     if(is.na(xlims[1])|length(xlims)!=2){
-      xlims<-quantile(DLM_data@TAC,c(0.005,0.95),na.rm=T)
+      xlims<-quantile(Data@TAC,c(0.005,0.95),na.rm=T)
       if(xlims[1]<0)xlims[1]<-0
     }
-    if(!NAor0(DLM_data@Ref)){
-      if(xlims[1]>DLM_data@Ref)xlims[1]<-max(0,0.98*DLM_data@Ref)
-      if(xlims[2]<DLM_data@Ref)xlims[2]<-1.02*DLM_data@Ref
+    if(!NAor0(Data@Ref)){
+      if(xlims[1]>Data@Ref)xlims[1]<-max(0,0.98*Data@Ref)
+      if(xlims[2]<Data@Ref)xlims[2]<-1.02*Data@Ref
     }
     ylims<-c(0,1)
 
     #for(m in 1:nMPs){
-     # if(sum(!is.na(DLM_data@TAC[m,,1]))>2){
-       # dens<-density(DLM_data@TAC[m,,1],na.rm=T)
+     # if(sum(!is.na(Data@TAC[m,,1]))>2){
+       # dens<-density(Data@TAC[m,,1],na.rm=T)
         #print(quantile(dens$y,0.99,na.rm=T))
       #  if(quantile(dens$y,0.9,na.rm=T)>ylims[2])ylims[2]<-quantile(dens$y,0.90,na.rm=T)
       #}
@@ -1136,34 +1203,34 @@ setMethod("plot",
       m<-mbyp[[p]][1]
       plot(NA,NA,xlim=xlims,ylim=ylims,main="",xlab="",ylab="",col="white",lwd=3,type="l")
       abline(h=0)
-      if(!NAor0(DLM_data@Ref)){
-        abline(v=DLM_data@Ref,col="light grey",lwd=2)
-        if(!NAor0(DLM_data@Ref_type[1]))legend('right',DLM_data@Ref_type,text.col="grey",bty='n')
+      if(!NAor0(Data@Ref)){
+        abline(v=Data@Ref,col="light grey",lwd=2)
+        if(!NAor0(Data@Ref_type[1]))legend('right',Data@Ref_type,text.col="grey",bty='n')
       }
       #plot(density(DLM@TAC[m,,1],from=0,na.rm=T),xlim=xlims,ylim=ylims,main="",xlab="",ylab="",col=coly[m],lty=ltyy[m],type="l")
 
-      if(!is.na(perc[1]))abline(v=quantile(DLM_data@TAC[m,,1],p=perc,na.rm=T),col=cols[m],lty=ltys[m])
+      if(!is.na(perc[1]))abline(v=quantile(Data@TAC[m,,1],p=perc,na.rm=T),col=cols[m],lty=ltys[m])
       #if(length(mbyp[[p]])>0){
         for(ll in 1:length(mbyp[[p]])){
           m<-mbyp[[p]][ll]
-          if(sum(!is.na(DLM_data@TAC[m,,1]))>10){  # only plot if there are sufficient non-NA TAC samples
-            x<-density(DLM_data@TAC[m,,1],from=0,na.rm=T)$x
-            y<-density(DLM_data@TAC[m,,1],from=0,na.rm=T)$y
+          if(sum(!is.na(Data@TAC[m,,1]))>10){  # only plot if there are sufficient non-NA TAC samples
+            x<-density(Data@TAC[m,,1],from=0,na.rm=T)$x
+            y<-density(Data@TAC[m,,1],from=0,na.rm=T)$y
             y<-y/max(y)
             lines(x,y,col=cols[ll])
           }else{
             print(paste("Method ",funcs[m]," produced too many NA TAC values for plotting densities",sep=""))
           }
-          if(!is.na(perc[1]))abline(v=quantile(DLM_data@TAC[m,,1],p=perc,na.rm=T),col=cols[ll],lty=2)
+          if(!is.na(perc[1]))abline(v=quantile(Data@TAC[m,,1],p=perc,na.rm=T),col=cols[ll],lty=2)
         }
       #}
       cind<-1:length(mbyp[[p]])
       legend('topright',funcs[mbyp[[p]]],text.col=cols[cind],col=cols[cind],lty=1,bty='n',cex=0.75)
     }
 
-    mtext(paste("TAC (",DLM_data@Units,")",sep=""),1,outer=T,line=0.5)
+    mtext(paste("TAC (",Data@Units,")",sep=""),1,outer=T,line=0.5)
     mtext(paste("Standardized relative frequency",sep=""),2,outer=T,line=0.5)
-    mtext(paste("TAC calculation for ",DLM_data@Name,sep=""),3,outer=T,line=0.5)
+    mtext(paste("TAC calculation for ",Data@Name,sep=""),3,outer=T,line=0.5)
 })
 
 #' Plot MSE object
@@ -1292,13 +1359,13 @@ setMethod("initialize", "Stock", function(.Object, file = NA) {
 
 
 
-#' Summary of DLM_data object
+#' Summary of Data object
 #'
-#' @rdname summary-DLM_data
-#' @param object object of class DLM_data
+#' @rdname summary-Data
+#' @param object object of class Data
 #' @export
 setMethod("summary",
-          signature(object = "DLM_data"),
+          signature(object = "Data"),
           function(object){
   
   old_par <- par(no.readonly = TRUE)
@@ -1337,7 +1404,7 @@ setMethod("summary",
     for(i in 2:length(slots)) lines(xstore[i,],ystore[i,],col=scols[i])
   }
   legend('topright',legend=namey[ind],text.col=scols[1:length(slots)],bty='n')
-  mtext(paste("Data summary for",deparse(substitute(DLM_data)),sep=" "),3,font=2,line=0.25,outer=T)
+  mtext(paste("Data summary for",deparse(substitute(Data)),sep=" "),3,font=2,line=0.25,outer=T)
 
 })
 
@@ -1394,4 +1461,83 @@ setMethod("summary",
 
 
 
+#' Class \code{'Imp'}
+#' 
+#' An operating model component that specifies the degree of adherence to management recommendations (Implementation error)
+#' 
+#' 
+#' @name Imp-class
+#' @docType class
+#' @section Objects from the Class: Objects can be created by calls of the form
+#' \code{new('Imp', OM)}
+#' @slot Name The name of the Implementation error object 
+#' @slot TACSD lognormal standard deviation in fraction of TAC taken (uniform distribution) 
+#' @slot TACFrac Mean fraction of TAC taken (uniform distribution) (can be an improper fraction greater than 1)
+#' @slot ESD lognormal standard deviation in fraction of TAE taken(uniform distribution)
+#' @slot EFrac Mean fraction of recommended effort taken (uniform distribution)
+#' @slot SizeLimSD lognormal error in size limit implementation (uniform distribution)
+#' @slot SizeLimFrac Mean fraction of the size limit (uniform distribution) (can be an improper fraction greater than 1)
+#' @slot DiscMort Discard mortality rate (uniform distribution) (can be an improper fraction greater than 1)
+#' @slot Source A reference to a website or article form which parameters were taken to define the operating model
+#' @author T. Carruthers
+#' @keywords classes
+#' @examples
+#' 
+#' showClass('Imp')
+#' 
+setClass("Imp", representation(Name = "character", TACSD = "numeric", TACFrac = "numeric", 
+                               ESD = "numeric", EFrac = "numeric",
+                               SizeLimSD = "numeric", SizeLimFrac="numeric",
+                               DiscMort = "numeric", 
+                               Source = "character"))
 
+# initialize Imp
+setMethod("initialize", "Imp", function(.Object, file = NA) {
+  
+  .Object@Name <- "Perfect implementation"
+  .Object@TACSD <- c(0,0)
+  .Object@TACFrac <- c(1,1)
+  .Object@ESD <- c(0,0)
+  .Object@EFrac <-c(1,1)
+  .Object@SizeLimSD <- c(0,0)
+  .Object@SizeLimFrac<-c(1,1)
+  .Object@DiscMort <- c(0,0)
+  .Object@Source <-"DLMtool generated"
+  
+  if (!is.na(file)) {
+    if (file.exists(file)) {
+      Ncol <- max(unlist(lapply(strsplit(readLines(file), ","), length)))
+      dat <- read.csv(file, header = F, colClasses = "character", 
+                      col.names = paste0("V", 1:Ncol))  # read 1st sheet
+      dname <- dat[, 1]
+      dat <- dat[, 2:ncol(dat)]
+      
+      .Object@Name <- dat[match("Name", dname), 1]
+      .Object@TACSD <- as.numeric(dat[match("TACSD", dname), 1:2])
+      .Object@TACFrac <- as.numeric(dat[match("TACFrac", dname), 1:2])
+      .Object@ESD <- as.numeric(dat[match("ESD", dname), 1:2])
+      .Object@EFrac <- as.numeric(dat[match("EFrac", dname), 1:2])
+      .Object@SizeLimSD <- as.numeric(dat[match("SizeLimSD", dname), 1:2])
+      .Object@SizeLimFrac <- as.numeric(dat[match("SizeLimFrac", dname), 1:2])
+      .Object@DiscMort <- as.numeric(dat[match("DiscMort", dname), 1:2])
+      .Object@Source <- dat[match("Source", dname), 1]
+      
+    } else {
+      
+      message("File doesn't exist")
+      
+    }
+    
+    
+  }
+  .Object
+  
+})
+
+  
+
+  
+  
+  
+  
+  

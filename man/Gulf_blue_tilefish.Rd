@@ -3,12 +3,12 @@
 \docType{data}
 \name{Gulf_blue_tilefish}
 \alias{Gulf_blue_tilefish}
-\title{Gulf_blue_tilefish DLM_data}
-\format{An object of class \code{DLM_data} of length 1.}
+\title{Gulf_blue_tilefish Data}
+\format{An object of class \code{Data} of length 1.}
 \usage{
 Gulf_blue_tilefish
 }
 \description{
-An object of class DLM_data
+An object of class Data
 }
 \keyword{datasets}

@@ -55,21 +55,21 @@ OM_xl <- function(fname, stkname, fpath = "", saveCSV = FALSE) {
     unlink(tmpfile)
   
   # Observation
-  index <- which(pmatch(shtname, paste0(stkname, "Observation")) == 1)
+  index <- which(pmatch(shtname, paste0(stkname, "Obs")) == 1)
   if (length(index) > 1) 
     stop("More than one match")
   obs <- readxl::read_excel(infile, sheet = index, col_names = FALSE)
   obs <- as.data.frame(obs)
-  tmpfile <- paste0(fpath, stkname, "Observation.csv")
+  tmpfile <- paste0(fpath, stkname, "Obs.csv")
   if (file.exists(tmpfile)) 
     unlink(tmpfile)
-  writeCSV(inobj = obs, tmpfile, objtype = "Observation")
-  tmpobs <- new("Observation", tmpfile)
+  writeCSV(inobj = obs, tmpfile, objtype = "Obs")
+  tmpobs <- new("Obs", tmpfile)
   if (!saveCSV) 
     unlink(tmpfile)
   
   # Operating Model
-  OM <- new("OM", Stock = tmpstock, Fleet = tmpfleet, Observation = tmpobs)
+  OM <- new("OM", Stock = tmpstock, Fleet = tmpfleet, Obs = tmpobs)
   OM
 }
 
@@ -110,8 +110,8 @@ Fease_xl <- function(fname, stkname, fpath = "", saveCSV = FALSE) {
   tmpfile <- paste0(fpath, stkname, "Fease.csv")
   if (file.exists(tmpfile)) 
     unlink(tmpfile)
-  writeCSV(inobj = feasedat, tmpfile, objtype = "DLM_fease")
-  fease <- new("DLM_fease", tmpfile)
+  writeCSV(inobj = feasedat, tmpfile, objtype = "Fease")
+  fease <- new("Fease", tmpfile)
   if (!saveCSV) 
     unlink(tmpfile)
   
@@ -127,15 +127,15 @@ Fease_xl <- function(fname, stkname, fpath = "", saveCSV = FALSE) {
 #' 
 #' 
 #' @usage writeCSV(inobj, tmpfile = NULL, objtype = c('Stock', 'Fleet',
-#' 'Observation', 'DLM_data', 'OM', 'DLM_fease'))
-#' @param inobj A object of class Stock, Fleet, Observation, DLM_data, OM, or
-#' DLM_fease
+#' 'Observation', 'Data', 'OM', 'Fease'))
+#' @param inobj A object of class Stock, Fleet, Observation, Data, OM, or
+#' Fease
 #' @param tmpfile The full file path and name for the saved CSV file
 #' @param objtype The class corresonding to the \code{inobj}
 #' @author A. Hordyk
 #' @export writeCSV
 writeCSV <- function(inobj, tmpfile = NULL, objtype = c("Stock", "Fleet", 
-  "Observation", "DLM_data", "OM", "DLM_fease")) {
+  "Observation", "Data", "OM", "Fease")) {
   objtype <- match.arg(objtype)
   tmpobj <- new(objtype)
   sn <- slotNames(tmpobj)

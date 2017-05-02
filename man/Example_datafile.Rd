@@ -3,12 +3,12 @@
 \docType{data}
 \name{Example_datafile}
 \alias{Example_datafile}
-\title{Example_datafile DLM_data}
-\format{An object of class \code{DLM_data} of length 1.}
+\title{Example_datafile Data}
+\format{An object of class \code{Data} of length 1.}
 \usage{
 Example_datafile
 }
 \description{
-An object of class DLM_data
+An object of class Data
 }
 \keyword{datasets}

@@ -3,12 +3,12 @@
 \docType{data}
 \name{Simulation_1}
 \alias{Simulation_1}
-\title{Simulation_1 DLM_data}
-\format{An object of class \code{DLM_data} of length 1.}
+\title{Simulation_1 Data}
+\format{An object of class \code{Data} of length 1.}
 \usage{
 Simulation_1
 }
 \description{
-An object of class DLM_data
+An object of class Data
 }
 \keyword{datasets}

@@ -1,3 +1,7 @@
+# This file is automatically built by createObjects.r in DLMDev
+# Don't edit by hand!
+# 
+
 #'  Albacore Stock
 #'
 #'  An object of class Stock
@@ -194,122 +198,259 @@
 "Targeting_Small_Fish"
 
 
-#'  Generic_obs Observation
+#'  Generic_obs Obs
 #'
-#'  An object of class Observation
+#'  An object of class Obs
 #'
 "Generic_obs"
 
 
-#'  Imprecise_Biased Observation
+#'  Imprecise_Biased Obs
 #'
-#'  An object of class Observation
+#'  An object of class Obs
 #'
 "Imprecise_Biased"
 
 
-#'  Imprecise_Unbiased Observation
+#'  Imprecise_Unbiased Obs
 #'
-#'  An object of class Observation
+#'  An object of class Obs
 #'
 "Imprecise_Unbiased"
 
 
-#'  Perfect_Info Observation
+#'  Perfect_Info Obs
 #'
-#'  An object of class Observation
+#'  An object of class Obs
 #'
 "Perfect_Info"
 
 
-#'  Precise_Biased Observation
+#'  Precise_Biased Obs
 #'
-#'  An object of class Observation
+#'  An object of class Obs
 #'
 "Precise_Biased"
 
 
-#'  Precise_Unbiased Observation
+#'  Precise_Unbiased Obs
 #'
-#'  An object of class Observation
+#'  An object of class Obs
 #'
 "Precise_Unbiased"
 
 
-#'  Feasibility DLM_fease
+#'  Feasibility Fease
 #'
-#'  An object of class DLM_fease
+#'  An object of class Fease
 #'
 "Feasibility"
 
 
-#'  Feasibility2 DLM_fease
+#'  Feasibility2 Fease
 #'
-#'  An object of class DLM_fease
+#'  An object of class Fease
 #'
 "Feasibility2"
 
 
-#'  mypars DLM_general
+#'  Atlantic_mackerel Data
 #'
-#'  An object of class DLM_general
-#'
-"mypars"
-
-
-#'  Atlantic_mackerel DLM_data
-#'
-#'  An object of class DLM_data
+#'  An object of class Data
 #'
 "Atlantic_mackerel"
 
 
-#'  China_rockfish DLM_data
+#'  China_rockfish Data
 #'
-#'  An object of class DLM_data
+#'  An object of class Data
 #'
 "China_rockfish"
 
 
-#'  Cobia DLM_data
+#'  Cobia Data
 #'
-#'  An object of class DLM_data
+#'  An object of class Data
 #'
 "Cobia"
 
 
-#'  Example_datafile DLM_data
+#'  Example_datafile Data
 #'
-#'  An object of class DLM_data
+#'  An object of class Data
 #'
 "Example_datafile"
 
 
-#'  Gulf_blue_tilefish DLM_data
+#'  Gulf_blue_tilefish Data
 #'
-#'  An object of class DLM_data
+#'  An object of class Data
 #'
 "Gulf_blue_tilefish"
 
 
-#'  ourReefFish DLM_data
+#'  ourReefFish Data
 #'
-#'  An object of class DLM_data
+#'  An object of class Data
 #'
 "ourReefFish"
 
 
-#'  Red_snapper DLM_data
+#'  Red_snapper Data
 #'
-#'  An object of class DLM_data
+#'  An object of class Data
 #'
 "Red_snapper"
 
 
-#'  Simulation_1 DLM_data
+#'  Simulation_1 Data
 #'
-#'  An object of class DLM_data
+#'  An object of class Data
 #'
 "Simulation_1"
+
+
+#'  Perfect_Imp Imp
+#'
+#'  An object of class Imp
+#'
+"Perfect_Imp"
+
+
+#'  Red_Snapper_GOM OM
+#'
+#'  An object of class OM
+#'
+"Red_Snapper_GOM"
+
+
+#'  Rougheye_Rockfish_BC OM
+#'
+#'  An object of class OM
+#'
+"Rougheye_Rockfish_BC"
+
+
+#'  testOM OM
+#'
+#'  An object of class OM
+#'
+"testOM"
+
+
+#'  Yellowfin_Tuna_IO OM
+#'
+#'  An object of class OM
+#'
+"Yellowfin_Tuna_IO"
+
+
+#'  AJ_GOM OM
+#'
+#'  An object of class OM
+#'
+"AJ_GOM"
+
+
+#'  LS_GOM OM
+#'
+#'  An object of class OM
+#'
+"LS_GOM"
+
+
+#'  LAJ_GOM OM
+#'
+#'  An object of class OM
+#'
+"LAJ_GOM"
+
+
+#'  RD_GOM OM
+#'
+#'  An object of class OM
+#'
+"RD_GOM"
+
+
+#'  SG_GOM OM
+#'
+#'  An object of class OM
+#'
+"SG_GOM"
+
+
+#'  SH_GOM OM
+#'
+#'  An object of class OM
+#'
+"SH_GOM"
+
+
+#'  WM_GOM OM
+#'
+#'  An object of class OM
+#'
+"WM_GOM"
+
+
+#'  YM_GOM OM
+#'
+#'  An object of class OM
+#'
+"YM_GOM"
+
+
+#'  San_Francisco_Bay_herring_California OM
+#'
+#'  An object of class OM
+#'
+"San_Francisco_Bay_herring_California"
+
+
+#'  Darnley_Bay_Char_DFO OM
+#'
+#'  An object of class OM
+#'
+"Darnley_Bay_Char_DFO"
+
+
+#'  Canary_Rockfish_BC_DFO OM
+#'
+#'  An object of class OM
+#'
+"Canary_Rockfish_BC_DFO"
+
+
+#'  Red_snapper_GOM_SS OM
+#'
+#'  An object of class OM (from SS using SS2DLM)
+#'  SEDAR 31, 2014 update assessment. Author: No author provided.
+#' 
+"Red_snapper_GOM_SS"
+
+
+#'  Yellowfin_tuna_IO_SS OM
+#'
+#'  An object of class OM (from SS using SS2DLM)
+#'  SEDAR 31, 2014 update assessment. Author: No author provided.
+#' 
+"Yellowfin_tuna_IO_SS"
+
+
+#'  Swordfish_OM OM
+#'
+#'  An object of class OM
+#'  Author: Alex Hanke (DFO)  Assessment: http://iccat.org/Documents/SCRS/Manual/CH2/2_1_9_SWO_ENG.pdf
+#' 
+"Swordfish_OM"
+
+
+#'  Arrowtooth_Flounder_BC_DFO_iSCAM OM
+#'
+#'  An object of class OM (built using iSCAM2DLM)
+#'  No source provided. Author: No author provided.
+#' 
+"Arrowtooth_Flounder_BC_DFO_iSCAM"
 
 

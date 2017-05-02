@@ -4,12 +4,12 @@
 \alias{LBSPR_ItEff}
 \title{Length-based SPR model with HCR that iteratively adjusts Effort}
 \usage{
-LBSPR_ItEff(x, DLM_data, yrsmth=1,reps=5, ...)
+LBSPR_ItEff(x, Data, yrsmth=1,reps=5, ...)
 }
 \arguments{
 \item{x}{Simulation number}
 
-\item{DLM_data}{DLM_data object}
+\item{Data}{Data object}
 
 \item{yrsmth}{Number of years to smooth length data - not currently used}
 

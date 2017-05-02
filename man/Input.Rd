@@ -4,11 +4,11 @@
 \alias{Input}
 \title{Function to run a set of input control methods}
 \usage{
-Input(DLM_data, MPs = NA, reps = 100, timelimit = 10, CheckMPs =
+Input(Data, MPs = NA, reps = 100, timelimit = 10, CheckMPs =
 TRUE)
 }
 \arguments{
-\item{DLM_data}{A DLM_data object}
+\item{Data}{A Data object}
 
 \item{MPs}{A list of input MPs, if NA all available input MPs are run}
 

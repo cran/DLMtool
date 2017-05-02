@@ -3,12 +3,12 @@
 \docType{data}
 \name{Generic_obs}
 \alias{Generic_obs}
-\title{Generic_obs Observation}
-\format{An object of class \code{Observation} of length 1.}
+\title{Generic_obs Obs}
+\format{An object of class \code{NULL} of length 0.}
 \usage{
 Generic_obs
 }
 \description{
-An object of class Observation
+An object of class Obs
 }
 \keyword{datasets}

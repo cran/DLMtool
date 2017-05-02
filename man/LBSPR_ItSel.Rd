@@ -4,12 +4,12 @@
 \alias{LBSPR_ItSel}
 \title{Length-based SPR model with HCR that iteratively adjusts Selectivity}
 \usage{
-LBSPR_ItSel(x, DLM_data, yrsmth=1,reps=5, ...)
+LBSPR_ItSel(x, Data, yrsmth=1,reps=5, ...)
 }
 \arguments{
 \item{x}{Simulation number}
 
-\item{DLM_data}{DLM_data object}
+\item{Data}{Data object}
 
 \item{yrsmth}{Number of years to smooth length data - not currently used}
 
