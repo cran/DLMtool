@@ -119,8 +119,7 @@ setMethod("initialize", "Data", function(.Object, stock = "nada") {
     .Object@Name <- dat[match("Name", dname), 1]
     .Object@Year <- as.numeric(dat[match("Year", dname), dat[match("Year", dname), ] != ""])
     .Object@Cat <- matrix(as.numeric(dat[match("Catch", dname), dat[match("Catch", dname), ] != ""]), nrow = 1)
-    .Object@Ind <- matrix(as.numeric(dat[match("Abundance index", dname), 
-      1:length(.Object@Year)]), nrow = 1)
+    .Object@Ind <- matrix(as.numeric(dat[match("Abundance index", dname), 1:length(.Object@Year)]), nrow = 1)
     .Object@Rec <- matrix(as.numeric(dat[match("Recruitment", dname), 1:length(.Object@Year)]), nrow = 1)
     .Object@t <- as.numeric(dat[match("Duration t", dname), 1])
     .Object@AvC <- as.numeric(dat[match("Average catch over time t", dname), 1])
@@ -137,7 +136,7 @@ setMethod("initialize", "Data", function(.Object, stock = "nada") {
     .Object@LFS <- as.numeric(dat[match("Length at full selection", dname), 1])
     .Object@Dep <- as.numeric(dat[match("Current stock depletion",  dname), 1])
     .Object@Abun <- as.numeric(dat[match("Current stock abundance",  dname), 1])
-	.Object@SpAbun <- as.numeric(dat[match("Current spawning stock abundance",  dname), 1])
+	  .Object@SpAbun <- as.numeric(dat[match("Current spawning stock abundance",  dname), 1])
     .Object@vbK <- as.numeric(dat[match("Von Bertalanffy K parameter", dname), 1])
     .Object@vbLinf <- as.numeric(dat[match("Von Bertalanffy Linf parameter", dname), 1])
     .Object@vbt0 <- as.numeric(dat[match("Von Bertalanffy t0 parameter", dname), 1])
@@ -145,15 +144,13 @@ setMethod("initialize", "Data", function(.Object, stock = "nada") {
     .Object@wlb <- as.numeric(dat[match("Length-weight parameter b", dname), 1])
     .Object@steep <- as.numeric(dat[match("Steepness", dname), 1])
     .Object@sigmaL <- as.numeric(dat[match("Sigma length composition", dname), 1])
-    
     .Object@CV_Cat <- as.numeric(dat[match("CV Catch", dname), 1])
     .Object@CV_Dt <- as.numeric(dat[match("CV Depletion over time t", dname), 1])
     .Object@CV_AvC <- as.numeric(dat[match("CV Average catch over time t", dname), 1])
     .Object@CV_Ind <- as.numeric(dat[match("CV Abundance index", dname), 1])
     .Object@CV_Mort <- as.numeric(dat[match("CV M", dname), 1])
     .Object@CV_Rec <- as.numeric(dat[match("CV Rec", dname), 1])
-    .Object@CV_FMSY_M <- as.numeric(dat[match("CV FMSY/M", dname), 
-      1])
+    .Object@CV_FMSY_M <- as.numeric(dat[match("CV FMSY/M", dname),  1])
     .Object@CV_BMSY_B0 <- as.numeric(dat[match("CV BMSY/B0", dname), 1])
     .Object@CV_Cref <- as.numeric(dat[match("CV Cref", dname), 1])
     .Object@CV_Bref <- as.numeric(dat[match("CV Bref", dname), 1])
@@ -168,8 +165,7 @@ setMethod("initialize", "Data", function(.Object, stock = "nada") {
     .Object@CV_LFS <- as.numeric(dat[match("CV Length at full selection", dname), 1])
     .Object@CV_wla <- as.numeric(dat[match("CV Length-weight parameter a", dname), 1])
     .Object@CV_wlb <- as.numeric(dat[match("CV Length-weight parameter b", dname), 1])
-    .Object@CV_steep <- as.numeric(dat[match("CV Steepness", dname), 
-      1])
+    .Object@CV_steep <- as.numeric(dat[match("CV Steepness", dname),  1])
     .Object@MaxAge <- as.numeric(dat[match("Maximum age", dname), 1])
     .Object@MPrec <- as.numeric(dat[match("MPrec", dname), 1])
     .Object@MPeff <- as.numeric(dat[match("MPeff", dname), 1])
@@ -179,23 +175,18 @@ setMethod("initialize", "Data", function(.Object, stock = "nada") {
       nCAL <- length(CAL_bins) - 1
       .Object@CAL_bins <- CAL_bins
       CALdat <- grep("CAL ", dname)
-      .Object@CAL <- array(as.numeric(as.matrix(dat[CALdat, 1:nCAL])), 
-        dim = c(1, length(CALdat), nCAL))
+      .Object@CAL <- array(as.numeric(as.matrix(dat[CALdat, 1:nCAL])),dim = c(1, length(CALdat), nCAL))
     }
     
     CAAy <- grep("CAA", dname)[1:length(grep("CAA", dname))]
     CAAa <- sum(dat[CAAy[1], ] != "")
     if (!is.na(CAAa)) {
-      .Object@CAA <- array(as.numeric(as.matrix(dat[CAAy, 1:CAAa])), 
-        dim = c(1, length(CAAy), CAAa))
+      .Object@CAA <- array(as.numeric(as.matrix(dat[CAAy, 1:CAAa])),  dim = c(1, length(CAAy), CAAa))
     }
     
-    .Object@ML <- matrix(as.numeric(dat[match("Mean length", dname), 
-      1:length(.Object@Year)]), nrow = 1)
-    .Object@Lbar <- matrix(as.numeric(dat[match("Mean length Lc", dname), 
-      1:length(.Object@Year)]), nrow = 1)
-    .Object@Lc <- matrix(as.numeric(dat[match("Modal length", dname), 
-      1:length(.Object@Year)]), nrow = 1)
+    .Object@ML <- matrix(as.numeric(dat[match("Mean length", dname), 1:length(.Object@Year)]), nrow = 1)
+    .Object@Lbar <- matrix(as.numeric(dat[match("Mean length Lc", dname), 1:length(.Object@Year)]), nrow = 1)
+    .Object@Lc <- matrix(as.numeric(dat[match("Modal length", dname), 1:length(.Object@Year)]), nrow = 1)
     
     .Object@LHYear <- as.numeric(dat[match("LHYear", dname), 1])
     .Object@Units <- dat[match("Units", dname), 1]
@@ -213,78 +204,43 @@ setMethod("initialize", "Data", function(.Object, stock = "nada") {
     
   } else {
     if (stock != "MSE") {
-      if (!is.na(stock)) 
-        print("Couldn't find specified csv file, blank DLM object created")
+      if (!is.na(stock)) print("Couldn't find specified csv file, blank DLM object created")
     }
   }
   # Default values
   # -------------------------------------------------------------
-  if (NAor0(.Object@CV_Cat)) 
-    .Object@CV_Cat <- 0.2
-  if (NAor0(.Object@CV_Dt)) 
-    .Object@CV_Dt <- 0.25
-  if (NAor0(.Object@CV_AvC)) 
-    .Object@CV_AvC <- 0.2
-  if (NAor0(.Object@CV_Ind)) 
-    .Object@CV_Ind <- 0.2
-  if (NAor0(.Object@CV_Mort)) 
-    .Object@CV_Mort <- 0.2
-  if (NAor0(.Object@CV_FMSY_M)) 
-    .Object@CV_FMSY_M <- 0.2
-  if (NAor0(.Object@CV_BMSY_B0)) 
-    .Object@CV_BMSY_B0 <- 0.045
-  if (NAor0(.Object@CV_Cref)) 
-    .Object@CV_Cref <- 0.2
-  if (NAor0(.Object@CV_Bref)) 
-    .Object@CV_Bref <- 0.2
-  if (NAor0(.Object@CV_Iref)) 
-    .Object@CV_Iref <- 0.2
-  if (NAor0(.Object@CV_Rec)) 
-    .Object@CV_Rec <- 0.2
-  if (NAor0(.Object@CV_Dep)) 
-    .Object@CV_Dep <- 0.25
-  if (NAor0(.Object@CV_Abun)) 
-    .Object@CV_Abun <- 0.25
-  if (NAor0(.Object@CV_vbK)) 
-    .Object@CV_vbK <- 0.1
-  if (NAor0(.Object@CV_vbLinf)) 
-    .Object@CV_vbLinf <- 0.1
-  if (NAor0(.Object@CV_vbt0)) 
-    .Object@CV_vbt0 <- 0.1
-  if (NAor0(.Object@CV_L50)) 
-    .Object@CV_L50 <- 0.1
-  if (NAor0(.Object@CV_LFC)) 
-    .Object@CV_LFC <- 0.2
-  if (NAor0(.Object@CV_LFS)) 
-    .Object@CV_LFS <- 0.2
-  if (NAor0(.Object@CV_wla)) 
-    .Object@CV_wla <- 0.1
-  if (NAor0(.Object@CV_wlb)) 
-    .Object@CV_wlb <- 0.1
-  if (NAor0(.Object@CV_steep)) 
-    .Object@CV_steep <- 0.2
-  if (length(.Object@sigmaL) == 0) 
-    .Object@sigmaL <- 0.2
-  if (length(.Object@CAA) == 0) 
-    .Object@CAA <- array(NA, c(1, 1, 1))
-  if (length(.Object@CAL) == 0) 
-    .Object@CAL <- array(NA, c(1, 1, 1))
-  if (length(.Object@CAL_bins) == 0) 
-    .Object@CAL_bins <- 1
-  if (length(.Object@TAC) == 0) 
-    .Object@TAC <- array(1, c(1, 1))
-  if (length(.Object@TACbias) == 0) 
-    .Object@TACbias <- array(1, c(1, 1))
-  if (length(.Object@Sense) == 0) 
-    .Object@Sense <- array(1, c(1, 1))
-  if (length(.Object@ML) == 0) 
-    .Object@ML <- array(NA, c(1, 1))
-  if (length(.Object@Lbar) == 0) 
-    .Object@Lbar <- array(NA, c(1, 1))
-  if (length(.Object@Lc) == 0) 
-    .Object@Lc <- array(NA, c(1, 1))
-  
-  
+  if (NAor0(.Object@CV_Cat)) .Object@CV_Cat <- 0.2
+  if (NAor0(.Object@CV_Dt)) .Object@CV_Dt <- 0.25
+  if (NAor0(.Object@CV_AvC)) .Object@CV_AvC <- 0.2
+  if (NAor0(.Object@CV_Ind)) .Object@CV_Ind <- 0.2
+  if (NAor0(.Object@CV_Mort)) .Object@CV_Mort <- 0.2
+  if (NAor0(.Object@CV_FMSY_M)) .Object@CV_FMSY_M <- 0.2
+  if (NAor0(.Object@CV_BMSY_B0)) .Object@CV_BMSY_B0 <- 0.045
+  if (NAor0(.Object@CV_Cref)) .Object@CV_Cref <- 0.2
+  if (NAor0(.Object@CV_Bref)) .Object@CV_Bref <- 0.2
+  if (NAor0(.Object@CV_Iref)) .Object@CV_Iref <- 0.2
+  if (NAor0(.Object@CV_Rec)) .Object@CV_Rec <- 0.2
+  if (NAor0(.Object@CV_Dep)) .Object@CV_Dep <- 0.25
+  if (NAor0(.Object@CV_Abun)) .Object@CV_Abun <- 0.25
+  if (NAor0(.Object@CV_vbK)) .Object@CV_vbK <- 0.1
+  if (NAor0(.Object@CV_vbLinf)) .Object@CV_vbLinf <- 0.1
+  if (NAor0(.Object@CV_vbt0)) .Object@CV_vbt0 <- 0.1
+  if (NAor0(.Object@CV_L50))  .Object@CV_L50 <- 0.1
+  if (NAor0(.Object@CV_LFC))  .Object@CV_LFC <- 0.2
+  if (NAor0(.Object@CV_LFS))  .Object@CV_LFS <- 0.2
+  if (NAor0(.Object@CV_wla))  .Object@CV_wla <- 0.1
+  if (NAor0(.Object@CV_wlb))  .Object@CV_wlb <- 0.1
+  if (NAor0(.Object@CV_steep)) .Object@CV_steep <- 0.2
+  if (length(.Object@sigmaL) == 0) .Object@sigmaL <- 0.2
+  if (length(.Object@CAA) == 0) .Object@CAA <- array(NA, c(1, 1, 1))
+  if (length(.Object@CAL) == 0) .Object@CAL <- array(NA, c(1, 1, 1))
+  if (length(.Object@CAL_bins) == 0) .Object@CAL_bins <- 1
+  if (length(.Object@TAC) == 0) .Object@TAC <- array(1, c(1, 1))
+  if (length(.Object@TACbias) == 0) .Object@TACbias <- array(1, c(1, 1))
+  if (length(.Object@Sense) == 0) .Object@Sense <- array(1, c(1, 1))
+  if (length(.Object@ML) == 0)  .Object@ML <- array(NA, c(1, 1))
+  if (length(.Object@Lbar) == 0) .Object@Lbar <- array(NA, c(1, 1))
+  if (length(.Object@Lc) == 0) .Object@Lc <- array(NA, c(1, 1))
   .Object
 })
 
@@ -295,7 +251,6 @@ setMethod("initialize", "Data", function(.Object, stock = "nada") {
 #' 
 #' An object for storing information about what data are available or might be
 #' available
-#' 
 #' 
 #' @name Fease-class
 #' @docType class
@@ -344,39 +299,25 @@ setMethod("initialize", "Fease", function(.Object, file = "nada", ncases = 1) {
     nr <- nrow(dat)
     ncases = ncol(dat) - 1
     dname <- dat[, 1]
-    if (ncases == 1) 
-      dat <- array(dat[, 2:ncol(dat)], dim = c(nr, ncases))
-    if (ncases > 1) 
-      dat <- dat[, 2:ncol(dat)]
+    if (ncases == 1) dat <- array(dat[, 2:ncol(dat)], dim = c(nr, ncases))
+    if (ncases > 1) dat <- dat[, 2:ncol(dat)]
     .Object@Name <- dat[match("Name", dname), 1]
     .Object@Case <- as.character(dat[match("Case", dname), 1:ncases])
     .Object@Catch <- as.numeric(dat[match("Catch", dname), 1:ncases])
     .Object@Index <- as.numeric(dat[match("Index", dname), 1:ncases])
-    .Object@Natural_mortality_rate <- as.numeric(dat[match("Natural_mortality_rate", 
-      dname), 1:ncases])
-    .Object@Maturity_at_length <- as.numeric(dat[match("Maturity_at_length", 
-      dname), 1:ncases])
+    .Object@Natural_mortality_rate <- as.numeric(dat[match("Natural_mortality_rate",  dname), 1:ncases])
+    .Object@Maturity_at_length <- as.numeric(dat[match("Maturity_at_length",  dname), 1:ncases])
     .Object@Growth <- as.numeric(dat[match("Growth", dname), 1:ncases])
-    .Object@Length_weight_conversion <- as.numeric(dat[match("Length_weight_conversion", 
-      dname), 1:ncases])
-    .Object@Fleet_selectivity <- as.numeric(dat[match("Fleet_selectivity", 
-      dname), 1:ncases])
-    .Object@Catch_at_length <- as.numeric(dat[match("Catch_at_length", 
-      dname), 1:ncases])
-    .Object@Catch_at_age <- as.numeric(dat[match("Catch_at_age", dname), 
-      1:ncases])
-    .Object@Recruitment_index <- as.numeric(dat[match("Recruitment_index", 
-      dname), 1:ncases])
-    .Object@Stock_recruitment_relationship <- as.numeric(dat[match("Stock_recruitment_relationship", 
-      dname), 1:ncases])
-    .Object@Target_catch <- as.numeric(dat[match("Target_catch", dname), 
-      1:ncases])
-    .Object@Target_biomass <- as.numeric(dat[match("Target_biomass", 
-      dname), 1:ncases])
-    .Object@Target_index <- as.numeric(dat[match("Target_index", dname), 
-      1:ncases])
-    .Object@Abundance <- as.numeric(dat[match("Abundance", dname), 
-      1:ncases])
+    .Object@Length_weight_conversion <- as.numeric(dat[match("Length_weight_conversion", dname), 1:ncases])
+    .Object@Fleet_selectivity <- as.numeric(dat[match("Fleet_selectivity", dname), 1:ncases])
+    .Object@Catch_at_length <- as.numeric(dat[match("Catch_at_length", dname), 1:ncases])
+    .Object@Catch_at_age <- as.numeric(dat[match("Catch_at_age", dname), 1:ncases])
+    .Object@Recruitment_index <- as.numeric(dat[match("Recruitment_index", dname), 1:ncases])
+    .Object@Stock_recruitment_relationship <- as.numeric(dat[match("Stock_recruitment_relationship", dname), 1:ncases])
+    .Object@Target_catch <- as.numeric(dat[match("Target_catch", dname), 1:ncases])
+    .Object@Target_biomass <- as.numeric(dat[match("Target_biomass", dname), 1:ncases])
+    .Object@Target_index <- as.numeric(dat[match("Target_index", dname), 1:ncases])
+    .Object@Abundance <- as.numeric(dat[match("Abundance", dname), 1:ncases])
   } else {
     .Object@Name <- "Blank DLM_Fease"
     .Object@Case <- "Case 1"
@@ -409,7 +350,7 @@ setMethod("initialize", "Fease", function(.Object, file = "nada", ncases = 1) {
 #' @name Fleet-class
 #' @docType class
 #' @section Objects from the Class: Objects can be created by calls of the form
-#' \code{new('Fleet', OM)}
+#' \code{new('Fleet')}
 #'
 #' @slot Name Name of the Fleet object
 #' @slot nyears The number of years for the historical simulation
@@ -452,8 +393,7 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
   if (!is.na(file)) {
     if (file.exists(file)) {
       Ncol <- max(unlist(lapply(strsplit(readLines(file), ","), length)))
-      dat <- read.csv(file, header = F, colClasses = "character", 
-        col.names = paste0("V", 1:Ncol))  # read 1st sheet
+      dat <- read.csv(file, header = F, colClasses = "character", col.names = paste0("V", 1:Ncol))  # read 1st sheet
       dname <- dat[, 1]
       dat <- dat[, 2:ncol(dat)]
       
@@ -463,8 +403,7 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
       .Object@CurrentYr <- as.numeric(dat[match("CurrentYr", dname), 1])
       if(is.na(.Object@CurrentYr)).Object@CurrentYr<-.Object@nyears
       
-      .Object@Spat_targ <- as.numeric(dat[match("Spat_targ", dname), 
-        1:2])
+      .Object@Spat_targ <- as.numeric(dat[match("Spat_targ", dname),  1:2])
       .Object@Esd <- as.numeric(dat[match("Esd", dname), 1:2])
 	  .Object@Esd <- as.numeric(dat[match("Fsd", dname), 1:2])
       # .Object@Fgrad<-as.numeric(dat[match('Fgrad',dname),1:2])
@@ -475,13 +414,9 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
       options(warn = oldw)
       ind <- which(!is.na(chk))
       nEffYears <- length(ind)
-      .Object@EffYears <- as.numeric(dat[match("EffYears", dname), 
-        1:nEffYears])
-      .Object@EffLower <- as.numeric(dat[match("EffLower", dname), 
-        1:nEffYears])
-      .Object@EffUpper <- as.numeric(dat[match("EffUpper", dname), 
-        1:nEffYears])
-      
+      .Object@EffYears <- as.numeric(dat[match("EffYears", dname),  1:nEffYears])
+      .Object@EffLower <- as.numeric(dat[match("EffLower", dname),  1:nEffYears])
+      .Object@EffUpper <- as.numeric(dat[match("EffUpper", dname),  1:nEffYears])
       .Object@qinc <- as.numeric(dat[match("qinc", dname), 1:2])
       .Object@qcv <- as.numeric(dat[match("qcv", dname), 1:2])
       
@@ -497,31 +432,21 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
         chk <- length(ind)
         if (is.finite(chk) & chk > 0) {
           # parameters for selectivity years exists
-          .Object@SelYears <- as.numeric(dat[match("SelYears", 
-          dname), 1:nSelYears])
-          .Object@L5Lower <- as.numeric(dat[match("L5Lower", dname), 
-          1:nSelYears])
-          .Object@L5Upper <- as.numeric(dat[match("L5Upper", dname), 
-          1:nSelYears])
-          .Object@LFSLower <- as.numeric(dat[match("LFSLower", 
-          dname), 1:nSelYears])
-          .Object@LFSUpper <- as.numeric(dat[match("LFSUpper", 
-          dname), 1:nSelYears])
-          .Object@VmaxLower <- as.numeric(dat[match("VmaxLower", 
-          dname), 1:nSelYears])
-          .Object@VmaxUpper <- as.numeric(dat[match("VmaxUpper", 
-          dname), 1:nSelYears])
+          .Object@SelYears <- as.numeric(dat[match("SelYears", dname), 1:nSelYears])
+          .Object@L5Lower <- as.numeric(dat[match("L5Lower", dname), 1:nSelYears])
+          .Object@L5Upper <- as.numeric(dat[match("L5Upper", dname), 1:nSelYears])
+          .Object@LFSLower <- as.numeric(dat[match("LFSLower", dname), 1:nSelYears])
+          .Object@LFSUpper <- as.numeric(dat[match("LFSUpper", dname), 1:nSelYears])
+          .Object@VmaxLower <- as.numeric(dat[match("VmaxLower", dname), 1:nSelYears])
+          .Object@VmaxUpper <- as.numeric(dat[match("VmaxUpper", dname), 1:nSelYears])
         }
       }
       # These are ignored in MSE if L5Lower etc are set
       .Object@L5 <- as.numeric(dat[match("L5", dname), 1:2])
       .Object@LFS <- as.numeric(dat[match("LFS", dname), 1:2])
-      .Object@Vmaxlen <- as.numeric(dat[match("Vmaxlen", dname), 
-        1:2])
-      
+      .Object@Vmaxlen <- as.numeric(dat[match("Vmaxlen", dname), 1:2])
       .Object@isRel <- dat[match("isRel", dname), 1]  # Are selecivity parameters relative to maturity?
-      if (NAor0(.Object@isRel)) 
-        .Object@isRel <- "TRUE"
+      if (NAor0(.Object@isRel)) .Object@isRel <- "TRUE"
     } else {
       message("File doesn't exist")
     }
@@ -541,7 +466,7 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
 #' @name initialize-methods
 #' @aliases initialize-methods initialize,Data-method
 #' initialize,Fleet-method initialize,MSE-method initialize,Obs-method
-#' initialize,OM-method initialize,Stock-method initialize,lmmodel-method
+#' initialize,OM-method initialize,Stock-method initialize
 #' initialize,Fease-method initialize,DLM_general-method
 #' @docType methods
 #' @section Methods: \describe{
@@ -564,8 +489,6 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
 #' \item{list('signature(.Object = \'Stock\')')}{ %% ~~describe this method
 #' here~~ }
 #' 
-#' \item{list('signature(.Object = \'lmmodel\')')}{ %% ~~describe this method
-#' here~~ }
 #' 
 #' \item{list('signature(.Object = \'Fease\')')}{ %% ~~describe this method
 #' here~~ } \item{list('signature(.Object = \'DLM_general\')')}{ %% ~~describe
@@ -574,37 +497,6 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
 #' }
 #' @keywords methods ~~ other possible keyword(s) ~~
 NULL
-
-
-
-
-
-#' Class \code{'lmmodel'}
-#' 
-#' An object for storing fitted linear model objects in this case the
-#' relationship between M, age-at-maturity and the von B. K parameter.
-#' 
-#' 
-#' @name lmmodel-class
-#' @docType class
-#' @section Objects from the Class: Objects can be created by calls of the form
-#' \code{new('lmmodel', stock)}. %% ~~ describe objects here ~~
-#' @author T. Carruthers
-#' @keywords classes
-#' @examples
-#' 
-#' newdata<-new('lmmodel','Name',new('list'))
-#' 
-setClass("lmmodel",representation(Name="character",models="list"))
-# initialize lmmodel 
-setMethod("initialize", "lmmodel", function(.Object,Name,models){
-  .Object@Name<-Name
-  .Object@models<-models
-  .Object
-})
-
-
-
 
 
 #' Class \code{'MSE'}
@@ -617,7 +509,7 @@ setMethod("initialize", "lmmodel", function(.Object,Name,models){
 #' @docType class
 #' @section Objects from the Class: Objects can be created by calls of the form
 #' \code{new('MSE', Name, nyears, proyears, nMPs, MPs, nsim, OMtable, Obs,
-#' B_BMSYa, F_FMSYa, Ba, FMa, Ca, OFLa, Effort)} 
+#' B_BMSYa, F_FMSYa, Ba, FMa, Ca, OFLa, Effort, PAA, CAA, CAL, CALbins)} 
 #'
 #' @slot Name Name of the MSE object
 #' @slot nyears The number of years for the historical simulation
@@ -784,7 +676,7 @@ setMethod("initialize", "MSE", function(.Object, Name, nyears, proyears,
 #' well its here and you might want to make it hyperstable beta < 1 or
 #' hyperdeplete beta > 1, only.
 #' @section Objects from the Class: Objects can be created by calls of the form
-#' \code{new('Obs', OM)} 
+#' \code{new('Obs')} 
 #' @slot Name The name of the observation model object 
 #' @slot Cobs Log-normal catch observation error expressed as a coefficient of variation (uniform distribution) 
 #' @slot Cbiascv A coefficient of variation controlling the sampling of bias in catch observations for each simulation (uniform distribution) 
@@ -847,20 +739,14 @@ setMethod("initialize", "Obs", function(.Object, file = NA) {
         col.names = paste0("V", 1:Ncol))  # read 1st sheet
       dname <- dat[, 1]
       dat <- dat[, 2:ncol(dat)]
-      
       .Object@Name <- dat[match("Name", dname), 1]
       .Object@LenMcv <- as.numeric(dat[match("LenMcv", dname), 1])
       .Object@Cobs <- as.numeric(dat[match("Cobs", dname), 1:2])
-      .Object@Cbiascv <- as.numeric(dat[match("Cbiascv", dname), 
-        1])
-      .Object@CAA_nsamp <- as.numeric(dat[match("CAA_nsamp", dname), 
-        1:2])
-      .Object@CAA_ESS <- as.numeric(dat[match("CAA_ESS", dname), 
-        1:2])
-      .Object@CAL_nsamp <- as.numeric(dat[match("CAA_nsamp", dname), 
-        1:2])
-      .Object@CAL_ESS <- as.numeric(dat[match("CAA_ESS", dname), 
-        1:2])
+      .Object@Cbiascv <- as.numeric(dat[match("Cbiascv", dname), 1])
+      .Object@CAA_nsamp <- as.numeric(dat[match("CAA_nsamp", dname), 1:2])
+      .Object@CAA_ESS <- as.numeric(dat[match("CAA_ESS", dname), 1:2])
+      .Object@CAL_nsamp <- as.numeric(dat[match("CAA_nsamp", dname), 1:2])
+      .Object@CAL_ESS <- as.numeric(dat[match("CAA_ESS", dname), 1:2])
       .Object@CALcv <- as.numeric(dat[match("CALcv", dname), 1:2])
       .Object@Iobs <- as.numeric(dat[match("Iobs", dname), 1:2])
       .Object@Mcv <- as.numeric(dat[match("Mcv", dname), 1])
@@ -871,23 +757,18 @@ setMethod("initialize", "Obs", function(.Object, file = NA) {
       .Object@LFScv <- as.numeric(dat[match("LFScv", dname), 1])
       .Object@B0cv <- as.numeric(dat[match("B0cv", dname), 1])
       .Object@FMSYcv <- as.numeric(dat[match("FMSYcv", dname), 1])
-      .Object@FMSY_Mcv <- as.numeric(dat[match("FMSY_Mcv", dname), 
-        1])
-      .Object@BMSY_B0cv <- as.numeric(dat[match("BMSY_B0cv", dname), 
-        1])
+      .Object@FMSY_Mcv <- as.numeric(dat[match("FMSY_Mcv", dname), 1])
+      .Object@BMSY_B0cv <- as.numeric(dat[match("BMSY_B0cv", dname), 1])
       .Object@rcv <- as.numeric(dat[match("rcv", dname), 1])
-      .Object@Dbiascv <- as.numeric(dat[match("Dbiascv", dname), 
-        1])
+      .Object@Dbiascv <- as.numeric(dat[match("Dbiascv", dname), 1])
       .Object@Dcv <- as.numeric(dat[match("Dcv", dname), 1:2])
       .Object@Btbias <- as.numeric(dat[match("Btbias", dname), 1:2])
       .Object@Btcv <- as.numeric(dat[match("Btcv", dname), 1:2])
-      .Object@Fcurbiascv <- as.numeric(dat[match("Fcurbiascv", dname), 
-        1])
+      .Object@Fcurbiascv <- as.numeric(dat[match("Fcurbiascv", dname), 1])
       .Object@Fcurcv <- as.numeric(dat[match("Fcurcv", dname), 1:2])
       .Object@hcv <- as.numeric(dat[match("hcv", dname), 1])
       .Object@Icv <- as.numeric(dat[match("Icv", dname), 1])
-      .Object@maxagecv <- as.numeric(dat[match("maxagecv", dname), 
-        1])
+      .Object@maxagecv <- as.numeric(dat[match("maxagecv", dname), 1])
       .Object@Reccv <- as.numeric(dat[match("Reccv", dname), 1:2])
       .Object@Irefcv <- as.numeric(dat[match("Irefcv", dname), 1])
       .Object@Crefcv <- as.numeric(dat[match("Crefcv", dname), 1])
@@ -1058,61 +939,58 @@ setClass("OM", representation(Name = "character", nsim="numeric",proyears="numer
   cpars="list",seed="numeric",CurrentYr="numeric"))
 
 
-Generic_fleet<-NULL
-Generic_obs<-NULL
-Perfect_Imp<-NULL
+# This hack is neccessary to get around CRAN checks but causes problems that 
+# Generic_fleet etc objects are considered class NULL ONLY when accessed by internal functions
+# in the package - i.e., they are ok in interactive mode
+# Commented out for now but need a fix before we release the next version to CRAN. 
 
+# Generic_fleet<-NULL
+# Generic_obs<-NULL
+# Perfect_Imp<-NULL
+# testOM<-NULL
 
 
 # initialize OM
-setMethod("initialize", "OM", function(.Object, Stock=NULL, Fleet=Generic_fleet, Obs=Generic_obs, Imp=Perfect_Imp, nsim=48, proyears=50) {
+setMethod("initialize", "OM", function(.Object, Stock=NULL, Fleet=DLMtool::Generic_fleet, 
+                                       Obs=DLMtool::Generic_obs, Imp=DLMtool::Perfect_Imp, 
+                                       nsim=48, proyears=50) {
   if (is.null(Stock)) {
     message("No Stock object found. Returning a blank OM object") 
     return(makePerf(.Object))
   }
 
   if (class(Stock) != "Stock") 
-    print(paste("Could not build operating model:", deparse(substitute(Stock)), 
-      "not of class Stock"))
+    print(paste("Could not build operating model:", deparse(substitute(Stock)), "not of class Stock"))
   if (class(Fleet) != "Fleet") 
-    print(paste("Could not build operating model:", deparse(substitute(Fleet)), 
-      "not of class Fleet"))
+    print(paste("Could not build operating model:", deparse(substitute(Fleet)), "not of class Fleet"))
   if (class(Obs) != "Obs") 
-    print(paste("Could not build operating model:", deparse(substitute(Obs)), 
-      "not of class Obs"))
+    print(paste("Could not build operating model:", deparse(substitute(Obs)), "not of class Obs"))
   if (class(Imp) != "Imp") 
-    print(paste("Could not build operating model:", deparse(substitute(Imp)), 
-                "not of class Imp"))
-  if (class(Stock) != "Stock" | class(Fleet) != "Fleet" | 
-      class(Obs) != "Obs"  | class(Imp) != "Imp") stop()
-  
-  .Object@Name <- paste("Stock:", Stock@Name, "  Fleet:", Fleet@Name, 
-    "  Obs model:", Obs@Name, "  Imp model:", Imp@Name, sep = "")
+    print(paste("Could not build operating model:", deparse(substitute(Imp)), "not of class Imp"))
+  if (class(Stock) != "Stock" | class(Fleet) != "Fleet" | class(Obs) != "Obs"  | class(Imp) != "Imp") stop()
+  .Object@Name <- paste("Stock:", Stock@Name, "  Fleet:", Fleet@Name, "  Obs model:", 
+                        Obs@Name, "  Imp model:", Imp@Name, sep = "")
   # Now copy the values for stock, fleet and observation slots to same
   # slots in the Sim object
   Sslots <- slotNames(Stock)
   for (i in 2:length(Sslots)) {
     tt <- .hasSlot(Stock, Sslots[i])  # For back-compatibility
-    if (tt) 
-      slot(.Object, Sslots[i]) <- slot(Stock, Sslots[i])
+    if (tt) slot(.Object, Sslots[i]) <- slot(Stock, Sslots[i])
   }
   Fslots <- slotNames(Fleet)
   for (i in 2:length(Fslots)) {
     tt <- .hasSlot(Fleet, Fslots[i])
-    if (tt) 
-      slot(.Object, Fslots[i]) <- slot(Fleet, Fslots[i])
+    if (tt) slot(.Object, Fslots[i]) <- slot(Fleet, Fslots[i])
   }
   Oslots <- slotNames(Obs)
   for (i in 2:length(Oslots)) {
     tt <- .hasSlot(Obs, Oslots[i])
-    if (tt) 
-      slot(.Object, Oslots[i]) <- slot(Obs, Oslots[i])
+    if (tt) slot(.Object, Oslots[i]) <- slot(Obs, Oslots[i])
   }
   Islots <- slotNames(Imp)
   for (i in 2:length(Islots)) {
     tt <- .hasSlot(Imp, Islots[i])
-    if (tt) 
-      slot(.Object, Islots[i]) <- slot(Imp, Islots[i])
+    if (tt) slot(.Object, Islots[i]) <- slot(Imp, Islots[i])
   }
   
   # Default MSE parameters
@@ -1257,7 +1135,7 @@ setMethod("plot",
 #' @name Stock-class
 #' @docType class
 #' @section Objects from the Class: Objects can be created by calls of the form
-#' \code{new('Stock', OM)}
+#' \code{new('Stock')}
 #' @slot Name The name of the Stock object 
 #' @slot maxage The maximum age of individuals that is simulated (there is no 'plus group': individuals die off beyone the maximum age so there isn't a huge cost to simulating more older age classes) 
 #' @slot R0 The magnitude of unfished recruitment. This is normally fixed to some arbitrary value since it simply scales the simulated numbers) 
@@ -1469,7 +1347,7 @@ setMethod("summary",
 #' @name Imp-class
 #' @docType class
 #' @section Objects from the Class: Objects can be created by calls of the form
-#' \code{new('Imp', OM)}
+#' \code{new('Imp')}
 #' @slot Name The name of the Implementation error object 
 #' @slot TACSD lognormal standard deviation in fraction of TAC taken (uniform distribution) 
 #' @slot TACFrac Mean fraction of TAC taken (uniform distribution) (can be an improper fraction greater than 1)
@@ -1540,4 +1418,26 @@ setMethod("initialize", "Imp", function(.Object, file = NA) {
   
   
   
-  
+# #' Class \code{'lmmodel'}
+# #'
+# #' An object for storing fitted linear model objects in this case the
+# #' relationship between M, age-at-maturity and the von B. K parameter.
+# #'
+# #'
+# #' @name lmmodel-class
+# #' @docType class
+# #' @section Objects from the Class: Objects can be created by calls of the form
+# #' \code{new('lmmodel', stock)}. %% ~~ describe objects here ~~
+# #' @author T. Carruthers
+# #' @keywords classes
+# #' @examples
+# #'
+# #' newdata<-new('lmmodel','Name',new('list'))
+# #'
+# setClass("lmmodel",representation(Name="character",models="list"))
+# # initialize lmmodel
+# setMethod("initialize", "lmmodel", function(.Object,Name,models){
+#   .Object@Name<-Name
+#   .Object@models<-models
+#   .Object
+# })

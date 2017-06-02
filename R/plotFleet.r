@@ -1,3 +1,7 @@
+#' @method plot Fleet
+#' @export
+plot.Fleet <- function(x, ...)  plotFleet(x, ...)
+
 #' Plot the Fleet object parameters 
 #' 
 #' @param x An object of class Fleet (or of class OM)
@@ -10,10 +14,9 @@
 #' @param lwd line width 
 #' @param ...  Optional additional arguments passed to \code{plot}
 #' @rdname plot-Fleet 
-#' @method plot Fleet
 #' @author A. Hordyk
 #' @export 
-plot.Fleet <- function(x, Stock=NULL, nsamp=3, nsim=500, proyears=28, 
+plotFleet <- function(x, Stock=NULL, nsamp=3, nsim=500, proyears=28, 
   col="darkgray", breaks=10, lwd=2, ...) { 
   cpars <- NULL
   Fleet <- x 
@@ -321,13 +324,13 @@ plot.Fleet <- function(x, Stock=NULL, nsamp=3, nsim=500, proyears=28,
  # layout.show(m)				   
 									   
   op <- par(mar = c(4, 3, 3, 1), oma=c(1,2,4,1), las=1) 
-  hist(Esd, col=col, axes=FALSE, main="Esd", breaks=breaks)
+  hist2(Esd, col=col, axes=FALSE, main="Esd", breaks=breaks)
   axis(side=1) 
-  hist(qinc, col=col, axes=FALSE, main="qinc", breaks=breaks)
+  hist2(qinc, col=col, axes=FALSE, main="qinc", breaks=breaks)
   axis(side=1)  
-  hist(qcv, col=col, axes=FALSE, main="qcv", breaks=breaks)
+  hist2(qcv, col=col, axes=FALSE, main="qcv", breaks=breaks)
   axis(side=1) 
-  hist(Spat_targ, col=col, axes=FALSE, main="Spat_targ", breaks=breaks)
+  hist2(Spat_targ, col=col, axes=FALSE, main="Spat_targ", breaks=breaks)
   axis(side=1) 
   title("not currently used", line=0)  
 

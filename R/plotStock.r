@@ -1,3 +1,23 @@
+## Wrapper for histogram function 
+hist2 <- function(x, col, axes=FALSE, main="", breaks=10,cex.main=1) {
+  if (mean(x) == x[1]) {
+   
+    plot(mean(x)*c(0.9,1.1),c(0,1000),col="white",axes=F,main=main,xlab="",ylab="")
+    axis(1)
+    #hist(x, border="white", xlim=range(x),xlab="", ...)
+    abline(v=mean(x),col=col,lwd=2)
+    
+  } else {
+    col="dark grey"
+    hist(x, border='white',xlab="",col=col,axes=axes,main=main,breaks=breaks)
+  }
+}
+
+
+#' @method plot Stock
+#' @export
+plot.Stock <- function(x, ...)  plotStock(x, ...)
+
 #' Plot the Stock object parameters 
 #' 
 #' A function that plots histograms of samples from the Stock object parameters,
@@ -15,11 +35,9 @@
 #' @param ask Ask before displaying next page?
 #' @param incVB Show the sampled von Bertalanffy growth curves on second page?
 #' @param ...  Optional additional arguments passed to \code{plot}
-#' @rdname plot-Stock
-#' @method plot Stock
 #' @author A. Hordyk
 #' @export 
-plot.Stock <- function(x, nsamp=3, nsim=500, nyears=50, proyears=28, 
+plotStock <- function(x, nsamp=3, nsim=500, nyears=50, proyears=28, 
   col="darkgray", breaks=10, lwd=2, ask=FALSE, incVB=TRUE, ...) {
   Stock <- x 
   cpars <- NULL
@@ -165,41 +183,41 @@ plot.Stock <- function(x, nsamp=3, nsim=500, nyears=50, proyears=28,
   # stop()
   op <- par(mar = c(2, 1, 3, 1), oma=c(1,2,4,1), ask=FALSE, las=1)
   
-  hist(M, col=col, axes=FALSE, main="M", breaks=breaks)
+  hist2(M, col=col, axes=FALSE, main="M", breaks=breaks)
   axis(side=1)  
-  hist(Msd, col=col, axes=FALSE, main="Msd", breaks=breaks)
+  hist2(Msd, col=col, axes=FALSE, main="Msd", breaks=breaks)
   axis(side=1) 
-  hist(Mgrad, col=col, axes=FALSE, main="Mgrad", breaks=breaks)
+  hist2(Mgrad, col=col, axes=FALSE, main="Mgrad", breaks=breaks)
   axis(side=1)
   
   # M traj
   matplot(t(Marray[its,]), type="l", bty="l", main="M by Year", lwd=lwd)
   
   # M/K
-  hist(M/K, col=col, axes=FALSE, main="M/K", breaks=breaks)
+  hist2(M/K, col=col, axes=FALSE, main="M/K", breaks=breaks)
   axis(side=1)
   
-  hist(Linf, col=col, axes=FALSE, main="Linf", breaks=breaks)
+  hist2(Linf, col=col, axes=FALSE, main="Linf", breaks=breaks)
   axis(side=1) 
-  hist(Linfsd, col=col, axes=FALSE, main="Linfsd", breaks=breaks)
+  hist2(Linfsd, col=col, axes=FALSE, main="Linfsd", breaks=breaks)
   axis(side=1)  
-  hist(Linfgrad, col=col, axes=FALSE, main="Linfgrad", breaks=breaks)
+  hist2(Linfgrad, col=col, axes=FALSE, main="Linfgrad", breaks=breaks)
   axis(side=1)
   
   # Linf traj 
   matplot(t(Linfarray[its,]), type="l", bty="l", main="Linf by Year", lwd=lwd)
   
-  hist(K, col=col, axes=FALSE, main="K", breaks=breaks)
+  hist2(K, col=col, axes=FALSE, main="K", breaks=breaks)
   axis(side=1)
-  hist(Ksd, col=col, axes=FALSE, main="Ksd", breaks=breaks)
+  hist2(Ksd, col=col, axes=FALSE, main="Ksd", breaks=breaks)
   axis(side=1) 
-  hist(Kgrad, col=col, axes=FALSE, main="Kgrad", breaks=breaks)
+  hist2(Kgrad, col=col, axes=FALSE, main="Kgrad", breaks=breaks)
   axis(side=1)  
   
   # K traj 
   matplot(t(Karray[its,]), type="l", bty="l", main="K by Year", lwd=lwd)
     
-  hist(t0, col=col, axes=FALSE, main="t0", breaks=breaks)
+  hist2(t0, col=col, axes=FALSE, main="t0", breaks=breaks)
   axis(side=1)
   
   # Recruitment Deviations
@@ -219,11 +237,11 @@ plot.Stock <- function(x, nsamp=3, nsim=500, nyears=50, proyears=28,
   }
   
   # Recruitment 
-  hist(hs, col=col, axes=FALSE, main="Steepness (h)", breaks=breaks)
+  hist2(hs, col=col, axes=FALSE, main="Steepness (h)", breaks=breaks)
   axis(side=1)  
-  hist(procsd, col=col, axes=FALSE, main="procsd", breaks=breaks)
+  hist2(procsd, col=col, axes=FALSE, main="procsd", breaks=breaks)
   axis(side=1) 
-  hist(AC, col=col, axes=FALSE, main="AC", breaks=breaks)
+  hist2(AC, col=col, axes=FALSE, main="AC", breaks=breaks)
   axis(side=1)
   
   matplot(t(Perr[its,]), type="l", bty="l", main="Rec Devs by Year", lwd=lwd)
@@ -249,14 +267,14 @@ plot.Stock <- function(x, nsamp=3, nsim=500, nyears=50, proyears=28,
   
   
   # Depletion
-  hist(dep,  col=col, axes=FALSE, main="Depletion", breaks=breaks)
+  hist2(dep,  col=col, axes=FALSE, main="Depletion", breaks=breaks)
   axis(side=1)
   
   # Maturity 
   
-  hist(L50, col=col, axes=FALSE, main="L50", breaks=breaks)
+  hist2(L50, col=col, axes=FALSE, main="L50", breaks=breaks)
   axis(side=1)
-  hist(L95, col=col, axes=FALSE, main="L95", breaks=breaks)
+  hist2(L95, col=col, axes=FALSE, main="L95", breaks=breaks)
   axis(side=1)
   
   slope <- log(19)/(L50_95)

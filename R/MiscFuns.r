@@ -15,6 +15,41 @@ setup <- function(cpus=parallel::detectCores()) {
   snowfall::sfInit(parallel=TRUE,cpus=cpus)  
 }
 
+
+#' Check that a DLM object is valid 
+#' 
+#' Check that all slots in Object are valid and contain values
+#' 
+#' @param OM An object of class OM, Stock, Fleet, Obs, or Imp
+#' @export
+ChkObj <- function(OM) {
+  if (!class(OM) %in% c("OM", "Stock", "Fleet", "Obs", "Imp"))
+    stop("Argument must be of class: OM, Stock, Fleet, Obs, or Imp", call.=FALSE)
+  slots <- slotNames(OM)
+  Ok <- rep(TRUE, length(slots))
+  for (sl in seq_along(slots)) {
+    slotVal <- slot(OM, slots[sl])
+    if (length(slotVal) == 0) Ok[sl] <- FALSE
+    if (length(slotVal) > 0) {
+      Ok[sl] <- class(slotVal) == class(slot(OM, slots[sl]))
+      if (class(slotVal) != "character" & class(slotVal) != "list") Ok[sl] <- all(is.finite(slotVal)) & length(slotVal) > 0
+    } 
+  }
+  SelSlots <- c("SelYears", "AbsSelYears", "L5Lower", "L5Upper", "LFSLower",
+                "LFSUpper", "VmaxLower", "VmaxUpper")
+  RecSlots <-  c("Period", "Amplitude")
+  # Slots ok to not contain values
+  Ignore <- c("Name", "Source", "cpars", SelSlots, RecSlots)  
+  # if values present for one they need to be there for all! 
+  if (any(SelSlots %in% slots[Ok])) Ignore <- Ignore[!Ignore %in% SelSlots] 
+  if (any(RecSlots %in% slots[Ok])) Ignore <- Ignore[!Ignore %in% RecSlots] 
+  
+  probSlots <- slots[!Ok][!slots[!Ok] %in% Ignore]
+  if (length(probSlots) > 0) 
+    stop("Slots in Object have missing values:\n ", paste(probSlots, " "), call.=FALSE)
+  TRUE
+}
+
 #' What objects of this class are available
 #' 
 #' Generic class finder
@@ -26,13 +61,20 @@ setup <- function(cpus=parallel::detectCores()) {
 #' @author T. Carruthers
 #' @export avail
 avail <- function(classy) {
- temp <- try(class(classy), silent=TRUE)
+  temp <- try(class(classy), silent=TRUE)
   if (class(temp) == "try-error") classy <- deparse(substitute(classy))
-  temp <- unique(c(ls("package:DLMtool")[unlist(lapply(ls("package:DLMtool"), 
-    getclass, classy = classy))], ls(envir = .GlobalEnv)[unlist(lapply(ls(envir = .GlobalEnv), 
-    getclass, classy = classy))])) 
-   if (classy == "Observation") message("Class 'Observation' has been re-named 'Obs'")	
-   if (length(temp) <1) stop("No objects of class '", classy, "' found", call.=FALSE)
+  if (temp == "function") classy <- deparse(substitute(classy))
+  
+  temp <- c(ls("package:DLMtool")[unlist(lapply(ls("package:DLMtool"), getclass, classy = classy))], 
+            ls(envir = .GlobalEnv)[unlist(lapply(ls(envir = .GlobalEnv), getclass, classy = classy))])
+  pkgs <- search()
+  if ("package:DLMdata" %in% pkgs) {
+    temp <- c(temp, unique(ls("package:DLMdata")[unlist(lapply(ls("package:DLMdata"), getclass, classy = classy))]))
+  }
+  temp <- unique(temp)
+  
+  if (classy == "Observation") message("Class 'Observation' has been re-named 'Obs'")	
+  if (length(temp) <1) stop("No objects of class '", classy, "' found", call.=FALSE)
   return(temp)
 }
 
@@ -1119,5 +1161,24 @@ gettempvar <- function(targ, targsd, targgrad, nyears, nsim, rands=NULL) {
 }
 
 
+
+#' Return class of MP from MP name
+#' 
+#' 
+#' @param MPs list or vector of MP names
+#' @keywords internal
+#' @export
+#'
+MPclass <- function(MPs) {
+  if (class(MPs) == "list") MPs <- unlist(MPs)
+  if (class(MPs) != "character") stop("MPs must be character", call.=FALSE)
+  all <- c(avail("Output"), avail("Input"))
+  if (any(!MPs %in% all)) message("Some MPs not found: ", paste(MPs[!MPs %in% all], "\n"))
+  MPs <- MPs[MPs %in% all]
+  # cbind(MPs, Class=sapply(1:length(MPs), function(X) class(get(MPs[X]))))
+  classes <- sapply(1:length(MPs), function(X) class(get(MPs[X])))
+  classes[grepl("ref", MPs)] <- "Reference"
+  classes
+}
 
 
