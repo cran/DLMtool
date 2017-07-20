@@ -83,6 +83,7 @@
 #' @slot MPrec The previous recommendation of a management proceedure 
 #' @slot MPeff The current level of effort 
 #' @slot LHYear The last historical year of the simulation (before projection) 
+#' @slot nareas Number of fishing areas
 #' @slot Misc Optional list which is passed to MPs
 
 #' @author T. Carruthers
@@ -108,7 +109,7 @@ setClass("Data", representation(Name = "character", Year = "vector",
   PosMPs = "vector", MPs = "vector", OM = "data.frame", Obs = "data.frame", 
   TAC = "array", TACbias = "array", Sense = "array", CAL_bins = "numeric", 
   CAL = "array", MPrec = "vector", MPeff = "vector", ML = "array", Lbar = "array", 
-  Lc = "array", LHYear = "numeric", Misc = "list"))
+  Lc = "array", LHYear = "numeric", nareas = "numeric", Misc = "list"))
 
 # initialize Data
 setMethod("initialize", "Data", function(.Object, stock = "nada") {
@@ -210,9 +211,12 @@ setMethod("initialize", "Data", function(.Object, stock = "nada") {
       if (!is.na(stock)) print("Couldn't find specified csv file, blank DLM object created")
     }
   }
+  
+  # Standardise Index if not already 
+  .Object@Ind <- .Object@Ind/mean(.Object@Ind, na.rm=TRUE)
+  
   # Default value
   if (NAor0(.Object@LenCV)) .Object@LenCV <- 0.1
-  
   if (NAor0(.Object@CV_Cat)) .Object@CV_Cat <- 0.2
   if (NAor0(.Object@CV_Dt)) .Object@CV_Dt <- 0.25
   if (NAor0(.Object@CV_AvC)) .Object@CV_AvC <- 0.2
@@ -235,6 +239,8 @@ setMethod("initialize", "Data", function(.Object, stock = "nada") {
   if (NAor0(.Object@CV_wla))  .Object@CV_wla <- 0.1
   if (NAor0(.Object@CV_wlb))  .Object@CV_wlb <- 0.1
   if (NAor0(.Object@CV_steep)) .Object@CV_steep <- 0.2
+  if (NAor0(.Object@nareas)) .Object@nareas <- 2
+  
   if (length(.Object@sigmaL) == 0) .Object@sigmaL <- 0.2
   if (length(.Object@CAA) == 0) .Object@CAA <- array(NA, c(1, 1, 1))
   if (length(.Object@CAL) == 0) .Object@CAL <- array(NA, c(1, 1, 1))
@@ -366,6 +372,7 @@ setMethod("initialize", "Fease", function(.Object, file = "nada", ncases = 1) {
 #' @slot Msd Inter-annual variability in natural mortality rate expressed as a coefficient of variation (uniform distribution) 
 #' @slot Mgrad Mean temporal trend in natural mortality rate, expressed as a percentage change in M per year (uniform distribution) 
 #' @slot Mexp Exponent of the Lorenzen function assuming an inverse relationship between M and weight (uniform distribution)
+#' @slot Fdisc Fraction of discarded fish that die
 #' @slot h Steepness of the stock recruit relationship (uniform distribution) 
 #' @slot SRrel Type of stock-recruit relationship (1)Beverton-Holt (2) Ricker 
 #' @slot Linf Maximum length (uniform distribution) 
@@ -390,7 +397,7 @@ setMethod("initialize", "Fease", function(.Object, file = "nada", ncases = 1) {
 #' @slot Size_area_1 The size of area 1 relative to area 2 (uniform distribution) 
 #' @slot Frac_area_1 The fraction of the unfished biomass in stock 1 (uniform distribution) 
 #' @slot Prob_staying The probability of inviduals in area 1 remaining in area 1 over the course of one year 
-#' @slot Source A reference to a website or article form which parameters were taken to define the operating model
+#' @slot Source A reference to a website or article from which parameters were taken to define the operating model
 
 #' @author T. Carruthers
 #' @keywords classes
@@ -400,7 +407,8 @@ setMethod("initialize", "Fease", function(.Object, file = "nada", ncases = 1) {
 #' 
 # FecB = "numeric"
 setClass("Stock", representation(Name = "character", maxage = "numeric", 
-                                 R0 = "numeric", M = "numeric", M2 = "numeric", Msd = "numeric", Mgrad = "numeric",  Mexp="numeric",
+                                 R0 = "numeric", M = "numeric", M2 = "numeric", Msd = "numeric", Mgrad = "numeric",  
+                                 Mexp="numeric", Fdisc="numeric",
                                  h = "numeric", SRrel = "numeric", Linf = "numeric", K = "numeric", 
                                  t0 = "numeric", LenCV="numeric", Ksd = "numeric", Kgrad = "numeric", Linfsd = "numeric", 
                                  Linfgrad = "numeric", recgrad = "numeric", a = "numeric", b = "numeric", 
@@ -421,13 +429,24 @@ setMethod("initialize", "Stock", function(.Object, file = NA) {
       .Object@Name <- dat[match("Name", dname), 1]
       .Object@maxage <- as.numeric(dat[match("maxage", dname), 1])
       .Object@R0 <- as.numeric(dat[match("R0", dname), 1])
+      options(warn=-1)
       temp <- as.numeric(dat[match("M", dname), 1:Ncol])
-      .Object@M <- temp[!is.na(temp)]
+      .Object@M <- temp
+      nas <- which(is.na(temp))
+      if (length(nas) > 0) {
+        .Object@M <- temp[1:(nas[1]-1)]
+      }
       temp <- as.numeric(dat[match("M2", dname), 1:Ncol])
-      .Object@M2 <- temp[!is.na(temp)]
+      .Object@M2 <- temp
+      nas <- which(is.na(temp))
+      if (length(nas) > 0) {
+        .Object@M2 <- temp[1:(nas[1]-1)]
+      }
+      options(warn=1)
       .Object@Msd <- as.numeric(dat[match("Msd", dname), 1:2])
       .Object@Mgrad <- as.numeric(dat[match("Mgrad", dname), 1:2])
       .Object@Mexp <- as.numeric(dat[match("Mexp", dname), 1:2])
+      .Object@Fdisc <- as.numeric(dat[match("Fdisc", dname), 1:2])
       .Object@h <- as.numeric(dat[match("h", dname), 1:2])
       .Object@SRrel <- as.numeric(dat[match("SRrel", dname), 1])
       .Object@Linf <- as.numeric(dat[match("Linf", dname), 1:2])
@@ -451,12 +470,16 @@ setMethod("initialize", "Stock", function(.Object, file = NA) {
       .Object@Prob_staying <- as.numeric(dat[match("Prob_staying", dname), 1:2])
       .Object@L50 <- as.numeric(dat[match("L50", dname), 1:2])
       .Object@L50_95 <- as.numeric(dat[match("L50_95", dname), 1:2])
-      #.Object@FecB <- as.numeric(dat[match("FecB", dname), 1:2])
+
+      # .Object@FecB <- as.numeric(dat[match("FecB", dname), 1:2])
+
       .Object@Source <- dat[match("Source", dname), 1]
     } else {
       message("File doesn't exist")
     }
   }
+  if (all(is.na(.Object@LenCV))) .Object@LenCV <- c(0.08, 0.12)
+  if (all(is.na(.Object@recgrad))) .Object@recgrad <- c(0, 0) # recgrad not currently used
   .Object
   
 })
@@ -480,8 +503,14 @@ setMethod("initialize", "Stock", function(.Object, file = NA) {
 #' @slot EffLower Lower bound on relative effort corresponding to EffYears (uniform distribution)
 #' @slot EffUpper Uppper bound on relative effort corresponding to EffYears (uniform distribution)
 #' @slot LFS Shortest length that is fully vulnerable to fishing (uniform distribution)
-#' @slot L5 Shortest length corresponding ot 5 percent vulnerability (uniform distribution)
+#' @slot L5 Shortest length corresponding to 5 percent vulnerability (uniform distribution)
 #' @slot Vmaxlen The vulnerability of the longest (oldest) fish (uniform distribution)
+#' 
+#' @slot LR5 Shortest length corresponding ot 5 percent retention (uniform distribution)
+#' @slot LFR Shortest length that is fully retained (uniform distribution)
+#' @slot Rmaxlen The retention of the longest (oldest) fish (uniform distribution)
+#' @slot DR Discard rate - fraction of caught fish that are discarded (must be <= 1) (uniform distribution)
+#' 
 #' @slot SelYears Vector of verticies, index for years at which historical selectivity pattern changed. If left empty, historical selectivity is constant
 #' @slot AbsSelYears Optional values for SelYears, used for plotting only. Must be of same length as SelYears
 #' @slot L5Lower Optional vector of values of length SelYears, specifiying lower limits of L5 (use \code{ChooseSelect} function to set these)
@@ -494,7 +523,7 @@ setMethod("initialize", "Stock", function(.Object, file = NA) {
 #' @slot qcv Inter-annual variability in fishing efficiency (uniform distribution)(applicable only to forward projection and input controls)
 #' @slot isRel Are the selectivity parameters relative to size-of-maturity? TRUE or FALSE
 #' @slot CurrentYr The current calendar year (final year) of the historical simulations (e.g. 2011)
-#'
+
 #' @author T. Carruthers
 #' @keywords classes
 #' @examples
@@ -504,8 +533,9 @@ setMethod("initialize", "Stock", function(.Object, file = NA) {
 setClass("Fleet", slots = c(Name = "character", nyears = "numeric", Spat_targ = "numeric", 
   Esd = "numeric", qinc = "numeric", qcv = "numeric", EffYears = "numeric", 
   EffLower = "numeric", EffUpper = "numeric", SelYears = "numeric", AbsSelYears = "numeric", 
-  L5 = "numeric", LFS = "numeric", Vmaxlen = "numeric", L5Lower = "numeric", 
-  L5Upper = "numeric", LFSLower = "numeric", LFSUpper = "numeric", VmaxLower = "numeric", 
+  L5 = "numeric", LFS = "numeric", Vmaxlen = "numeric", 
+  LR5 = "numeric", LFR = "numeric", Rmaxlen = "numeric", DR = "numeric",
+  L5Lower = "numeric", L5Upper = "numeric", LFSLower = "numeric", LFSUpper = "numeric", VmaxLower = "numeric", 
   VmaxUpper = "numeric", isRel = "character",CurrentYr="numeric"))
 
 # initialize Fleet
@@ -524,8 +554,12 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
       if(is.na(.Object@CurrentYr)).Object@CurrentYr<-.Object@nyears
       
       .Object@Spat_targ <- as.numeric(dat[match("Spat_targ", dname),  1:2])
-      .Object@Esd <- as.numeric(dat[match("Esd", dname), 1:2])
-	    .Object@Esd <- as.numeric(dat[match("Fsd", dname), 1:2])
+      if (!is.na(match("Esd", dname))) {
+        .Object@Esd <- as.numeric(dat[match("Esd", dname), 1:2])  
+      } else {
+        .Object@Esd <- as.numeric(dat[match("Fsd", dname), 1:2])  
+      }
+      
       # .Object@Fgrad<-as.numeric(dat[match('Fgrad',dname),1:2])
       nEffYears <- ncol(dat[match("EffYears", dname), ])
       oldw <- getOption("warn")
@@ -565,6 +599,13 @@ setMethod("initialize", "Fleet", function(.Object, file = NA) {
       .Object@L5 <- as.numeric(dat[match("L5", dname), 1:2])
       .Object@LFS <- as.numeric(dat[match("LFS", dname), 1:2])
       .Object@Vmaxlen <- as.numeric(dat[match("Vmaxlen", dname), 1:2])
+      
+      # Retention curve parameters 
+      .Object@LR5 <- as.numeric(dat[match("LR5", dname), 1:2])
+      .Object@LFR <- as.numeric(dat[match("LFR", dname), 1:2])
+      .Object@Rmaxlen <- as.numeric(dat[match("Rmaxlen", dname), 1:2])
+      .Object@DR <- as.numeric(dat[match("DR", dname), 1:2])
+      
       .Object@isRel <- dat[match("isRel", dname), 1]  # Are selecivity parameters relative to maturity?
       if (NAor0(.Object@isRel)) .Object@isRel <- "TRUE"
     } else {
@@ -759,7 +800,6 @@ setMethod("initialize", "Obs", function(.Object, file = NA) {
 #' @slot EFrac Mean fraction of recommended effort taken (uniform distribution)
 #' @slot SizeLimSD lognormal error in size limit implementation (uniform distribution)
 #' @slot SizeLimFrac Mean fraction of the size limit (uniform distribution) (can be an improper fraction greater than 1)
-#' @slot DiscMort Discard mortality rate (uniform distribution) (can be an improper fraction greater than 1)
 #' @slot Source A reference to a website or article form which parameters were taken to define the operating model
 #' @author T. Carruthers
 #' @keywords classes
@@ -770,7 +810,6 @@ setMethod("initialize", "Obs", function(.Object, file = NA) {
 setClass("Imp", representation(Name = "character", TACSD = "numeric", TACFrac = "numeric", 
                                ESD = "numeric", EFrac = "numeric",
                                SizeLimSD = "numeric", SizeLimFrac="numeric",
-                               DiscMort = "numeric", 
                                Source = "character"))
 
 # initialize Imp
@@ -783,7 +822,6 @@ setMethod("initialize", "Imp", function(.Object, file = NA) {
   .Object@EFrac <-c(1,1)
   .Object@SizeLimSD <- c(0,0)
   .Object@SizeLimFrac<-c(1,1)
-  .Object@DiscMort <- c(0,0)
   .Object@Source <-"DLMtool generated"
   
   if (!is.na(file)) {
@@ -801,7 +839,6 @@ setMethod("initialize", "Imp", function(.Object, file = NA) {
       .Object@EFrac <- as.numeric(dat[match("EFrac", dname), 1:2])
       .Object@SizeLimSD <- as.numeric(dat[match("SizeLimSD", dname), 1:2])
       .Object@SizeLimFrac <- as.numeric(dat[match("SizeLimFrac", dname), 1:2])
-      .Object@DiscMort <- as.numeric(dat[match("DiscMort", dname), 1:2])
       .Object@Source <- dat[match("Source", dname), 1]
       
     } else {
@@ -841,6 +878,8 @@ setMethod("initialize", "Imp", function(.Object, file = NA) {
 #' @slot M2 Optional vector of M-at-age (must be length maxage) 
 #' @slot Msd Inter-annual variability in natural mortality rate expressed as a coefficient of variation (uniform distribution) 
 #' @slot Mgrad Mean temporal trend in natural mortality rate, expressed as a percentage change in M per year (uniform distribution) 
+#' @slot Mexp Exponent of the Lorenzen function assuming an inverse relationship between M and weight (uniform distribution)
+#' @slot Fdisc Fraction of discarded fish that die
 #' @slot h Steepness of the stock recruit relationship (uniform distribution) 
 #' @slot SRrel Type of stock-recruit relationship (1)Beverton-Holt (2) Ricker 
 #' @slot Linf Maximum length (uniform distribution) 
@@ -865,6 +904,12 @@ setMethod("initialize", "Imp", function(.Object, file = NA) {
 #' @slot LFS Shortest length that is fully vulnerable to fishing (uniform distribution) 
 #' @slot L5 Shortest length at 5 percent vulnerability (uniform distribution) 
 #' @slot Vmaxlen The vulnerability of the longest (oldest) fish (uniform distribution) 
+#' 
+#' @slot LR5 Shortest length corresponding ot 5 percent retention (uniform distribution)
+#' @slot LFR Shortest length that is fully retained (uniform distribution)
+#' @slot Rmaxlen The retention of the longest (oldest) fish (uniform distribution)
+#' @slot DR Discard rate - fraction of caught fish that are discarded (must be <= 1) (uniform distribution)
+#' 
 #' @slot SelYears Vector of verticies that index years where historical selectivity pattern changed. Leave empty to ignore 
 #' @slot AbsSelYears vector of absolute year values that correspond to year indices in SelYears. Used only for plotting 
 #' @slot L5Lower Optional vector of values of length SelYears, specifiying lower limits of L5 (use \code{ChooseSelect}  function to set these. Overrides L5 above) 
@@ -932,7 +977,6 @@ setMethod("initialize", "Imp", function(.Object, file = NA) {
 #' @slot EFrac Mean fraction of recommended effort taken (uniform distribution)
 #' @slot SizeLimSD lognormal error in size limit implementation (uniform distribution)
 #' @slot SizeLimFrac Mean fraction of the size limit (uniform distribution) (can be an improper fraction greater than 1)
-#' @slot DiscMort Discard mortality rate (uniform distribution) (can be an improper fraction greater than 1)
 #' @author T. Carruthers
 #' @keywords classes
 #' 
@@ -983,6 +1027,10 @@ setMethod("initialize", "OM", function(.Object, Stock=NULL, Fleet=DLMtool::Gener
     if (tt) slot(.Object, Islots[i]) <- slot(Imp, Islots[i])
   }
   
+  # 
+  # source <- paste("Stock:", Stock@Source, "Fleet:", Fleet@Source, "Obs:", Obs@Source, "Imp:",Imp@Source)
+  slot(.Object, "Source") <- Stock@Source
+  
   # Default MSE parameters
   .Object@nsim <- nsim       
   .Object@proyears <- proyears
@@ -990,12 +1038,22 @@ setMethod("initialize", "OM", function(.Object, Stock=NULL, Fleet=DLMtool::Gener
   if(length(.Object@Mexp) < 2) .Object@Mexp <- c(0,0)
   if(length(.Object@LenCV) < 2) .Object@LenCV <- c(0.08,0.15)
   if(length(.Object@CurrentYr)==0).Object@CurrentYr=.Object@nyears
-  # if(length(.Object@FecB) < 2) .Object@FecB <- c(3,3)
   
+  # if(length(.Object@FecB) < 2) .Object@FecB <- c(3,3)
+  # if(all(is.na(.Object@FecB))) .Object@FecB <- c(3,3)  
   if(all(is.na(.Object@Mexp))) .Object@Mexp <- c(0,0)
   if(all(is.na(.Object@LenCV))) .Object@LenCV <- c(0.08,0.15)
   if(all(is.na(.Object@CurrentYr))) .Object@CurrentYr=.Object@nyears
-  # if(all(is.na(.Object@FecB))) .Object@FecB <- c(3,3)
+  
+  if(length(.Object@LR5) < 2) .Object@LR5 <- c(0,0)
+  if(length(.Object@LFR) < 2) .Object@LFR <- c(0,0)
+  if(length(.Object@Rmaxlen) < 2) .Object@Rmaxlen <- c(1,1)
+  if(length(.Object@Fdisc) < 2) .Object@Fdisc <- c(0,0)
+  
+  if(all(is.na(.Object@LR5))) .Object@LR5 <- c(0,0)  
+  if(all(is.na(.Object@LFR))) .Object@LFR <- c(0,0)  
+  if(all(is.na(.Object@Rmaxlen))) .Object@Rmaxlen <- c(1,1)
+  if(all(is.na(.Object@Fdisc))) .Object@Fdisc <- c(0,0)  
   
   .Object@seed=1
   .Object
@@ -1396,8 +1454,36 @@ setMethod("summary",
 
 
 
+# -- Input Control Recommendation Class ----
+#' Class \code{'InputRec'}
+#' 
+#' An object for storing the recommendation for an input control MP 
+#' 
+#' @name InputRec-class
+#' @docType class
+#' @section Objects from the Class: Objects can be created by calls of the form
+#' \code{new('InputRec')} 
 
-  
+#' @slot Effort A numeric value with the effort recommendation as a fraction of current (nyear) fishing effort
+#' @slot Spatial A boolean vector of length 'nareas' specifying if area is open (1) or closed (0) to fishing 
+#' @slot Allocate A boolean value describing if effort should be re-allocated from close to open areas
+#' @slot LR5 smallest length at 5 per cent retention
+#' @slot LFR smallest length at full retention 
+#' @slot HS upper harvest slot (no retention above this)
+#' @slot Rmaxlen retention of the largest size class
+#' @slot Misc An empty list that can be used to store information and pass on to MPs in future 
+#' @author A. Hordyk
+#' @keywords classes
+
+setClass("InputRec", representation(Effort = "numeric", 
+                                    Spatial="numeric", Allocate = "numeric", LR5 = "numeric",
+                                    LFR = "numeric", HS="numeric", Rmaxlen="numeric", Misc="list"))
+
+# # initialize InputRec
+# setMethod("initialize", "InputRec") 
+#   
+
+
 
   
   

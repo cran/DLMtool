@@ -1054,8 +1054,7 @@ class(Itarget4) <- "Output"
 #' @param x A position in data-limited methods data object
 #' @param Data A data-limited methods data object
 #' @param reps The number of TAC samples
-#' @param yrsmth Years over which to smooth recent estimates of surplus
-#' production
+#' @param yrsmth Years over which to smooth recent estimates of surplus production
 #' @param lambda A gain parameter controlling the speed in update in TAC.
 #' @param xx Parameter controlling the fraction of mean catch to start using in
 #' first year
@@ -1068,8 +1067,7 @@ class(Itarget4) <- "Output"
 #' data-poor fisheries; forecasting with few data. ICES J. Mar. Sci.
 #' doi:10.1093/icesjms/fst232
 #' @export Islope1
-Islope1 <- function(x, Data, reps = 100, yrsmth = 5, lambda = 0.4, 
-  xx = 0.2) {
+Islope1 <- function(x, Data, reps = 100, yrsmth = 5, lambda = 0.4,xx = 0.2) {
   dependencies = "Data@Year, Data@Cat, Data@CV_Cat, Data@Ind"
   ind <- (length(Data@Year) - (yrsmth - 1)):length(Data@Year)
   ylast <- (Data@LHYear - Data@Year[1]) + 1  #last historical year
@@ -1492,7 +1490,7 @@ DD <- function(x, Data, reps = 100) {
   E_hist <- E_hist/mean(E_hist)
   ny_DD <- length(C_hist)
   params <- log(c(Data@Mort[x], mean(C_hist, na.rm = T), Data@Mort[x]))
-  k_DD <- ceiling(a50V)  # get age nearest to 50% vulnerability (ascending limb)  -------------
+  k_DD <- ceiling(a50V)  # get age nearest to 50% vulnerability (ascending limb)  
   k_DD[k_DD > Data@MaxAge/2] <- ceiling(Data@MaxAge/2)  # to stop stupidly high estimates of age at 50% vulnerability
   Rho_DD <- (wa[k_DD + 2] - Winf)/(wa[k_DD + 1] - Winf)
   Alpha_DD <- Winf * (1 - Rho_DD)
@@ -1608,8 +1606,29 @@ DD4010 <- function(x, Data, reps = 100) {
 }
 class(DD4010) <- "Output"
 
-DD_R <- function(params, opty, So_DD, Alpha_DD, Rho_DD, ny_DD, k_DD, wa_DD, 
-  E_hist, C_hist, UMSYprior) {
+
+
+
+#' Internal optimization function for delay-difference MPs
+#'
+#' @param params vector of length 3 with log parameters
+#' @param opty optimization option
+#' @param So_DD internal parameter
+#' @param Alpha_DD  internal parameter
+#' @param Rho_DD  internal parameter
+#' @param ny_DD  internal parameter
+#' @param k_DD  internal parameter
+#' @param wa_DD  internal parameter
+#' @param E_hist  internal parameter
+#' @param C_hist  internal parameter
+#' @param UMSYprior  internal parameter
+#'
+#' @author T. Carruthers
+#' @keywords internal
+#' @export
+#'
+DD_R <- function(params, opty, So_DD, Alpha_DD, Rho_DD, ny_DD, k_DD, wa_DD, E_hist, 
+                 C_hist, UMSYprior) {
   UMSY_DD = exp(params[1])
   MSY_DD = exp(params[2])
   q_DD = exp(params[3])
@@ -1704,22 +1723,18 @@ DBSRA <- function(x, Data, reps = 100) {
   C_hist <- Data@Cat[x, ]
   TAC <- rep(NA, reps)
   DBSRAcount <- 1
-  if (is.na(Data@Dep[x]) | is.na(Data@CV_Dep[x])) 
-    return(NA)
+  if (is.na(Data@Dep[x]) | is.na(Data@CV_Dep[x])) return(NA)
   while (DBSRAcount < (reps + 1)) {
     depo <- max(0.01, min(0.99, Data@Dep[x]))  # known depletion is between 1% and 99% - needed to generalise the Dick and MacCall method to extreme depletion scenarios
-    Bt_K <- rbeta(100, alphaconv(depo, min(depo * Data@CV_Dep[x], 
-      (1 - depo) * Data@CV_Dep[x])), betaconv(depo, min(depo * 
-      Data@CV_Dep[x], (1 - depo) * Data@CV_Dep[x])))  # CV 0.25 is the default for Dick and MacCall mu=0.4, sd =0.1
+    Bt_K <- rbeta(100, alphaconv(depo, min(depo * Data@CV_Dep[x], (1 - depo) * Data@CV_Dep[x])), 
+                  betaconv(depo, min(depo * Data@CV_Dep[x], (1 - depo) * Data@CV_Dep[x])))  # CV 0.25 is the default for Dick and MacCall mu=0.4, sd =0.1
     Bt_K <- Bt_K[Bt_K > 0.00999 & Bt_K < 0.99001][1]  # interval censor (0.01,0.99)  as in Dick and MacCall 2011
     Mdb <- trlnorm(100, Data@Mort[x], Data@CV_Mort[x])
     Mdb <- Mdb[Mdb < 0.9][1]  # !!!! maximum M is 0.9   interval censor
-    if (is.na(Mdb)) 
-      Mdb <- 0.9  # !!!! maximum M is 0.9   absolute limit
+    if (is.na(Mdb)) Mdb <- 0.9  # !!!! maximum M is 0.9   absolute limit
     FMSY_M <- trlnorm(1, Data@FMSY_M[x], Data@CV_FMSY_M[x])
-    BMSY_K <- rbeta(100, alphaconv(Data@BMSY_B0[x], Data@CV_BMSY_B0[x] * 
-      Data@BMSY_B0[x]), betaconv(Data@BMSY_B0[x], Data@CV_BMSY_B0[x] * 
-      Data@BMSY_B0[x]))  #0.045 corresponds with mu=0.4 and quantile(BMSY_K,c(0.025,0.975)) =c(0.31,0.49) as in Dick and MacCall 2011
+    BMSY_K <- rbeta(100, alphaconv(Data@BMSY_B0[x], Data@CV_BMSY_B0[x] *  Data@BMSY_B0[x]), 
+                    betaconv(Data@BMSY_B0[x], Data@CV_BMSY_B0[x] * Data@BMSY_B0[x]))  #0.045 corresponds with mu=0.4 and quantile(BMSY_K,c(0.025,0.975)) =c(0.31,0.49) as in Dick and MacCall 2011
     tryBMSY_K <- BMSY_K[BMSY_K > 0.05 & BMSY_K < 0.95][1]  # interval censor (0.05,0.95) as in Dick and MacCall, 2011
     if (is.na(tryBMSY_K)) {
       Min <- min(BMSY_K, na.rm = TRUE)
@@ -1729,14 +1744,12 @@ DBSRA <- function(x, Data, reps = 100) {
       if (Min >= 0.95) 
         BMSY_K <- 0.95
     }
-    if (!is.na(tryBMSY_K)) 
-      BMSY_K <- tryBMSY_K
+    if (!is.na(tryBMSY_K))  BMSY_K <- tryBMSY_K
     
-    adelay <- max(floor(iVB(Data@vbt0[x], Data@vbK[x], Data@vbLinf[x], 
-      Data@L50[x])), 1)
-    opt <- optimize(DBSRAopt, log(c(0.01 * mean(C_hist), 1000 * mean(C_hist))), 
-      C_hist = C_hist, nys = length(C_hist), Mdb = Mdb, FMSY_M = FMSY_M, 
-      BMSY_K = BMSY_K, Bt_K = Bt_K, adelay = adelay, tol = 0.01)
+    adelay <- max(floor(iVB(Data@vbt0[x], Data@vbK[x], Data@vbLinf[x],  Data@L50[x])), 1)
+    opt <- optimize(DBSRAopt, log(c(0.01 * mean(C_hist), 1000 * mean(C_hist))), C_hist = C_hist, 
+                    nys = length(C_hist), Mdb = Mdb, FMSY_M = FMSY_M, BMSY_K = BMSY_K, 
+                    Bt_K = Bt_K, adelay = adelay, tol = 0.01)
     # if(opt$objective<0.1){
     Kc <- exp(opt$minimum)
     BMSYc <- Kc * BMSY_K
@@ -1783,8 +1796,7 @@ DBSRA_40 <- function(x, Data, reps = 100) {
   C_hist <- Data@Cat[x, ]
   TAC <- rep(NA, reps)
   DBSRAcount <- 1
-  if (is.na(Data@Dep[x]) | is.na(Data@CV_Dep[x])) 
-    return(NA)
+  if (is.na(Data@Dep[x]) | is.na(Data@CV_Dep[x]))   return(NA)
   while (DBSRAcount < (reps + 1)) {
     depo <- 0.4
     Bt_K <- rbeta(100, alphaconv(depo, min(depo * Data@CV_Dep[x], 
@@ -1801,9 +1813,17 @@ DBSRA_40 <- function(x, Data, reps = 100) {
     BMSY_K <- rbeta(100, alphaconv(Data@BMSY_B0[x], Data@CV_BMSY_B0[x] * 
       Data@BMSY_B0[x]), betaconv(Data@BMSY_B0[x], Data@CV_BMSY_B0[x] * 
       Data@BMSY_B0[x]))  #0.045 corresponds with mu=0.4 and quantile(BMSY_K,c(0.025,0.975)) =c(0.31,0.49) as in Dick and MacCall 2011
-    BMSY_K <- BMSY_K[BMSY_K > 0.05 & BMSY_K < 0.95][1]  # interval censor (0.05,0.95) as in Dick and MacCall, 2011
-    adelay <- max(floor(iVB(Data@vbt0[x], Data@vbK[x], Data@vbLinf[x], 
-      Data@L50[x])), 1)
+    tryBMSY_K <- BMSY_K[BMSY_K > 0.05 & BMSY_K < 0.95][1]  # interval censor (0.05,0.95) as in Dick and MacCall, 2011
+    if (is.na(tryBMSY_K)) {
+      Min <- min(BMSY_K, na.rm = TRUE)
+      Max <- max(BMSY_K, na.rm = TRUE)
+      if (Max <= 0.05) 
+        BMSY_K <- 0.05
+      if (Min >= 0.95) 
+        BMSY_K <- 0.95
+    }
+    if (!is.na(tryBMSY_K))  BMSY_K <- tryBMSY_K
+    adelay <- max(floor(iVB(Data@vbt0[x], Data@vbK[x], Data@vbLinf[x],  Data@L50[x])), 1)
     opt <- optimize(DBSRAopt, log(c(0.1 * mean(C_hist), 1000 * mean(C_hist))), 
       C_hist = C_hist, nys = length(C_hist), Mdb = Mdb, FMSY_M = FMSY_M, 
       BMSY_K = BMSY_K, Bt_K = Bt_K, adelay = adelay, tol = 0.01)
@@ -1847,16 +1867,15 @@ DBSRA_ML <- function(x, Data, reps = 100) {
   DBSRAcount <- 1
   maxIts <- 200
   nIts <- 0
-  if (is.na(Data@Dep[x]) | is.na(Data@CV_Dep[x])) 
-    return(NA)
+  if (is.na(Data@Dep[x]) | is.na(Data@CV_Dep[x])) return(NA)
   while (DBSRAcount < (reps + 1) & nIts < maxIts) {
     Linfc <- trlnorm(1, Data@vbLinf[x], Data@CV_vbLinf[x])
     Kc <- trlnorm(1, Data@vbK[x], Data@CV_vbK[x])
     Mdb <- trlnorm(100, Data@Mort[x], Data@CV_Mort[x])
     Mdb <- Mdb[Mdb < 0.9][1]  # !!!! maximum M is 0.9   interval censor
-    if (is.na(Mdb)) 
-      Mdb <- 0.9  # !!!! maximum M is 0.9   absolute limit
+    if (is.na(Mdb)) Mdb <- 0.9  # !!!! maximum M is 0.9   absolute limit
     Z <- MLne(x, Data, Linfc = Linfc, Kc = Kc, ML_reps = 1, MLtype = "dep")
+    if (all(is.na(Z))) return(rep(NA, reps))
     FM <- Z - Mdb
     FM[FM < 0] <- 0.01
     nyears <- length(Data@Year)
@@ -1865,18 +1884,28 @@ DBSRA_ML <- function(x, Data, reps = 100) {
     # dep<-c(Ct1,Ct2)/(1-exp(-FM[,c(1,2)]))
     dep <- c(Ct1, Ct2)/(1 - exp(-FM))
     Bt_K <- dep[2]/dep[1]
-    if (Bt_K < 0.01) 
-      Bt_K <- 0.01  # interval censor / temporary hack to avoid doing multiple depletion estimates that would take far too long
-    if (Bt_K > 0.99) 
-      Bt_K <- 0.99  # interval censor / temporary hack to avoid doing multiple depletion estimates that would take far too long
+    
+    if (Bt_K < 0.01) Bt_K <- 0.01  # interval censor / temporary hack to avoid doing multiple depletion estimates that would take far too long
+    if (Bt_K > 0.99) Bt_K <- 0.99  # interval censor / temporary hack to avoid doing multiple depletion estimates that would take far too long
+    
     
     FMSY_M <- trlnorm(1, Data@FMSY_M[x], Data@CV_FMSY_M[x])
     BMSY_K <- rbeta(100, alphaconv(Data@BMSY_B0[x], Data@CV_BMSY_B0[x] * 
       Data@BMSY_B0[x]), betaconv(Data@BMSY_B0[x], Data@CV_BMSY_B0[x] * 
       Data@BMSY_B0[x]))  #0.045 corresponds with mu=0.4 and quantile(BMSY_K,c(0.025,0.975)) =c(0.31,0.49) as in Dick and MacCall 2011
-    BMSY_K <- BMSY_K[BMSY_K > 0.05 & BMSY_K < 0.95][1]  # interval censor (0.05,0.95) as in Dick and MacCall, 2011
-    adelay <- max(floor(iVB(Data@vbt0[x], Data@vbK[x], Data@vbLinf[x], 
-      Data@L50[x])), 1)
+    tryBMSY_K <- BMSY_K[BMSY_K > 0.05 & BMSY_K < 0.95][1]  # interval censor (0.05,0.95) as in Dick and MacCall, 2011
+    
+    if (is.na(tryBMSY_K)) {
+      Min <- min(BMSY_K, na.rm = TRUE)
+      Max <- max(BMSY_K, na.rm = TRUE)
+      if (Max <= 0.05) 
+        BMSY_K <- 0.05
+      if (Min >= 0.95) 
+        BMSY_K <- 0.95
+    }
+    if (!is.na(tryBMSY_K))  BMSY_K <- tryBMSY_K
+    if (all(is.na(BMSY_K))) return(rep(NA, reps))
+    adelay <- max(floor(iVB(Data@vbt0[x], Data@vbK[x], Data@vbLinf[x],  Data@L50[x])), 1)
     opt <- optimize(DBSRAopt, log(c(0.1 * mean(C_hist), 1000 * mean(C_hist))), 
       C_hist = C_hist, nys = length(C_hist), Mdb = Mdb, FMSY_M = FMSY_M, 
       BMSY_K = BMSY_K, Bt_K = Bt_K, adelay = adelay, tol = 0.01)
@@ -1940,7 +1969,16 @@ DBSRA4010 <- function(x, Data, reps = 100) {
     BMSY_K <- rbeta(100, alphaconv(Data@BMSY_B0[x], Data@CV_BMSY_B0[x] * 
       Data@BMSY_B0[x]), betaconv(Data@BMSY_B0[x], Data@CV_BMSY_B0[x] * 
       Data@BMSY_B0[x]))  #0.045 corresponds with mu=0.4 and quantile(BMSY_K,c(0.025,0.975)) =c(0.31,0.49) as in Dick and MacCall 2011
-    BMSY_K <- BMSY_K[BMSY_K > 0.05 & BMSY_K < 0.95][1]  # interval censor (0.05,0.95) as in Dick and MacCall, 2011
+    tryBMSY_K <- BMSY_K[BMSY_K > 0.05 & BMSY_K < 0.95][1]  # interval censor (0.05,0.95) as in Dick and MacCall, 2011
+    if (is.na(tryBMSY_K)) {
+      Min <- min(BMSY_K, na.rm = TRUE)
+      Max <- max(BMSY_K, na.rm = TRUE)
+      if (Max <= 0.05) 
+        BMSY_K <- 0.05
+      if (Min >= 0.95) 
+        BMSY_K <- 0.95
+    }
+    if (!is.na(tryBMSY_K))  BMSY_K <- tryBMSY_K
     adelay <- max(floor(iVB(Data@vbt0[x], Data@vbK[x], Data@vbLinf[x], 
       Data@L50[x])), 1)
     opt <- optimize(DBSRAopt, log(c(0.01 * mean(C_hist), 1000 * mean(C_hist))), 
@@ -2162,6 +2200,7 @@ DCAC_ML <- function(x, Data, reps = 100) {
   Linfc <- trlnorm(reps, Data@vbLinf[x], Data@CV_vbLinf[x])
   Kc <- trlnorm(reps, Data@vbK[x], Data@CV_vbK[x])
   Z <- MLne(x, Data, Linfc = Linfc, Kc = Kc, ML_reps = reps, MLtype = "dep")
+  if (all(is.na(Z))) return(rep(NA, reps))
   FM <- Z - Mdb
   nyears <- length(Data@Year)
   Ct1 <- mean(Data@Cat[x, 1:3])
@@ -2286,6 +2325,7 @@ BK_ML <- function(x, Data, reps = 100) {
   Kc <- trlnorm(reps * 10, Data@vbK[x], Data@CV_vbK[x])
   Mdb <- trlnorm(reps * 10, Data@Mort[x], Data@CV_Mort[x])
   Z <- MLne(x, Data, Linfc = Linfc, Kc = Kc, ML_reps = reps * 10, MLtype = "F")
+  if (all(is.na(Z))) return(rep(NA, reps))
   FM <- Z - Mdb
   MuC <- Data@Cat[x, length(Data@Cat[x, ])]
   Cc <- trlnorm(reps * 10, MuC, Data@CV_Cat[x])
@@ -2446,8 +2486,8 @@ Fratio_ML <- function(x, Data, reps = 100) {
   Mdb <- trlnorm(reps * 10, Data@Mort[x], Data@CV_Mort[x])  # CV of 0.5 as in MacCall 2009
   Linfc <- trlnorm(reps * 10, Data@vbLinf[x], Data@CV_vbLinf[x])
   Kc <- trlnorm(reps * 10, Data@vbK[x], Data@CV_vbK[x])
-  Z <- MLne(x, Data, Linfc = Linfc, Kc = Kc, ML_reps = reps * 10, 
-    MLtype = "F")
+  Z <- MLne(x, Data, Linfc = Linfc, Kc = Kc, ML_reps = reps * 10, MLtype = "F")
+  if (all(is.na(Z))) return(rep(NA, reps))
   FM <- Z - Mdb
   Ac <- Cc/(1 - exp(-FM))
   TAC <- Ac * trlnorm(reps * 10, Data@FMSY_M[x], Data@CV_FMSY_M[x]) * 
@@ -2744,8 +2784,8 @@ SPSRA_ML <- function(x, Data, reps = 100) {
   hvec <- trlnorm(reps, Data@steep[x], Data@CV_steep[x])
   rsamp <- getr(x, Data, Mvec, Kvec, Linfvec, t0vec, hvec, maxage = Data@MaxAge, 
     r_reps = reps)
-  Z <- MLne(x, Data, Linfc = Linfvec, Kc = Kvec, ML_reps = reps, 
-    MLtype = "dep")
+  Z <- MLne(x, Data, Linfc = Linfvec, Kc = Kvec, ML_reps = reps,  MLtype = "dep")
+  if (all(is.na(Z))) return(rep(NA, reps))
   FM <- Z - Mvec
   nyears <- length(Data@Year)
   Ct1 <- mean(Data@Cat[x, 1:3])
@@ -2912,8 +2952,8 @@ YPR_ML <- function(x, Data, reps = 100) {
   b <- Data@wlb[x]
   MuC <- Data@Cat[x, length(Data@Cat[x, ])]
   Cc <- trlnorm(reps * 10, MuC, Data@CV_Cat[x])
-  Z <- MLne(x, Data, Linfc = Linfc, Kc = Kc, ML_reps = reps * 10, 
-    MLtype = "F")
+  Z <- MLne(x, Data, Linfc = Linfc, Kc = Kc, ML_reps = reps * 10, MLtype = "F")
+  if (all(is.na(Z))) return(rep(NA, reps))
   FM <- Z - Mdb
   Ac <- Cc/(1 - exp(-FM))
   FMSY <- YPRopt(Linfc, Kc, t0c, Mdb, a, b, LFS, Data@MaxAge, reps * 
@@ -3076,12 +3116,11 @@ Fdem_ML <- function(x, Data, reps = 100) {
   hvec <- trlnorm(reps * 10, Data@steep[x], Data@CV_steep[x])
   MuC <- Data@Cat[x, length(Data@Cat[x, ])]
   Cc <- trlnorm(reps * 10, MuC, Data@CV_Cat[x])
-  Z <- MLne(x, Data, Linfc = Linfc, Kc = Kc, ML_reps = reps * 10, 
-    MLtype = "F")
+  Z <- MLne(x, Data, Linfc = Linfc, Kc = Kc, ML_reps = reps * 10, MLtype = "F")
+  if (all(is.na(Z))) return(rep(NA, reps))
   FM <- Z - Mvec
   Ac <- Cc/(1 - exp(-FM))
-  FMSY <- getr(x, Data, Mvec, Kc, Linfc, t0c, hvec, maxage = Data@MaxAge, 
-    r_reps = reps * 10)/2
+  FMSY <- getr(x, Data, Mvec, Kc, Linfc, t0c, hvec, maxage = Data@MaxAge, r_reps = reps * 10)/2
   TAC <- FMSY * Ac
   TAC <- TAC[TAC > 0][1:reps]
   TACfilter(TAC)
@@ -3475,8 +3514,7 @@ MLne <- function(x, Data, Linfc, Kc, ML_reps = 100, MLtype = "dep") {
   year <- 1:dim(Data@CAL)[2]
   nlbin <- ncol(Data@CAL[x, , ])
   nlyr <- nrow(Data@CAL[x, , ])
-  mlbin <- (Data@CAL_bins[1:nlbin] + Data@CAL_bins[2:(nlbin + 
-    1)])/2
+  mlbin <- (Data@CAL_bins[1:nlbin] + Data@CAL_bins[2:(nlbin + 1)])/2
   nbreaks <- 1
   Z <- matrix(NA, nrow = ML_reps, ncol = nbreaks + 1)
   Z2 <- rep(NA, ML_reps)
@@ -3492,25 +3530,24 @@ MLne <- function(x, Data, Linfc, Kc, ML_reps = 100, MLtype = "dep") {
     ss <- ceiling(apply(Data@CAL[x, , ], 1, sum)/2)
     if (MLtype == "dep") {
       for (y in 1:length(year)) {
-        if (sum(Data@CAL[x, y, ] > 0) > 0.25 * length(Data@CAL[x, 
-          y, ])) {
-          temp2 <- sample(mlbin, ceiling(sum(Data@CAL[x, y, 
-          ])/2), replace = T, prob = Data@CAL[x, y, ])
+        if (sum(Data@CAL[x, y, ] > 0) > 0.25 * length(Data@CAL[x, y, ])) {
+          temp2 <- sample(mlbin, ceiling(sum(Data@CAL[x, y, ])/2), replace = T, prob = Data@CAL[x, y, ])
           mlen[y] <- mean(temp2[temp2 >= Lc], na.rm = TRUE)
         }
       }
-      Z[i, ] <- bhnoneq(year = year, mlen = mlen, ss = ss, K = Kc[i], 
-        Linf = Linfc[i], Lc = Lc, nbreaks = nbreaks, styrs = ceiling(length(year) * 
-          ((1:nbreaks)/(nbreaks + 1))), stZ = rep(Data@Mort[x], 
-          nbreaks + 1))
+      
+      fitmod <- bhnoneq(year = year, mlen = mlen, ss = ss, K = Kc[i], Linf = Linfc[i], 
+                        Lc = Lc, nbreaks = nbreaks, styrs = ceiling(length(year) * ((1:nbreaks)/(nbreaks + 1))), 
+                        stZ = rep(Data@Mort[x], nbreaks + 1))
+      if (all(fitmod == FALSE)) {
+        Z[i, ] <- NA
+      } else Z[i, ] <- fitmod
     } else {
       
       # ind<-(which.min(((Data@CAL_bins-Data@LFS[x])^2)^0.5)-1):(length(Data@CAL_bins)-1)
       for (y in 1:length(year)) {
-        if (sum(Data@CAL[x, y, ] > 0) > 0.25 * length(Data@CAL[x, 
-          y, ])) {
-          temp2 <- sample(mlbin, ceiling(sum(Data@CAL[x, y, 
-          ])/2), replace = T, prob = Data@CAL[x, y, ])
+        if (sum(Data@CAL[x, y, ] > 0) > 0.25 * length(Data@CAL[x, y, ])) {
+          temp2 <- sample(mlbin, ceiling(sum(Data@CAL[x, y, ])/2), replace = T, prob = Data@CAL[x, y, ])
           mlen[y] <- mean(temp2[temp2 >= Lc], na.rm = TRUE)
         }
       }
@@ -3530,16 +3567,20 @@ bheq <- function(K, Linf, Lc, Lbar) {
 }
 
 bhnoneq <- function(year, mlen, ss, K, Linf, Lc, nbreaks, styrs, stZ) {
+ 
   mlen[mlen <= 0 | is.na(mlen)] <- -99
   ss[ss <= 0 | is.na(ss) | mlen == -99] <- 0
   stpar <- c(stZ, styrs)
+  
   # results <-
   # optim(stpar,bhnoneq_LL,method='BFGS',year=year,Lbar=mlen,ss=ss,
   # nbreaks=nbreaks,K=K,Linf=Linf,Lc=Lc,control=list(maxit=1e6))
-  results <- optim(stpar, bhnoneq_LL, method = "Nelder-Mead", year = year, 
+  results <- try(optim(stpar, bhnoneq_LL, method = "Nelder-Mead", year = year, 
     Lbar = mlen, ss = ss, nbreaks = nbreaks, K = K, Linf = Linf, Lc = Lc, 
-    control = list(maxit = 1e+06), hessian = FALSE)
-  return(results$par[1:(nbreaks + 1)])
+    control = list(maxit = 1e+06), hessian = FALSE), silent=TRUE)
+  if (class(results) == "try-error") {
+    return(FALSE)
+  } else return(results$par[1:(nbreaks + 1)])
 }
 
 getdep <- function(lnFF, targ, Md, Linfd, Kd, t0d, AFSd, ad, bd, maxage, 
@@ -3919,12 +3960,13 @@ L95target <- function(x, Data, reps = 100, yrsmth = 5, buffer = 0) {
 class(L95target) <- "Output"
 
 
-
 #' Mean index ratio MP from Jardim et al. 2015
 #' 
 #' The TAC is adjusted by the ratio alpha, where the numerator 
 #' being the mean index in the most recent two years of the time series and the denominator
 #' being the mean index in the three years prior to those in the numerator.
+#' 
+#' This MP is the stochastic version of Method 3.2 used by ICES for Data-Limited Stocks (ICES 2012).
 #' 
 #' @param x A position in data-limited methods data object
 #' @param Data A data-limited methods data object
@@ -3935,6 +3977,10 @@ class(L95target) <- "Output"
 #' data limited stocks using length-based reference points and survey biomass indices, 
 #' Fisheries Research, Volume 171, November 2015, Pages 12-19, ISSN 0165-7836, 
 #' https://doi.org/10.1016/j.fishres.2014.11.013
+#' 
+#' ICES. 2012. ICES Implementation of Advice for Data-limited Stocks in 2012 in its 2012
+#' Advice. ICES CM 2012/ACOM 68. 42 pp.
+
 Iratio <- function(x, Data, reps, yrs = c(2, 5)) {
   dependencies = "Data@Ind, Data@CV_Ind, Data@Cat, Data@CV_Cat"
   
@@ -3956,12 +4002,15 @@ Iratio <- function(x, Data, reps, yrs = c(2, 5)) {
 }
 class(Iratio) <- "Output"
 
-
-#' Index Confidence Interval MP by Jardim et al. (2015)
+#' Index Confidence Interval (ICI) MP by Jardim et al. (2015)
 #' 
 #' The MP adjusts catch based on the value of the index in the current year relative to the 
 #' time series mean and standard error.
-#' There are two thresholds which delineates whether catch is reduced, held constant, or increased.
+#'  
+#' The mean and standard error of the index time series is calculated. There are two thresholds 
+#' which delineates whether catch is reduced, held constant, or increased. The catch is reduced by 0.75
+#' if the Z-score of the current year's index is less than -0.44. The catch is increased by 1.05
+#' if the Z-score of the current year's index is greater than 1.96. Otherwise, the catch is held constant.
 #' 
 #' @param x A position in data-limited methods data object
 #' @param Data A data-limited methods data object
@@ -3984,8 +4033,8 @@ ICI <- function(x, Data, reps) {
   sigmaI <- apply(Ind.samp, 2, sd, na.rm = TRUE)
   
   Ind <- Ind.samp[nI, ]
-  z.low <- qnorm(0.33)
-  z.upp <- qnorm(0.974)
+  z.low <- -0.44 #qnorm(0.33)
+  z.upp <- 1.96 #qnorm(0.974)
   
   ci.low <- muI + z.low * sigmaI / sqrt(nI)
   ci.high <- muI + z.upp * sigmaI / sqrt(nI)
@@ -4004,14 +4053,18 @@ ICI <- function(x, Data, reps) {
 class(ICI) <- "Output"
 
 
-#' Less Precautionary Index Confidence Interval MP by Jardim et al. (2015)
+
+#' Less Precautionary Index Confidence Interval (ICI) MP by Jardim et al. (2015)
 #' 
 #' The MP adjusts catch based on the value of the index in the current year relative to the 
-#' time series mean and standard error.
-#' There are two thresholds which delineates whether catch is reduced, held constant, or increased.
-#' This method is less precautionary of the two ICI MPs by allowing for a larger increase in TAC
+#' time series mean and standard error. This method is less precautionary of the two ICI MPs by allowing for a larger increase in TAC
 #' and a lower threshold of the index to decrease the TAC (see Jardim et al. 2015).
 #' 
+#' The mean and standard error of the index time series is calculated. There are two thresholds 
+#' which delineates whether catch is reduced, held constant, or increased. The catch is reduced by 0.75
+#' if the Z-score of the current year's index is less than -1.96. The catch is increased by 1.25
+#' if the Z-score of the current year's index is greater than 1.96. Otherwise, the catch is held constant.
+#'  
 #' @param x A position in data-limited methods data object
 #' @param Data A data-limited methods data object
 #' @param reps The number of TAC samples
@@ -4033,8 +4086,8 @@ ICI2 <- function(x, Data, reps) {
   sigmaI <- apply(Ind.samp, 2, sd, na.rm = TRUE)
   
   Ind <- Ind.samp[nI, ]
-  z.low <- qnorm(0.025)
-  z.upp <- qnorm(0.975)
+  z.low <- -1.96 #qnorm(0.025)
+  z.upp <- 1.96 #qnorm(0.975)
   
   ci.low <- muI + z.low * sigmaI / sqrt(nI)
   ci.high <- muI + z.upp * sigmaI / sqrt(nI)
@@ -4053,13 +4106,16 @@ ICI2 <- function(x, Data, reps) {
 class(ICI2) <- "Output"
 
 
-#'  Mean length-based indicator MP of Jardim et al. 2015 using Beverton-Holt invariant 
-#'  M/K ratio = 1.5 and assumes FMSY = M.
+#' Mean length-based indicator MP of Jardim et al. 2015 using Beverton-Holt invariant 
+#' M/K ratio = 1.5 and assumes FMSY = M.
 #' 
 #' The TAC is adjusted by the ratio alpha, where the numerator 
-#' is the mean length of the catch and the denominator is the mean length expected
-#' when FMSY = M and M/K = 1.5. Natural mortality M and von Bertalanffy K are not used in this MP 
-#' (see Appendix A of Jardim et al. 2015).
+#' is the mean length of the catch (of lengths larger than Lc) and 
+#' the denominator is the mean length expected when FMSY = M and M/K = 1.5. 
+#' Natural mortality M and von Bertalanffy K are not used in this MP 
+#' (see Appendix A of Jardim et al. 2015). Here, Lc is the length at 
+#' full selection (LFS).
+#' 
 #' Argument yrsmth currently takes the mean length of the most recent 3 years of data 
 #' as a smoother.
 #' 
@@ -4073,11 +4129,11 @@ class(ICI2) <- "Output"
 #' Fisheries Research, Volume 171, November 2015, Pages 12-19, ISSN 0165-7836, 
 #' https://doi.org/10.1016/j.fishres.2014.11.013
 Lratio_BHI <- function(x, Data, reps, yrsmth = 3) {
-  dependencies = "Data@vb_Linf, Data@CV_vbLinf, Data@Cat, Data@CV_Cat, Data@CAL, Data@CAL_bins"
+  dependencies = "Data@vb_Linf, Data@CV_vbLinf, Data@Cat, Data@CV_Cat, Data@CAL, Data@CAL_bins,
+  Data@LFS, Data@CV_LFS"
   Linfc <- trlnorm(reps, Data@vbLinf[x], Data@CV_vbLinf[x])
-  L50c <- trlnorm(reps, Data@L50[x], Data@CV_L50[x])
-  L25c <- L50c + (-log(3)/log(19)) * (Data@L95[x] - L50c)
-  Lref <- 0.75 * L25c + 0.25 * Linfc
+  Lc <- trlnorm(reps, Data@LFS[x], Data@CV_LFS[x])
+  Lref <- 0.75 * Lc + 0.25 * Linfc
   
   Cat <- Data@Cat[x, length(Data@Cat[x, ])]
   Cc <- trlnorm(reps, Cat, Data@CV_Cat[x])
@@ -4104,9 +4160,11 @@ class(Lratio_BHI) <- "Output"
 #' The more general version of the mean length-based indicator MP of Jardim et al. 2015.
 #' 
 #' The TAC is adjusted by the ratio alpha, where the numerator 
-#' is the mean length of the catch and the denominator is the mean length expected
-#' when FMSY = M and M/K = 1.5. Natural mortality M and von Bertalanffy K are not used in this MP 
-#' (see Appendix A of Jardim et al. 2015).
+#' is the mean length of the catch (of lengths larger than Lc) 
+#' and the denominator is the mean length as a function of Linf,
+#' FMSY/M, and M/K (see Appendix A of Jardim et al. 2015). Here, 
+#' Lc is the length at full selection (LFS).
+#' 
 #' Argument yrsmth currently takes the mean length of the most recent 3 years of data 
 #' as a smoother.
 #' 
@@ -4121,18 +4179,18 @@ class(Lratio_BHI) <- "Output"
 #' https://doi.org/10.1016/j.fishres.2014.11.013
 Lratio_BHI2 <- function(x, Data, reps, yrsmth = 3) {
   
-  dependencies = "Data@vb_Linf, Data@CV_vbLinf, Data@L50, Data@CV_L50, Data@L95, Data@Cat, Data@CV_Cat, 
-  Data@CAL, Data@CAL_bins, Data@FMSY_M, Data@CV_FMSY_M"
+  dependencies = "Data@vb_Linf, Data@CV_vbLinf, Data@Cat, Data@CV_Cat, Data@Mort, Data@CV_Mort,
+  Data@vb_K, Data@CV_vbK, Data@FMSY_M, Data@CV_FMSY_M, Data@CAL, Data@CAL_bins,
+  Data@LFS, Data@CV_LFS"
   Linfc <- trlnorm(reps, Data@vbLinf[x], Data@CV_vbLinf[x])
-  L50c <- trlnorm(reps, Data@L50[x], Data@CV_L50[x])
-  L25c <- L50c + (-log(3)/log(19)) * (Data@L95[x] - L50c)
+  Lc <- trlnorm(reps, Data@LFS[x], Data@CV_LFS[x])
   
   Mvec <- trlnorm(reps, Data@Mort[x], Data@CV_Mort[x])
   Kvec <- trlnorm(reps, Data@vbK[x], Data@CV_vbK[x])
   gamma <- trlnorm(reps, Data@FMSY_M[x], Data@CV_FMSY_M[x])
   theta <- Kvec/Mvec
   
-  Lref <- (theta * Linfc + L25c * (gamma + 1)) / (gamma + theta + 1)
+  Lref <- (theta * Linfc + Lc * (gamma + 1)) / (gamma + theta + 1)
   
   Cat <- Data@Cat[x, length(Data@Cat[x, ])]
   Cc <- trlnorm(reps, Cat, Data@CV_Cat[x])

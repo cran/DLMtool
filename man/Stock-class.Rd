@@ -27,6 +27,8 @@ dynamics model
 
 \item{\code{Mexp}}{Exponent of the Lorenzen function assuming an inverse relationship between M and weight (uniform distribution)}
 
+\item{\code{Fdisc}}{Fraction of discarded fish that die}
+
 \item{\code{h}}{Steepness of the stock recruit relationship (uniform distribution)}
 
 \item{\code{SRrel}}{Type of stock-recruit relationship (1)Beverton-Holt (2) Ricker}
@@ -73,7 +75,7 @@ dynamics model
 
 \item{\code{Prob_staying}}{The probability of inviduals in area 1 remaining in area 1 over the course of one year}
 
-\item{\code{Source}}{A reference to a website or article form which parameters were taken to define the operating model}
+\item{\code{Source}}{A reference to a website or article from which parameters were taken to define the operating model}
 }}
 
 \section{Objects from the Class}{

@@ -58,7 +58,7 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
   } 
   if (length(Stock@M) != maxage & length(Stock@M) != 2) stop("slot 'M' must be either length 2 or length maxage", call.=FALSE)
   
-  
+  if (!exists("M", inherits=FALSE)) M <- Mage[,maxage]
   calcMax <- ceiling(-log(0.01)/(min(M)))        # Age at which 1% of cohort survives
   if (maxage < 0.8*calcMax) {
     message("Note: Maximum age (", maxage, ") is lower than assuming 1% of cohort survives to maximum age (", calcMax, ")")
@@ -106,12 +106,12 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
   } else {
     StockOut$procsd <- procsd
   }
+  
   if (!exists("AC", inherits=FALSE)) {
     StockOut$AC <- AC <- runif(nsim, Stock@AC[1], Stock@AC[2])  # auto correlation parameter for recruitment deviations recdev(t)<-AC*recdev(t-1)+(1-AC)*recdev_proposed(t)  
   } else {
     StockOut$AC <- AC  # auto correlation parameter for recruitment deviations recdev(t)<-AC*recdev(t-1)+(1-AC)*recdev_proposed(t)
   }
-  
 
   # All recruitment Deviations
   # Add cycle (phase shift) to recruitment deviations - if specified
@@ -123,7 +123,7 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
   } else {
     recMulti <- 1 
   }
-  
+
   StockOut$procmu <- procmu <- -0.5 * (procsd)^2  # adjusted log normal mean
   if (!exists("Perr", inherits=FALSE)) {
     Perr <- array(rnorm((nyears + proyears+maxage-1) * nsim, rep(procmu, nyears + 
@@ -161,12 +161,18 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
   if (!exists("L50_95", inherits=FALSE)) {
     L50_95 <- array(runif(nsim * 50, Stock@L50_95[1], Stock@L50_95[2]), c(nsim, 50))  # length at 95% maturity
     if (!exists("sL50", inherits=FALSE)) sL50 <- matrix(L50, nsim, 50)
-    L50_95[(sL50+L50_95)/Linf > 0.99] <- NA
+    L50_95[((sL50+L50_95)/matrix(Linf, nsim, 50)) > 0.99] <- NA
     L50_95 <- apply(L50_95, 1, function(x) x[!is.na(x)][1]) 
   }
  
   if (!exists("L95", inherits=FALSE))   L95 <- L50 + L50_95
   
+  if (any(L95> Linf)) {
+    message("Note: Some samples of L95 are above Linf. Defaulting to 0.99*Linf")
+    L95[L95> Linf] <- 0.99* Linf[L95> Linf]
+  }
+
+
   # == Sample Fecundity-Length Exponent ===
   # if (!exists("FecB", inherits=FALSE))   FecB <- runif(nsim, min(Stock@FecB), max(Stock@FecB))
   
@@ -179,7 +185,6 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
   StockOut$Asize <- cbind(StockOut$Size_area_1, 1 - StockOut$Size_area_1)
   
   # === Generate random numbers for random walk ====
-  # done here so that they can be written out to SampPars 
   if (!exists("Mrand", inherits=FALSE)) Mrand <- matrix(exp(rnorm(nsim*(proyears+nyears), -0.5 * Msd^2, Msd)), nrow=nsim, ncol=proyears+nyears)
   if (!exists("Linfrand", inherits=FALSE)) Linfrand <- matrix(exp(rnorm(nsim*(proyears+nyears), -0.5 * Linfsd^2, Linfsd)), nrow=nsim, ncol=proyears+nyears)
   if (!exists("Krand", inherits=FALSE)) Krand <- matrix(exp(rnorm(nsim*(proyears+nyears), -0.5 * Ksd^2, Ksd)), nrow=nsim, ncol=proyears+nyears)
@@ -202,7 +207,8 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
     Len_age[ind] <- Linfarray[ind[, c(1, 3)]] * (1 - exp(-Karray[ind[, c(1, 3)]] * 
                                                            (Agearray[ind[, 1:2]] - t0[ind[, 1]])))
   } else { # Len_age has been passed in with cpars
-    if (any(dim(Len_age) != c(nsim, maxage, nyears + proyears))) stop("'Len_age' must be array with dimensions: nsim, maxage, nyears + proyears") 
+    if (any(dim(Len_age) != c(nsim, maxage, nyears + proyears))) 
+      stop("'Len_age' must be array with dimensions: nsim, maxage, nyears + proyears") 
     # Estimate vB parameters for each year and each sim 
     if (!all(c("Linf", "K", "t0") %in% names(cpars))) { # don't calculate if Linf, K and t0 have also been passed in with cpars
       vB <- function(pars, ages) pars[1] * (1-exp(-pars[2]*(ages-pars[3])))
@@ -244,7 +250,8 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
     Wa <- Stock@a
     Wb <- Stock@b 
   }	else {
-    if (any(dim(Wt_age) != c(nsim, maxage, nyears + proyears))) stop("'Wt_age' must be array with dimensions: nsim, maxage, nyears + proyears") 
+    if (any(dim(Wt_age) != c(nsim, maxage, nyears + proyears))) 
+      stop("'Wt_age' must be array with dimensions: nsim, maxage, nyears + proyears (", paste(c(nsim, maxage, nyears + proyears), ""), ") but has ", paste(dim(Wt_age), "")) 
     # Estimate length-weight parameters from the Wt_age data
     logL <- log(as.numeric(Len_age))
     logW <- log(as.numeric(Wt_age))
@@ -261,6 +268,15 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
   if (!exists("age95", inherits=FALSE)) age95 <- -((log(1 - L95/Linf))/K) + t0
   age95[age95 < 1] <- 1.5  # must be greater than 0 and ageM
   
+  if (any(ageM >= maxage-1)) {
+    message("Note: Some samples of age of maturity are above 'maxage'. Defaulting to maxage-1")
+    ageM[ageM >= maxage] <- maxage - 1 
+  }
+  if (any(ageM >= maxage)) {
+    message("Note: Some samples of age of maturity are above 'maxage'. Defaulting to maxage")
+    age95[age95 >= maxage] <- maxage  
+  }
+  
   ageMsd <- sapply(1:nsim, getroot, ageM, age95)
   ageMarray <- array(ageM, dim = c(nsim, maxage))  # Age at maturity array
   
@@ -270,10 +286,11 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
   } else {
     if (any(dim(Mat_age) != c(nsim, maxage))) stop("'Mat_age' must be array with dimensions: nsim, maxage") 
     # Calculate L50, L95, ageM and age95 
-    ageM <- sapply(1:nsim, function(x) LinInterp(Mat_age[x,], y=1:maxage, 0.5))
-    age95 <- sapply(1:nsim, function(x) LinInterp(Mat_age[x,], y=1:maxage, 0.95))
-    L50 <- sapply(1:nsim, function(x) LinInterp(Mat_age[x,], y=Len_age[x, , nyears], 0.5))
-    L95 <- sapply(1:nsim, function(x) LinInterp(Mat_age[x,], y=Len_age[x, , nyears], 0.95))
+    test <- sapply(1:nsim, function(x) LinInterp(Mat_age[x,], y=1:maxage, 0.5))
+    ageM <- unlist(sapply(1:nsim, function(x) LinInterp(Mat_age[x,], y=1:maxage, 0.5)))
+    age95 <- unlist(sapply(1:nsim, function(x) LinInterp(Mat_age[x,], y=1:maxage, 0.95)))
+    L50 <- unlist(sapply(1:nsim, function(x) LinInterp(Mat_age[x,], y=Len_age[x, , nyears], 0.5)))
+    L95 <- unlist(sapply(1:nsim, function(x) LinInterp(Mat_age[x,], y=Len_age[x, , nyears], 0.95)))
   }
 
   # == Calculate M-at-Age from M-at-Length if provided ====
@@ -281,8 +298,13 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
 
     MatLen <- matrix(NA, nsim, nrow(M_at_Length))
     MatLen[,1] <- runif(nsim, min(M_at_Length[1,2:3]), max(M_at_Length[1,2:3]))
-    val <- (MatLen[,1] - min(M_at_Length[1,2:3]))/ diff(t(M_at_Length[1,2:3]))
-    for (X in 2:nrow(M_at_Length)) MatLen[,X] <- min(M_at_Length[X,2:3]) + diff(t(M_at_Length[X,2:3]))*val 
+    
+    for (k in 1:nsim) {
+      for (X in 2:nrow(M_at_Length)) {
+        val <- (MatLen[k,1] - min(M_at_Length[1,2:3]))/ diff(t(M_at_Length[1,2:3]))
+        MatLen[k,X] <- min(M_at_Length[X,2:3]) + diff(t(M_at_Length[X,2:3]))*val 
+      }
+    }
     
     # Calculate M at age
     Mage <- matrix(NA, nsim, maxage)
@@ -291,6 +313,7 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
       Mage[sim, ] <- MatLen[sim, ind]  
     }
   }
+
   
   # == M-at-age has been provided in OM ====
   if (exists("Mage", inherits=FALSE)) {
@@ -319,12 +342,24 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
     M_ageArray[ind] <- Marray[ind[,c(1,3)]] * (Wt_age[ind]/Winf[ind[,1]]) ^ Mexp[ind[,1]]  
   }  
   
+
   # == Scale M at age so that mean M of mature ages is equal to sampled M ====
   tempM_ageArray <- M_ageArray
+
   for (sim in 1:nsim) {
-    scale <- Marray[sim,]/ apply(tempM_ageArray[sim,ageM[sim]:maxage,], 2, mean)
+    if (ageM[sim] < (maxage-1)) {
+      scale <- Marray[sim,]/ apply(tempM_ageArray[sim,ageM[sim]:maxage,], 2, mean)  
+    } else {
+      scale <- Marray[sim,]/ mean(tempM_ageArray[sim,ageM[sim]:maxage,])  
+    }
+    
     M_ageArray[sim,,] <- M_ageArray[sim,,] * matrix(scale, maxage, nyears+proyears, byrow=TRUE)
   }
+  
+  # == Sample Discard Mortality ====
+  if(!exists("Fdisc", inherits = FALSE)) Fdisc <- runif(nsim, min(Stock@Fdisc), max(Stock@Fdisc))
+  StockOut$Fdisc <- Fdisc 
+  
   
   StockOut$ageM <- ageM
   StockOut$age95 <- age95
@@ -347,6 +382,7 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL) 
   StockOut$Wt_age <- Wt_age
   StockOut$L50 <- L50
   StockOut$L95 <- L95
+  StockOut$L50_95 <- L50_95
   # StockOut$FecB <- FecB
   StockOut$Mat_age <- Mat_age
   

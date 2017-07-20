@@ -7,12 +7,14 @@
 
 DLMdiag <- function(Data, command = "available", reps = 5, timelimit = 1, funcs1=NA) {
   if (class(Data) != "Data") stop("First argument must be object of class 'Data'", call.=FALSE)
+  Data <- updateMSE(Data)
   if (all(is.na(funcs1))) funcs1 <- c(avail("Output"), avail("Input"))
+  mpclasses <- MPclass(funcs1)
+  funcs1 <- funcs1[mpclasses %in% c("Output", "Input", "Reference")]
   good <- rep(TRUE, length(funcs1))
   report <- rep("Worked fine", length(funcs1))
   test <- new("list")
   timey <- new("list")
-  options(show.error.messages = FALSE)
   on.exit(options(show.error.messages = TRUE))
   for (y in 1:length(funcs1)) {
     # First check for required data slots that are not NA
@@ -39,7 +41,9 @@ DLMdiag <- function(Data, command = "available", reps = 5, timelimit = 1, funcs1
         time1 <- Sys.time()
         suppressWarnings({
           setTimeLimit(timelimit * 1.5)
+          options(show.error.messages = FALSE)
           test[[y]] <- try(do.call(funcs1[y], list(x = 1, Data = Data, reps = 5)), silent = T)
+          options(show.error.messages = TRUE)
           if (class(test[[y]]) == "list") test[[y]] <- test[[y]][[1]]
           setTimeLimit(Inf)
         })
@@ -47,7 +51,9 @@ DLMdiag <- function(Data, command = "available", reps = 5, timelimit = 1, funcs1
         time1 <- Sys.time()
         suppressWarnings({
           setTimeLimit(timelimit * 1.5)
+          options(show.error.messages = FALSE)
           test[[y]] <- try(do.call(funcs1[y], list(x = 1, Data = Data)), silent = T)
+          options(show.error.messages = TRUE)
           setTimeLimit(Inf)
         })
       }      
@@ -57,6 +63,14 @@ DLMdiag <- function(Data, command = "available", reps = 5, timelimit = 1, funcs1
     if (class(test[[y]]) == "try-error") {
       report[[y]] <- "Insufficient data"
       good[[y]] <- FALSE
+    } else if (class(test[[y]]) == "InputRec") {
+      slts <- slotNames(test[[y]])
+      tt <- rep(FALSE, length(slts))
+      for (x in seq_along(slts)) tt[x] <- NAor0(slot(test[[y]], slts[x]))
+      if (sum(tt) < 1) {
+        report[[y]] <- "Produced all NA scores"
+        good[[y]] <- FALSE
+      }  
     } else if (sum(is.na(test[[y]])) == length(test[[y]])) {
       report[[y]] <- "Produced all NA scores"
       good[[y]] <- FALSE
@@ -107,6 +121,8 @@ parallelMPs <- function(x, Data, reps, MPs, ss) sapply(ss, MPs[x],
 #' @keywords internal 
 #' @export OneRep
 OneRep <- function(Data) {
+  if (class(Data) != "Data") stop("First argument must be object of class 'Data'", call.=FALSE)
+  Data <- updateMSE(Data)
   Data@CV_Cat = Data@CV_Dt = Data@CV_AvC = Data@CV_Ind = Data@CV_Mort = Data@CV_FMSY_M = Data@CV_BMSY_B0 = Data@CV_Cref = Data@CV_Bref = Data@CV_Iref = Data@CV_Rec = Data@CV_Dep = Data@CV_Abun = Data@CV_L50 = Data@CV_vbK = Data@CV_vbLinf = Data@CV_vbt0 = Data@CV_LFC = Data@CV_LFS = Data@CV_wla = Data@CV_wlb = Data@CV_steep = Data@sigmaL = tiny
   Data
 }
@@ -125,7 +141,8 @@ OneRep <- function(Data) {
 #' @author T. Carruthers
 #' @export plotOFL
 plotOFL <- function(Data, xlims = NA, perc = 0.5) {
-  
+  if (class(Data) != "Data") stop("First argument must be object of class 'Data'", call.=FALSE)
+  Data <- updateMSE(Data)
   cols <- rep(c("black", "red", "green", "blue", "orange", "brown", "purple", 
     "dark grey", "violet", "dark red", "pink", "dark blue", "grey"), 
     4)
@@ -266,8 +283,10 @@ Needed <- function(Data, timelimit = 1) {
 #'
 #' @author T. Carruthers
 #' @export Sense
-Sense <- function(Data, MP, nsense = 6, reps = 100, perc = c(0.05, 
-  0.5, 0.95), ploty = T) {
+Sense <- function(Data, MP, nsense = 6, reps = 100, perc = c(0.05, 0.5, 0.95), 
+                  ploty = T) {
+  if (class(Data) != "Data") stop("First argument must be object of class 'Data'", call.=FALSE)
+  Data <- updateMSE(Data)
   
   DLM_data2 <- Data
   nm <- deparse(substitute(DLM_data2))
@@ -420,7 +439,8 @@ replic8 <- function(Data, nrep) {
 #' @author T. Carruthers
 #' @export TAC
 TAC <- function(Data, MPs = NA, reps = 100, timelimit = 1) {
-  
+  if (class(Data) != "Data") stop("First argument must be object of class 'Data'", call.=FALSE)
+  Data <- updateMSE(Data)
   nm <- deparse(substitute(Data))
   PosMPs <- Can(Data, timelimit = timelimit)
   PosMPs <- PosMPs[PosMPs %in% avail("Output")]
@@ -445,7 +465,8 @@ TAC <- function(Data, MPs = NA, reps = 100, timelimit = 1) {
 }
 
 getTAC <- function(Data, MPs = NA, reps = 100) {
-  
+  if (class(Data) != "Data") stop("First argument must be object of class 'Data'", call.=FALSE)
+  Data <- updateMSE(Data)
   nsims <- length(Data@Mort)
   nMPs <- length(MPs)
   TACa <- array(NA, dim = c(nMPs, reps, nsims))
@@ -527,6 +548,8 @@ getTAC <- function(Data, MPs = NA, reps = 100) {
 #' @author T. Carruthers
 #' @export Sam
 Sam <- function(Data, MPs = NA, reps = 100, perc = 0.5) {
+  if (class(Data) != "Data") stop("First argument must be object of class 'Data'", call.=FALSE)
+  Data <- updateMSE(Data)
   nm <- deparse(substitute(DLM))
   Data@PosMPs <- MPs
   funcs <- Data@PosMPs
@@ -547,120 +570,6 @@ Sam <- function(Data, MPs = NA, reps = 100, perc = 0.5) {
 }
 
 
-# Input Control Functions Wrapper function for input control methods
-
-
-#' Runs input control MPs on a Data object.
-#' 
-#' Function runs a MP (or MPs) of class 'Input' and returns a list: input
-#' control recommendation(s) in element 1 and Data object in element 2.
-#' 
-#' 
-#' @usage runInMP(Data, MPs = NA, reps = 100)
-#' @param Data A object of class Data
-#' @param MPs A vector of MPs of class 'Input'
-#' @param reps Number of stochastic repititions - often not used in input
-#' control MPs.
-#' @author A. Hordyk
-#' @export runInMP
-runInMP <- function(Data, MPs = NA, reps = 100) {
-  
-  nsims <- length(Data@Mort)
-  nMPs <- length(MPs)
-  # len <- 4 + Data@MaxAge
-  len <- 8
-  InC <- array(NA, dim = c(len, nsims, nMPs))
-  if (!sfIsRunning() | (nMPs < 8 & nsims < 8)) {
-    for (ff in 1:nMPs) {
-      temp <- sapply(1:nsims, MPs[ff], Data = Data, reps = reps)
-      if (mode(temp) == "numeric") {
-        Nrow <- nrow(temp)
-        if (Nrow < len) {
-          dif <- (len - Nrow)
-          temp <- rbind(temp, matrix(NA, nrow = dif, ncol = ncol(temp)))
-        }
-        InC[, , ff] <- temp
-      }
-      if (mode(temp) == "list") {
-        temp2 <- unlist(temp[1, ])
-        temp2 <- matrix(temp2, ncol = nsims)
-        Nrow <- nrow(temp2)
-        if (Nrow < len) {
-          dif <- (len - Nrow)
-          temp2 <- rbind(temp2, matrix(NA, nrow = dif, ncol = ncol(temp2)))
-        }
-        InC[, , ff] <- temp2
-        for (x in 1:nsims) Data@Misc[[x]] <- temp[2, x][[1]]
-      }
-    }
-  } else {
-    sfExport(list = c("Data"))
-    if (nsims < 8) {
-      sfExport(list = c("MPs", "reps"))
-      for (ss in 1:nsims) {
-        temp <- t(sfSapply(1:length(MPs), parallelMPs, Data = Data, 
-          reps = reps, MPs = MPs, ss = ss))
-        if (mode(temp) == "numeric") {
-          Nrow <- nrow(temp)
-          if (Nrow < len) {
-          dif <- (len - Nrow)
-          temp <- rbind(temp, matrix(NA, nrow = dif, ncol = ncol(temp)))
-          }
-          InC[, , ff] <- temp
-        }
-        if (mode(temp) == "list") {
-          Lens <- unlist(lapply(temp, length))
-          ind <- which(Lens > 1)  # these have Misc objects
-          for (X in 1:length(Lens)) {
-          if (any(X == ind)) {
-            temp2 <- unlist(temp[[1]][1, X])
-            temp2 <- matrix(temp2, ncol = nsims)
-            Nrow <- nrow(temp2)
-            if (Nrow < len) {
-            dif <- (len - Nrow)
-            temp2 <- rbind(temp2, matrix(NA, nrow = dif, ncol = ncol(temp2)))
-            }
-            InC[, ss, X] <- temp2
-            Data@Misc[[ss]] <- temp[[1]][2, X][[1]]
-          } else {
-            InC[, ss, X] <- unlist(temp[, X])
-          }
-          }
-        }
-      }
-    } else {
-      for (ff in 1:nMPs) {
-        temp <- sfSapply(1:nsims, MPs[ff], Data = Data, 
-          reps = reps)
-        if (mode(temp) == "numeric") {
-          Nrow <- nrow(temp)
-          if (Nrow < len) {
-          dif <- (len - Nrow)
-          temp <- rbind(temp, matrix(NA, nrow = dif, ncol = ncol(temp)))
-          }
-          InC[, , ff] <- temp
-        }
-        if (mode(temp) == "list") {
-          temp2 <- unlist(temp[1, ])
-          temp2 <- matrix(temp2, ncol = nsims)
-          Nrow <- nrow(temp2)
-          if (Nrow < len) {
-          dif <- (len - Nrow)
-          temp2 <- rbind(temp2, matrix(NA, nrow = dif, ncol = ncol(temp2)))
-          }
-          InC[, , ff] <- temp2
-          for (x in 1:nsims) Data@Misc[[x]] <- temp[2, x][[1]]
-        }
-      }
-    }
-  }
-  
-  out <- list(InC, Data)
-  return(out)
-}
-
-
-
 #' Boxplot of TAC recommendations
 #' 
 #' @param x An object of class MSE
@@ -670,7 +579,7 @@ runInMP <- function(Data, MPs = NA, reps = 100) {
 #' @author A. Hordyk
 #' @export
 boxplot.Data <- function(x, outline = FALSE, ...) {
-  Data <- x
+  Data <- updateMSE(x)
   if (class(Data) != "Data") 
     stop("Object must be of class 'Data'")
   tacs <- t(Data@TAC[, , 1])
@@ -716,47 +625,48 @@ boxplot.Data <- function(x, outline = FALSE, ...) {
 #' 
 #' Runs a set of input control methods are returns the output in a single table
 #' 
-#' 
-#' @usage Input(Data, MPs = NA, reps = 100, timelimit = 10, CheckMPs =
-#' TRUE)
 #' @param Data A Data object
 #' @param MPs A list of input MPs, if NA all available input MPs are run
 #' @param reps Number of repetitions (for those methods that use them)
 #' @param timelimit Maximum timelimit to run MP (in seconds)
 #' @param CheckMPs Logical, the Can function is run if this is TRUE
+#' @param msg Logical. Should messages be printed?
 #' @author A. Hordyk
 #' @export Input
-Input <- function(Data, MPs = NA, reps = 100, timelimit = 10, CheckMPs = TRUE) {
-  print("Checking which MPs can be run")
-  flush.console()
-  if (CheckMPs) 
-    PosMPs <- Can(Data, timelimit = timelimit)
-  if (!CheckMPs) 
-    PosMPs <- MPs
+Input <- function(Data, MPs = NA, reps = 100, timelimit = 10, CheckMPs = TRUE, 
+                  msg=TRUE) {
+  if (class(Data) != "Data") stop("First argument must be object of class 'Data'", call.=FALSE)
+  Data <- updateMSE(Data)
+  if (msg) message("Checking which MPs can be run")
+
+  if (CheckMPs) PosMPs <- Can(Data, timelimit = timelimit)
+  if (!CheckMPs) PosMPs <- MPs
   PosMPs <- PosMPs[PosMPs %in% avail("Input")]
-  if (!is.na(MPs[1])) 
-    Data@MPs <- MPs[MPs %in% PosMPs]
-  if (is.na(MPs[1])) 
-    Data@MPs <- PosMPs
+  if (!is.na(MPs[1])) Data@MPs <- MPs[MPs %in% PosMPs]
+  if (is.na(MPs[1])) Data@MPs <- PosMPs
   funcs <- Data@MPs
   
   if (length(funcs) == 0) {
     stop("None of the methods 'MPs' are possible given the data available")
   } else {
-    Out <- matrix(NA, nrow = length(funcs), ncol = 6)
-    colnames(Out) <- c("Effort", "Area 1", "Area 2", "SL50", "SL95", 
-      "UpperLimit")
+    nareas <- Data@nareas
+    areacol <- paste("Area", 1:nareas)
+    Out <- matrix(NA, nrow = length(funcs), ncol = 4+nareas)
+    colnames(Out) <- c("Effort", "LR5", "LFR", "Harvest Slot Limit", areacol)
     rownames(Out) <- funcs
+    
     for (mm in 1:length(funcs)) {
-      print(paste("Running", mm, "of", length(funcs), "-", funcs[mm]))
-      flush.console()
-      runIn <- runInMP(Data, MPs = funcs[mm], reps = reps)[[1]][, 
-        , 1]
-      Out[mm, ] <- runIn[2:7]
-      Out[, 4:6] <- round(Out[, 4:6], 2)
+      if (msg) message("Running ", mm, " of ", length(funcs), " - ", funcs[mm])
+      
+      runIn <- runInMP(Data, MPs = funcs[mm], reps = reps)[[1]][[1]]
+      if (length(runIn$Effort) > 0) Out[mm, 1] <- runIn$Effort
+      if (length(runIn$LR5) > 0) Out[mm, 2] <- runIn$LR5
+      if (length(runIn$LFR) > 0) Out[mm, 3] <- runIn$LFR
+      if (length(runIn$HS) > 0) Out[mm, 4] <- runIn$HS
+      Out[mm, 5:ncol(Out)] <- runIn$Spatial
     }
   }
-  Out
+  round(Out,2)
   
 }
 
