@@ -93,11 +93,12 @@ ChkObj <- function(OM) {
       if (class(slotVal) != "character" & class(slotVal) != "list") Ok[sl] <- all(is.finite(slotVal)) & length(slotVal) > 0
     } 
   }
-  SelSlots <- c("SelYears", "AbsSelYears", "L5Lower", "L5Upper", "LFSLower",
+  SelSlots <- c("SelYears", "L5Lower", "L5Upper", "LFSLower",
                 "LFSUpper", "VmaxLower", "VmaxUpper")
   RecSlots <-  c("Period", "Amplitude")
+  
   # Slots ok to not contain values
-  Ignore <- c("Name", "Source", "cpars", SelSlots, RecSlots, "M2")  
+  Ignore <- c("Name", "Source", "cpars", "AbsSelYears", SelSlots, RecSlots, "M2")  
   # if values present for one they need to be there for all! 
   if (any(SelSlots %in% slots[Ok])) Ignore <- Ignore[!Ignore %in% SelSlots] 
   if (any(RecSlots %in% slots[Ok])) Ignore <- Ignore[!Ignore %in% RecSlots] 
@@ -1171,20 +1172,20 @@ getEffhist <- function(Esd, nyears, EffYears, EffLower, EffUpper) {
         }
         
         # sample Effort
-        fmat <- rbind(EffLower, EffUpper)
+        # fmat <- rbind(EffLower, EffUpper)
        
-        nyrs <- length(EffLower)
-        Effs <- matrix(0, nsim, nyrs)
+        # nyrs <- length(EffLower)
+        # Effs <- matrix(0, nsim, nyrs)
         
-        ind <- which(diff(fmat) > 0)[1]
-        for (X in 1:ind) {
-          Effs[,X] <- runif(nsim, min(fmat[,X]), max(fmat[,X]))  
-        }
+        # ind <- which(diff(fmat) > 0)[1]
+        # for (X in 1:ind) {
+          # Effs[,X] <- runif(nsim, min(fmat[,X]), max(fmat[,X]))  
+        # }
         
-        val <- (Effs[,ind] - min(fmat[,ind]))/ diff(fmat[,ind])
-        for (X in 2:nyrs) Effs[,X] <- min(fmat[,X]) + diff(fmat[,X])*val
+        # val <- (Effs[,ind] - min(fmat[,ind]))/ diff(fmat[,ind])
+        # for (X in 2:nyrs) Effs[,X] <- min(fmat[,X]) + diff(fmat[,X])*val
         
-        # Effs <- mapply(runif, n = nsim, min = EffLower, max = EffUpper)  # sample Effort
+        Effs <- mapply(runif, n = nsim, min = EffLower, max = EffUpper)  # sample Effort
         if (nsim > 1) {
             effort <- t(sapply(1:nsim, function(x) approx(x = refYear, 
                 y = Effs[x, ], method = "linear", n = nyears)$y))  # linear interpolation
