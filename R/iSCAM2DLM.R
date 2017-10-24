@@ -35,7 +35,7 @@ iSCAM2DLM<-function(iSCAMdir,nsim=48,proyears=50,Name=NULL,Source="No source pro
   #  print(replist$dat$to)
   if(replist$dat$num.sex>1)message("More than one sex was modelled with iSCAM, DLMtool currently does not include sex specific-parameters and will use growth etc from the first sex specified by iSCAM")
   
-  OM<-new('OM',DLMtool::Albacore, DLMtool::Generic_fleet, DLMtool::Generic_obs, DLMtool::Perfect_Imp)
+  OM<-new('OM',DLMtool::Albacore, DLMtool::Generic_Fleet, DLMtool::Generic_Obs, DLMtool::Perfect_Imp)
   OM@nsim<-nsim
   OM@proyears<-proyears
   
@@ -82,7 +82,7 @@ iSCAM2DLM<-function(iSCAMdir,nsim=48,proyears=50,Name=NULL,Source="No source pro
   OM@Linf<-quantile(Linf,c(0.025,0.975))
   
   OM@t0=rep(replist$dat$to,2) # t0 is not 
-  OM@Msd<-OM@Ksd<-OM@Linfsd<-OM@Mgrad<-OM@Kgrad<-OM@Linfgrad<-OM@recgrad<-c(0,0)
+  OM@Msd<-OM@Ksd<-OM@Linfsd<-OM@Mgrad<-OM@Kgrad<-OM@Linfgrad<-c(0,0)
   L50=Linf*(1-exp(-K*(replist$dat$age.at.50.mat-mean(OM@t0))))
   OM@a=replist$dat$lw.alpha
   OM@b=replist$dat$lw.beta

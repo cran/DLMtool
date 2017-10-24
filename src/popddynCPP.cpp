@@ -81,6 +81,7 @@ Rcpp::NumericMatrix popdynOneTScpp(double nareas, double maxage, Rcpp::NumericVe
 //' @param Ncurr A numeric matrix (maxage, nareas) with current numbers-at-age in each area
 //' @param pyears The number of years to project the population forward
 //' @param M_age Numeric matrix (maxage, pyears) with natural mortality by age and year
+//' @param Asize_c Numeric vector (length nareas) with size of each area
 //' @param MatAge Numeric vector with proportion mature by age
 //' @param WtAge Numeric matrix (maxage, pyears) with weight by age and year
 //' @param Vuln Numeric matrix (maxage, pyears) with vulnerability by age and year
@@ -107,7 +108,7 @@ Rcpp::NumericMatrix popdynOneTScpp(double nareas, double maxage, Rcpp::NumericVe
 //' @keywords internal
 //[[Rcpp::export]]
 List popdynCPP(double nareas, double maxage, arma::mat Ncurr, double pyears,
-               arma::mat M_age, arma::vec MatAge, arma::mat WtAge,
+               arma::mat M_age, arma::vec Asize_c, arma::mat MatAge, arma::mat WtAge,
                arma::mat Vuln, arma::mat Retc, arma::vec Prec,
                NumericMatrix movc, double SRrelc, arma::vec Effind,
                double Spat_targc, double hc, NumericVector R0c, NumericVector SSBpRc,
@@ -130,26 +131,27 @@ List popdynCPP(double nareas, double maxage, arma::mat Ncurr, double pyears,
   Narray.subcube(0, 0, 0, maxage-1, 0, nareas-1) = Ncurr;
   for (int A=0; A<nareas; A++) {
     Barray.subcube(0, 0, A, maxage-1, 0, A) = Ncurr.col(A) % WtAge.col(0);
-    SSNarray.subcube(0, 0, A, maxage-1, 0, A) = Ncurr.col(A) % MatAge; 
-    SBarray.subcube(0, 0, A, maxage-1, 0, A) = Ncurr.col(A) % WtAge.col(0) % MatAge;
+    SSNarray.subcube(0, 0, A, maxage-1, 0, A) = Ncurr.col(A) % MatAge.col(0); 
+    SBarray.subcube(0, 0, A, maxage-1, 0, A) = Ncurr.col(A) % WtAge.col(0) % MatAge.col(0);
     VBarray.subcube(0, 0, A, maxage-1, 0, A) = Ncurr.col(A) % WtAge.col(0) % Vuln.col(0);
     Marray.subcube(0, 0, A, maxage-1, 0, A) = M_age.col(0);
     tempVec(A) = accu(VBarray.slice(A));
   }
   
-  fishdist = (pow(tempVec, Spat_targc))/mean((pow(tempVec, Spat_targc)));
+  // fishdist = (pow(tempVec, Spat_targc))/mean((pow(tempVec, Spat_targc)));
+  fishdist = (pow(tempVec, Spat_targc))/sum((pow(tempVec, Spat_targc)));
 
   // calculate F at age for first year
   if (control == 1) {
     for (int A=0; A<nareas; A++) {
-      FMarray.subcube(0,0, A, maxage-1, 0, A) =  Effind(0) * Qc * fishdist(A) * Vuln.col(0);
-      FMretarray.subcube(0,0, A, maxage-1, 0, A) =  Effind(0) * Qc * fishdist(A) * Retc.col(0);
+      FMarray.subcube(0,0, A, maxage-1, 0, A) =  (Effind(0) * Qc * fishdist(A) * Vuln.col(0))/Asize_c(A);
+      FMretarray.subcube(0,0, A, maxage-1, 0, A) =  (Effind(0) * Qc * fishdist(A) * Retc.col(0))/Asize_c(A);
     }
   }
   if (control == 2) {
     for (int A=0; A<nareas; A++) {
-      FMarray.subcube(0,0, A, maxage-1, 0, A) =  Fapic * fishdist(A) * Vuln.col(0);
-      FMretarray.subcube(0,0, A, maxage-1, 0, A) =  Fapic * fishdist(A) * Retc.col(0);
+      FMarray.subcube(0,0, A, maxage-1, 0, A) =  (Fapic * fishdist(A) * Vuln.col(0))/Asize_c(A);
+      FMretarray.subcube(0,0, A, maxage-1, 0, A) =  (Fapic * fishdist(A) * Retc.col(0))/Asize_c(A);
     }
   }
   
@@ -167,35 +169,36 @@ List popdynCPP(double nareas, double maxage, arma::mat Ncurr, double pyears,
     arma::vec SB(nareas);
     
     for (int A=0; A<nareas; A++) SB(A) = accu(SBarray.subcube(0, yr, A, maxage-1, yr, A));
-    arma::mat Ncurr = Narray.subcube(0, yr, 0, maxage-1, yr, nareas-1);
+    arma::mat Ncurr2 = Narray.subcube(0, yr, 0, maxage-1, yr, nareas-1);
     arma::mat Zcurr = Zarray.subcube(0, yr, 0, maxage-1, yr, nareas-1);
-    NumericMatrix NextYrNa = popdynOneTScpp(nareas, maxage, wrap(SB), wrap(Ncurr), wrap(Zcurr), 
+    NumericMatrix NextYrNa = popdynOneTScpp(nareas, maxage, wrap(SB), wrap(Ncurr2), wrap(Zcurr), 
                                        Prec(yr+1+maxage), hc, R0c, SSBpRc, aRc, bRc, movc, SRrelc); 
     arma::mat NextYrN = as<arma::mat>(NextYrNa);
 
     Narray.subcube(0, yr+1, 0, maxage-1, yr+1, nareas-1) = NextYrN;
     for (int A=0; A<nareas; A++) {
       Barray.subcube(0, yr+1, A, maxage-1, yr+1, A) = NextYrN.col(A) % WtAge.col(yr+1);
-      SSNarray.subcube(0, yr+1, A, maxage-1, yr+1, A) = NextYrN.col(A) % MatAge;
-      SBarray.subcube(0, yr+1, A, maxage-1, yr+1, A) = NextYrN.col(A) % WtAge.col(yr+1) % MatAge;
+      SSNarray.subcube(0, yr+1, A, maxage-1, yr+1, A) = NextYrN.col(A) % MatAge.col(yr+1);
+      SBarray.subcube(0, yr+1, A, maxage-1, yr+1, A) = NextYrN.col(A) % WtAge.col(yr+1) % MatAge.col(yr+1);
       VBarray.subcube(0, yr+1, A, maxage-1, yr+1, A) = NextYrN.col(A) % WtAge.col(yr+1) % Vuln.col(yr+1);
       Marray.subcube(0, yr+1, A, maxage-1, yr+1, A) = M_age.col(yr+1);
       tempVec(A) = accu(VBarray.subcube(0, yr+1, A, maxage-1, yr+1, A));
     }
 
-    fishdist = (pow(tempVec, Spat_targc))/mean((pow(tempVec, Spat_targc)));
+    // fishdist = (pow(tempVec, Spat_targc))/mean((pow(tempVec, Spat_targc)));
+    fishdist = (pow(tempVec, Spat_targc))/sum((pow(tempVec, Spat_targc)));
 
     // calculate F at age for next year
     if (control == 1) {
       for (int A=0; A<nareas; A++) {
-        FMarray.subcube(0,yr+1, A, maxage-1, yr+1, A) =  Effind(yr+1) * Qc * fishdist(A) * Vuln.col(yr+1);
-        FMretarray.subcube(0,yr+1, A, maxage-1, yr+1, A) =  Effind(yr+1) * Qc * fishdist(A) * Retc.col(yr+1);
+        FMarray.subcube(0,yr+1, A, maxage-1, yr+1, A) =  (Effind(yr+1) * Qc * fishdist(A) * Vuln.col(yr+1))/Asize_c(A);
+        FMretarray.subcube(0,yr+1, A, maxage-1, yr+1, A) =  (Effind(yr+1) * Qc * fishdist(A) * Retc.col(yr+1))/Asize_c(A);
       }
     }
     if (control == 2) {
       for (int A=0; A<nareas; A++) {
-        FMarray.subcube(0,yr+1, A, maxage-1, yr+1, A) =  Fapic * fishdist(A) * Vuln.col(yr+1);
-        FMretarray.subcube(0,yr+1, A, maxage-1, yr+1, A) =  Fapic * fishdist(A) * Retc.col(yr+1);
+        FMarray.subcube(0,yr+1, A, maxage-1, yr+1, A) =  (Fapic * fishdist(A) * Vuln.col(yr+1))/Asize_c(A);
+        FMretarray.subcube(0,yr+1, A, maxage-1, yr+1, A) =  (Fapic * fishdist(A) * Retc.col(yr+1))/Asize_c(A);
       }
     }
     // apply Fmax condition 

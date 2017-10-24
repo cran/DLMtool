@@ -8,11 +8,11 @@
 #'
 validcpars <- function(print=TRUE) {
   vnames <- sort(c("dep","Esd","Find","procsd","AC","M","Msd", 
-                   "Mgrad","hs","Linf","Linfsd","Linfgrad","recgrad",
+                   "Mgrad","hs","Linf","Linfsd","Linfgrad",
                    "K","Ksd","Kgrad","t0","L50", "L95", "L50_95","Spat_targ",
                    "Frac_area_1","Prob_staying","Size_area_1", 
                    "Csd","Cbias","CAA_nsamp","CAA_ESS","CAL_nsamp",
-                   "CAL_ESS","CALcv","betas","Isd","Derr","Dbias", 
+                   "CAL_ESS","betas","Isd","Derr","Dbias", 
                    "Mbias","FMSY_Mbias","lenMbias","LFCbias",
                    "LFSbias","Aerr","Abias","Kbias","t0bias", 
                    "Linfbias","Irefbias","Crefbias","Brefbias",
@@ -21,7 +21,7 @@ validcpars <- function(print=TRUE) {
                    "ageM", "age95", "EffYears", "EffLower", "EffUpper",
                    "Wt_age", "Len_age", "Marray", "M_at_Length", "LenCV", 
                    "CAL_binsmid", "CAL_bins", "LatASD", "dFfinal",
-                   "LR5", "LFR", "Rmaxlen", "DR")) 
+                   "LR5", "LFR", "Rmaxlen", "DR", "Fdisc")) 
   
   if (print) {
     n <- length(vnames)

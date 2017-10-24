@@ -28,9 +28,9 @@ SRAsim<-function(OM,qmult=0.5,patchy=0.2,nCAA=100,sigmaE=0.25){
 
   ageM <- -((log(1-lenM/Linf))/K) + t0 # calculate ageM from L50 and growth parameters (non-time-varying)
   age95 <- -((log(1-len95/Linf))/K) + t0
-  ageMsd <- getroot(1,ageM,age95)
-  Mat_age <- 1/(1+exp((ageM-(1:maxage))/(ageM*ageMsd)))  # Maturity at age array
 
+  Mat_age <- 1/(1 + exp(-log(19) * (((1:maxage) - ageM)/(age95 - ageM))))
+  
   Len_age<-Linf*(1-exp(-K*((1:maxage)-t0)))
   Wt_age<-OM@a*Len_age^OM@b
   M_age<-rep(M,maxage)
@@ -210,7 +210,7 @@ StochasticSRA <-function(OM,CAA,Chist,Cobs=0.1,sigmaR=0.5,Umax=0.9,nsim=48,proye
   for (X in 1:length(StockPars)) assign(names(StockPars)[X], StockPars[[X]])
   agearr<-array(rep(1:maxage,each=nsim),c(nsim,maxage))
   Wt_age <- Wt_age[,,nyears] # no time-varying growth
-  
+  Mat_age<- Mat_age[,,nyears]
   
   # Sample Fleet Parameters 
   options(warn=-1)
@@ -230,6 +230,7 @@ StochasticSRA <-function(OM,CAA,Chist,Cobs=0.1,sigmaR=0.5,Umax=0.9,nsim=48,proye
   LHD<-array(NA,c(nsim,nits))
   
   
+
   if(sfIsRunning()){
     R0LB<-sfSapply(1:nsim,LSRA_cpp,FF=M*4,Chist_arr=Chist_a,M=M,Mat_age=Mat_age,Wt_age=Wt_age,
                    sel=Mat_age,Recdevs=array(1,c(nsim,nyears+maxage)),h=hs)
@@ -294,7 +295,7 @@ StochasticSRA <-function(OM,CAA,Chist,Cobs=0.1,sigmaR=0.5,Umax=0.9,nsim=48,proye
   
   # update<-(1:50)*(nits/50)
   adapt<-c(rep(5,100),rep(2.5,100),rep(1,nits-200))
-  
+  message("Running MCMC (may take a while!)")
   if (snowfall::sfIsRunning()) {
     mcmc <- snowfall::sfSapply(1:nsim, function(sim) {
       LSRA_MCMC_sim(nits=nits, pars[sim,], JumpCV, adapt, parLB[sim,], parUB[sim,], R0ind-1, 
@@ -498,7 +499,6 @@ StochasticSRA <-function(OM,CAA,Chist,Cobs=0.1,sigmaR=0.5,Umax=0.9,nsim=48,proye
 #' @return A list with three positions. Position 1 is the filled OM object, position 2 is the custompars data.frame that may be submitted as an argument to runMSE() and position 3 is the matrix of effort histories [nyears x nsim] vector of objects of class\code{classy}
 #' @author T. Carruthers (Canadian DFO grant)
 #' @references Walters, C.J., Martell, S.J.D., Korman, J. 2006. A stochastic approach to stock reduction analysis. Can. J. Fish. Aqua. Sci. 63:212-213.
-#' @export StochasticSRA
 #' @examples
 #' \dontrun{
 #' setup()
@@ -537,9 +537,8 @@ StochasticSRA2<-function(OM,CAA,Chist,Cobs=0.1,sigmaR=0.5,Umax=0.9,nsim=48,proye
   len95 <- lenM+L50_90
   ageM <- -((log(1-lenM/Linf))/K) + t0 # calculate ageM from L50 and growth parameters (non-time-varying)
   age95 <- -((log(1-len95/Linf))/K) + t0
-  ageMsd <- sapply(1:nsim,getroot,ageM,age95)
   agearr<-array(rep(1:maxage,each=nsim),c(nsim,maxage))
-  Mat_age <- 1/(1+exp((ageM-(agearr))/(ageM*ageMsd)))  # Maturity at age array
+  Mat_age <- 1/(1 + exp(-log(19) * ((agearr - ageM)/(age95 - ageM))))
 
   Len_age<-Linf*(1-exp(-K*((agearr)-t0)))
   Wt_age<-OM@a*Len_age^OM@b

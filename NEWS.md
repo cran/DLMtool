@@ -1,13 +1,29 @@
 ## DLMtool 
 The current version of the DLMtool package is available for download from [CRAN](https://CRAN.R-project.org/package=DLMtool).
 
+### DLMtool v4.4.xx Development Version 
+
+Since DLMtool V4.5 the following slots have been added to the OM object:
+
+- `OM@interval`
+- `OM@pstar`
+- `OM@maxF`
+- `OM@reps`
+
+This was done so that an OM object is completely self-contained and includes all information used in the MSE. 
+
+
+
+#### Minor Changes 
+
+- BMSY/B0 now calculated from B0 assuming current conditions, i.e what would B0 be with today's productivity
 
 ### DLMtool v4.4.1
 
 #### Minor Changes 
 
-- fixed a typo in 4.4 that affected effort controls
-- removed redudant code to speed up sampling of fleet parameters
+- fixed a typo in V4.4 that affected effort controls
+- removed redundant code to speed up sampling of fleet parameters
 
 
 ## Previous Versions

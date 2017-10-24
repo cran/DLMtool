@@ -73,7 +73,7 @@ gety <- function(n) (n^(n/(n - 1)))/(n - 1)  # More DBSRA code: get the y parame
 #' @importFrom methods getClassDef .hasSlot new slot slot<- slotNames
 #' @importFrom stats approx coef dbeta density dnorm dlnorm lm loess loess.smooth 
 #' median nlm optim optimise optimize plogis pnorm predict qlnorm quantile rbeta 
-#' rlnorm rmultinom rnorm runif sd uniroot   
+#' rlnorm rmultinom rnorm runif sd   
 #' @importFrom utils packageVersion lsf.str read.csv
 AvC <- function(x, Data, reps = 100) {
   rlnorm(reps, log(mean(Data@Cat[x, ], na.rm = T)), 0.2)
@@ -1163,7 +1163,7 @@ class(Islope4) <- "Output"
 #' @export IT10
 IT10 <- function(x, Data, reps = 100, yrsmth = 5, mc = 0.1) {
   
-  dependencies = "Data@Ind, Data@Cat, DLMdata@CV_Ind, DLMdata@Iref"
+  dependencies = "Data@Ind, Data@Cat, Data@CV_Ind, Data@Iref"
   ind <- max(1, (length(Data@Year) - yrsmth + 1)):length(Data@Year)
   
   
@@ -1199,7 +1199,7 @@ class(IT10) <- "Output"
 #' @export IT5
 IT5 <- function(x, Data, reps = 100, yrsmth = 5, mc = 0.05) {
   
-  dependencies = "Data@Ind, Data@Cat, DLMdata@CV_Ind, DLMdata@Iref"
+  dependencies = "Data@Ind, Data@Cat, Data@CV_Ind, Data@Iref"
   ind <- max(1, (length(Data@Year) - yrsmth + 1)):length(Data@Year)
   deltaI <- mean(Data@Ind[x, ind])/Data@Iref[x]
   if (deltaI < (1 - mc)) 
@@ -1231,7 +1231,7 @@ class(IT5) <- "Output"
 #' @export ITM
 ITM <- function(x, Data, reps = 100) {
   
-  dependencies = "Data@Ind, Data@Cat, DLMdata@CV_Ind, DLMdata@Iref, DLMdata@Mort"
+  dependencies = "Data@Ind, Data@Cat, Data@CV_Ind, Data@Iref, Data@Mort"
   mc <- (5 + Data@Mort[x] * 25)/100
   if (mc > 0.2) 
     mc <- 0.2
