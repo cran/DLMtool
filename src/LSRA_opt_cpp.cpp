@@ -283,4 +283,3 @@ List  LSRA_MCMC_sim(double nits, NumericVector pars,
   return(out);
 }
 
-
