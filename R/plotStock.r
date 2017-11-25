@@ -60,6 +60,7 @@ plotStock <- function(x, nsamp=3, nsim=500, nyears=50, proyears=28,
   Stock <- x 
   SampCpars <- list() # empty list 
   if (class(Stock) == "OM") {
+    Stock <- updateMSE(x) 
     if (is.finite(Stock@nyears)) nyears <- Stock@nyears
 	  if (is.finite(Stock@proyears)) proyears <- Stock@proyears
 	  if (is.finite(Stock@nsim)) nsim <- Stock@nsim	
@@ -213,8 +214,8 @@ plotStock <- function(x, nsamp=3, nsim=500, nyears=50, proyears=28,
 
   
   # Row 6 -- Depletion and Maturity ----
-  hist2(dep, col=col, axes=FALSE, main="Depletion", breaks=breaks)
-  abline(v=dep[its], col=1:nsamp, lwd=lwd)
+  hist2(D, col=col, axes=FALSE, main="Depletion", breaks=breaks)
+  abline(v=D[its], col=1:nsamp, lwd=lwd)
   axis(side=1)
   
   # Maturity 
