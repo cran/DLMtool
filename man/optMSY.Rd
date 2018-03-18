@@ -6,7 +6,7 @@
 \usage{
 optMSY(logFa, Asize_c, nareas, maxage, Ncurr, pyears, M_age, MatAge, WtAge,
   Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc, R0c, SSBpRc, aRc, bRc,
-  Qc, maxF, useCPP = TRUE)
+  Qc, MPA, maxF, useCPP = TRUE, SSB0c)
 }
 \arguments{
 \item{logFa}{log apical fishing mortality}
@@ -53,9 +53,13 @@ optMSY(logFa, Asize_c, nareas, maxage, Ncurr, pyears, M_age, MatAge, WtAge,
 
 \item{Qc}{Catchability}
 
+\item{MPA}{A matrix of spatial closures by year}
+
 \item{maxF}{A numeric value specifying the maximum fishing mortality for any single age class}
 
 \item{useCPP}{logical - use the CPP code? For testing purposes only}
+
+\item{SSB0c}{SSB0}
 }
 \description{
 Optimize yield for a single simulation

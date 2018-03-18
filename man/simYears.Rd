@@ -5,8 +5,8 @@
 \title{Simulate population dynamics for historical years}
 \usage{
 simYears(x, nareas, maxage, N, pyears, M_ageArray, Asize, Mat_age, Wt_age, V,
-  retA, Perr, mov, SRrel, Find, Spat_targ, hs, R0a, SSBpR, aR, bR, qs, maxF,
-  useCPP = TRUE)
+  retA, Perr, mov, SRrel, Find, Spat_targ, hs, R0a, SSBpR, aR, bR, qs, MPA,
+  maxF, useCPP = TRUE, SSB0)
 }
 \arguments{
 \item{x}{Integer, the simulation number}
@@ -54,9 +54,13 @@ Only values from the first year (i.e N[,,1,]) are used, which is the current N-a
 
 \item{qs}{A numeric vector nsim long with catchability coefficients}
 
+\item{MPA}{A matrix of spatial closures by year}
+
 \item{maxF}{A numeric value specifying the maximum fishing mortality for any single age class}
 
 \item{useCPP}{logical - use the CPP code? For testing purposes only}
+
+\item{SSB0}{SSB0}
 }
 \description{
 Simulate population dynamics for historical years

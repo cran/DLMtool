@@ -6,8 +6,10 @@
 \title{Class \code{'OM'}}
 \description{
 An object containing all the parameters needed to control the MSE which can
-be build from component Stock, Fleet and Obs objects. Almost all of
-these inputs are a vector of length 2 which describes the upper and lower
+be build from component Stock, Fleet, Obs, and Imp objects.
+}
+\details{
+Almost all of these inputs are a vector of length 2 which describes the upper and lower
 bounds of a uniform distribution from which to sample the parameter.
 }
 \section{Slots}{
@@ -19,6 +21,8 @@ bounds of a uniform distribution from which to sample the parameter.
 
 \item{\code{Region}}{Name of the general geographic region of the fishery. Character string}
 
+\item{\code{Sponsor}}{Name of the organization who sponsored the OM. Character string}
+
 \item{\code{Latitude}}{Latitude (decimal degrees). Negative values represent the South of the Equator. Numeric. Single value}
 
 \item{\code{Longitude}}{Longitude (decimal degrees). Negative values represent the West of the Prime Meridian. Numeric. Single value}
@@ -27,18 +31,22 @@ bounds of a uniform distribution from which to sample the parameter.
 
 \item{\code{proyears}}{The number of projected years}
 
-\item{\code{interval}}{The assessment interval - how often would you like to update
-the management system?}
+\item{\code{interval}}{The assessment interval - how often would you like to update the management system?}
 
-\item{\code{pstar}}{The percentile of the sample of the management recommendation
-for each method}
+\item{\code{pstar}}{The percentile of the sample of the management recommendation for each method}
 
-\item{\code{maxF}}{Maximum instantaneous fishing mortality rate that may be
-simulated for any given age class}
+\item{\code{maxF}}{Maximum instantaneous fishing mortality rate that may be simulated for any given age class}
 
-\item{\code{reps}}{Number of samples of the management recommendation for each
-method. Note that when this is set to 1, the mean value of the data inputs
-is used.}
+\item{\code{reps}}{Number of samples of the management recommendation for each method. Note that when this is set to 1, the mean value of 
+the data inputs is used.}
+
+\item{\code{cpars}}{A list of custom parameters. Time series are a matrix nsim rows by nyears columns. Single parameters are a vector nsim long}
+
+\item{\code{seed}}{A random seed to ensure users can reproduce results exactly}
+
+\item{\code{Source}}{A reference to a website or article from which parameters were taken to define the operating model}
+
+\item{\code{Common_Name}}{Common name of the species. Character string}
 
 \item{\code{Species}}{Scientific name of the species. Genus and species name. Character string}
 
@@ -150,7 +158,12 @@ is used.}
 
 \item{\code{VmaxUpper}}{(Optional) Upper bound of Vmaxlen (use \code{ChooseSelect} function to set these). Vector. Fraction}
 
-\item{\code{CurrentYr}}{The current calendar year (final year) of the historical simulations (eg 2011). Single value. Positive integer.}
+\item{\code{CurrentYr}}{The current calendar year (final year) of the historical simulations (eg 2011). Single value. Positive integer. .}
+
+\item{\code{MPA}}{(Optional) Matrix specifying spatial closures for historical years. Each row should contain year index (e.g 10 for 10th historical year)
+followed by fraction of area closed to fishing for each area. i.e. each row represents a change and the number of columns is nareas + 1. 
+The spatial closures are assumed to remain in place for the future projections unless changed by a MP. 
+Default (if left blank) is all areas are open to fishing in historical period.}
 
 \item{\code{Cobs}}{Log-normal catch observation error expressed as a coefficient of variation. Uniform distribution lower and upper bounds. Non-negative real numbers}
 
@@ -219,12 +232,6 @@ is used.}
 \item{\code{SizeLimFrac}}{The real minimum size that is retained expressed as a fraction of the size. Uniform distribution lower and upper bounds. Positive real number.}
 
 \item{\code{SizeLimSD}}{Log-normal coefficient of variation controlling mismatch between a minimum size limit and the real minimum size retained. Uniform distribution lower and upper bounds. Non-negative real numbers.}
-
-\item{\code{cpars}}{A list of custom parameters (single parameters are a vector nsim long, time series are a matrix nsim rows by nyears columns)}
-
-\item{\code{seed}}{A random seed to ensure users can reproduce results exactly}
-
-\item{\code{Source}}{A reference to a website or article from which parameters were taken to define the operating model}
 }}
 
 \section{Objects from the Class}{
