@@ -481,6 +481,17 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   UMSY <- MSY/VBMSY  # exploitation rate [equivalent to 1-exp(-FMSY)]
   FMSY_M <- FMSY/M  # ratio of true FMSY to natural mortality rate M
  
+  if (checks) {
+    Btemp <- apply(SSB, c(1,3), sum)
+    x <- Btemp[,nyears]/SSBMSY
+    y <-D/SSBMSY_SSB0
+    plot(x,y, xlim=c(0,max(x)), ylim=c(0,max(y)), xlab="SSB/SSBMSY", ylab="D/SSBMSY_SSB0")
+    lines(c(-10,10),c(-10,10))
+    
+
+  }
+  
+  
   # --- Code for deriving low biomass ---- 
   # (SSB where it takes MGThorizon x MGT to reach Bfrac of BMSY)
   
@@ -687,7 +698,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
                         MSY=MSY, qinc, qcv, FMSY=FMSY, Linf, K, t0, hs, Linfgrad, Kgrad, Linfsd, Ksd, 
                         ageM=ageM[,nyears], L5=L5[nyears, ], LFS=LFS[nyears, ], Vmaxlen=Vmaxlen[nyears, ], LFC, OFLreal, 
                         Spat_targ, Size_area_1, Frac_area_1, Prob_staying, AC, L50, L95, B0, N0, SSB0, BMSY_B0,
-                        TACSD,TACFrac,TAESD,TAEFrac,SizeLimSD,SizeLimFrac,Blow,
+                        TACSD,TACFrac,TAESD,TAEFrac,SizeLimSD,SizeLimFrac,Blow,MGT,
                         BMSY, SSBMSY=SSBMSY, Mexp, Fdisc, 
                         LR5=LR5[nyears,], LFR=LFR[nyears,], Rmaxlen=Rmaxlen[nyears,], DR=DR[nyears,]) 
 
@@ -799,7 +810,6 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
       if (!silent) flush.console()
       
       MSYrefsYr <- sapply(1:nsim, optMSY_eq, M_ageArray, Wt_age, Mat_age, V, maxage, R0, SRrel, hs, yr=nyears+y)
-      
       MSY_P[,,y] <- MSYrefsYr[1, ]
       FMSY_P[,,y] <- MSYrefsYr[2,]
       SSBMSY_P[,,y] <- MSYrefsYr[3,]
@@ -857,7 +867,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     SA1 <- SAYR[, 1:2]
     S1 <- SAYR[, 1]
     SY1 <- SAYR[, c(1, 3)]
-    SAY1 <- SAYR[, 1:3]
+    SAY1 <- SAYRt[, 1:3]
     SYA <- as.matrix(expand.grid(1:nsim, 1, 1:maxage))  # Projection year
     SY <- SYA[, 1:2]
     SA <- SYA[, c(1, 3)]
