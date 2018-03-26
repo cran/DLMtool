@@ -58,6 +58,7 @@ if(getRversion() >= "2.15.1") utils::globalVariables(Names)
 #' @param control control options for testing and debugging
 #' @return An object of class MSE
 #' @author T. Carruthers and A. Hordyk
+#' @importFrom utils ls.str
 #' @export
 #' 
 runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","matlenlim", "MRreal"), 
@@ -70,10 +71,43 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
     message("Sorry! Historical simulations currently can't use parallel.")
     parallel <- FALSE
   }
+  
+  # check if custom MP names already exist in DLMtool
+  gl.funs <- as.vector(lsf.str(envir=globalenv()))
+  pkg.funs <- as.vector(ls.str('package:DLMtool'))
+  if (length(gl.funs)>0) {
+    gl.clss <- unlist(lapply(lapply(gl.funs, get), class))
+    gl.MP <- gl.funs[gl.clss %in% 'MP']
+    if (length(gl.MP)>0) {
+      inc.gl <- gl.MP[gl.MP %in% MPs]
+      if (length(inc.gl)>0) {
+        dup.MPs <- inc.gl[inc.gl %in% pkg.funs]
+        if (length(dup.MPs)>0) {
+          stop("Custom MP names already in DLMtool: ", paste0(dup.MPs, ""), "\nRename Custom MPs")
+        }
+      }
+    } 
+  }
+  
+  # Check MPs 
+  if (!all(is.na(MPs))) {
+    for (mm in MPs) {
+      chkMP <- try(get(mm), silent=TRUE)
+      if (class(chkMP) != 'MP') stop(mm, " is not a valid MP", call.=FALSE) 
+    }
+  }
+
+  
   if (parallel) {
     if(!snowfall::sfIsRunning()) {
-      stop("Parallel processing hasn't been initialized. Use 'setup'", call. = FALSE)
+      # stop("Parallel processing hasn't been initialized. Use 'setup'", call. = FALSE)
+      message("Parallel processing hasn't been initialized. Calling 'setup()' now")
+      setup()
     }
+    
+    # Export Custom MPs # 
+    cMPs <- MPs[!MPs %in% pkg.funs]
+    if (length(cMPs)>0) snowfall::sfExport(list=cMPs)
     
     ncpu <- snowfall::sfCpus()
     
@@ -94,6 +128,7 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
       itsim[length(itsim)-1] <- itsim[length(itsim)-1] - 1
     }
     if (!silent) message("Running MSE in parallel on ", ncpu, ' processors')
+    
     temp <- snowfall::sfClusterApplyLB(1:nits, run_parallel, itsim=itsim, OM=OM, MPs=MPs,  
                              CheckMPs=CheckMPs, timelimit=timelimit, Hist=Hist, ntrials=ntrials, 
                              fracD=fracD, CalcBlow=CalcBlow, 
@@ -201,12 +236,12 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   for (X in 1:length(FleetPars)) assign(names(FleetPars)[X], FleetPars[[X]])
   
   # --- Sample Obs Parameters ----
-  ObsPars <- SampleObsPars(OM, nsim)
+  ObsPars <- SampleObsPars(OM, nsim, cpars=SampCpars)
   # Assign Obs pars to function environment
   for (X in 1:length(ObsPars)) assign(names(ObsPars)[X], ObsPars[[X]])
   
   # --- Sample Imp Paramerers ----
-  ImpPars <- SampleImpPars(OM, nsim)
+  ImpPars <- SampleImpPars(OM, nsim, cpars=SampCpars)
   # Assign Imp pars to function environment
   for (X in 1:length(ImpPars)) assign(names(ImpPars)[X], ImpPars[[X]])
   
@@ -428,7 +463,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         if (length(tooLow) > 0) message(tooLow, " sims can't get down to the lower bound on depletion")
         if (length(tooHigh) > 0) message(tooHigh, " sims can't get to the upper bound on depletion")
         if(!silent) message("More than ", fracD*100, "% of simulations can't get to the specified level of depletion with these Operating Model parameters")
-        stop("Try again for a complete new sample, modify the input parameters, or increase ")
+        stop("Change OM@seed and try again for a complete new sample, modify the input parameters, or increase ntrials")
       } else {
         if (length(tooLow) > 0) message(tooLow, " sims can't get down to the lower bound on depletion")
         if (length(tooHigh) > 0) message(tooHigh, " sims can't get to the upper bound on depletion")
@@ -500,7 +535,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   MGT<-apply(Agearray*(Mat_age[,,nyears]*MGTsurv),1,sum)/apply(Mat_age[,,nyears]*MGTsurv,1,sum)
   
   if(CalcBlow){
-    if(!silent) message("Calculating Blow reference points")              # Print a progress update  
+    if(!silent) message("Calculating B-low reference points")              # Print a progress update  
     
     MGThorizon<-floor(HZN*MGT)
     
@@ -1053,7 +1088,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         Depletion[Depletion < tiny] <- tiny
 
         NextYrNtemp <- lapply(1:nsim, function(x)
-          popdynOneTScpp(nareas, maxage, SSBcurr=colSums(SSB[x,,y, ]), Ncurr=N_P[x,,y,],
+          popdynOneTScpp(nareas, maxage, SSBcurr=colSums(SSB_P[x,,y, ]), Ncurr=N_P[x,,y,],
                          Zcurr=matrix(M_ageArray[x,,y+nyears], ncol=nareas, nrow=maxage), 
                          PerrYr=Perr[x, y+nyears+maxage-1], hs=hs[x],
                          R0a=R0a[x,], SSBpR=SSBpR[x,], aR=aR[x,], bR=bR[x,],

@@ -38,10 +38,26 @@
 #'
 #' A simple average catch MP that is included to demonstrate a 'status quo' management option
 #'
+#' 
 #' @param x A position in a data-limited methods data object
 #' @param Data A data-limited methods data object
 #' @param reps The number of stochastic samples of the TAC recommendation
 #' @author T. Carruthers
+#' 
+#' @examples 
+#' Data <- DLMtool::Cobia
+#' # Plot the historical catches 
+#' plot(Data@Year, Data@Cat[1,], type="l", 
+#'      xlab="Year", ylab=paste0("Catch (", Data@Units, ")"), lwd=2)
+#' abline(h=mean(Data@Cat[1,]), lty=2) # plot mean catches
+#' 
+#' # Apply the AvC MP to the Data
+#' Rec <- AvC(1, Data, reps=1000) # 1,000 log-normal samples with CV = 0.2
+#' 
+#' # Distribution of TACs
+#' boxplot(Rec@TAC, add=TRUE, at=max(Data@Year), col="grey", 
+#'         width=1, outline=FALSE)
+#'         
 #' @export 
 #'
 #' @importFrom abind abind
@@ -509,19 +525,25 @@ DBSRA <- function(x, Data, reps = 100) {
     if (is.na(tryBMSY_K)) {
       Min <- min(BMSY_K, na.rm = TRUE)
       Max <- max(BMSY_K, na.rm = TRUE)
-      if (Max <= 0.05) 
-        BMSY_K <- 0.05
-      if (Min >= 0.95) 
-        BMSY_K <- 0.95
+      if (Max <= 0.05) BMSY_K <- 0.05
+      if (Min >= 0.95) BMSY_K <- 0.95
     }
     if (!is.na(tryBMSY_K))  BMSY_K <- tryBMSY_K
     
     adelay <- max(floor(iVB(Data@vbt0[x], Data@vbK[x], Data@vbLinf[x],  Data@L50[x])), 1)
-    opt <- optimize(DBSRAopt, log(c(0.01 * mean(C_hist), 1000 * mean(C_hist))), C_hist = C_hist, 
-                    nys = length(C_hist), Mdb = Mdb, FMSY_M = FMSY_M, BMSY_K = BMSY_K, 
+ 
+    # opt <- optimize(DBSRAopt, log(c(0.01 * mean(C_hist), 1000 * mean(C_hist))), C_hist = C_hist, 
+                    # nys = length(C_hist), Mdb = Mdb, FMSY_M = FMSY_M, BMSY_K = BMSY_K, 
+                    # Bt_K = Bt_K, adelay = adelay, tol = 0.01)
+    # scale catches for optimization
+    scaler <- 1000/mean(C_hist)
+    C_hist2 <- scaler * C_hist
+    opt <- optimize(DBSRAopt, log(c(0.01 * mean(C_hist2), 1000 * mean(C_hist2))), C_hist = C_hist2, 
+                    nys = length(C_hist2), Mdb = Mdb, FMSY_M = FMSY_M, BMSY_K = BMSY_K, 
                     Bt_K = Bt_K, adelay = adelay, tol = 0.01)
+    
     # if(opt$objective<0.1){
-    Kc <- exp(opt$minimum)
+    Kc <- exp(opt$minimum) / scaler
     BMSYc <- Kc * BMSY_K
     FMSYc <- Mdb * FMSY_M
     UMSYc <- (FMSYc/(FMSYc + Mdb)) * (1 - exp(-(FMSYc + Mdb)))
@@ -593,9 +615,16 @@ DBSRA_40 <- function(x, Data, reps = 100) {
     }
     if (!is.na(tryBMSY_K))  BMSY_K <- tryBMSY_K
     adelay <- max(floor(iVB(Data@vbt0[x], Data@vbK[x], Data@vbLinf[x],  Data@L50[x])), 1)
-    opt <- optimize(DBSRAopt, log(c(0.1 * mean(C_hist), 1000 * mean(C_hist))), 
-                    C_hist = C_hist, nys = length(C_hist), Mdb = Mdb, FMSY_M = FMSY_M, 
-                    BMSY_K = BMSY_K, Bt_K = Bt_K, adelay = adelay, tol = 0.01)
+    # opt <- optimize(DBSRAopt, log(c(0.1 * mean(C_hist), 1000 * mean(C_hist))), 
+    #                 C_hist = C_hist, nys = length(C_hist), Mdb = Mdb, FMSY_M = FMSY_M, 
+    #                 BMSY_K = BMSY_K, Bt_K = Bt_K, adelay = adelay, tol = 0.01)
+    # scale catches for optimization
+    scaler <- 1000/mean(C_hist)
+    C_hist2 <- scaler * C_hist
+    opt <- optimize(DBSRAopt, log(c(0.01 * mean(C_hist2), 1000 * mean(C_hist2))), C_hist = C_hist2, 
+                    nys = length(C_hist2), Mdb = Mdb, FMSY_M = FMSY_M, BMSY_K = BMSY_K, 
+                    Bt_K = Bt_K, adelay = adelay, tol = 0.01)
+    
     # if(opt$objective<0.1){
     Kc <- exp(opt$minimum)
     BMSYc <- Kc * BMSY_K
@@ -669,9 +698,16 @@ DBSRA4010 <- function(x, Data, reps = 100) {
     if (!is.na(tryBMSY_K))  BMSY_K <- tryBMSY_K
     adelay <- max(floor(iVB(Data@vbt0[x], Data@vbK[x], Data@vbLinf[x], 
                             Data@L50[x])), 1)
-    opt <- optimize(DBSRAopt, log(c(0.01 * mean(C_hist), 1000 * mean(C_hist))), 
-                    C_hist = C_hist, nys = length(C_hist), Mdb = Mdb, FMSY_M = FMSY_M, 
-                    BMSY_K = BMSY_K, Bt_K = Bt_K, adelay = adelay, tol = 0.01)
+    # opt <- optimize(DBSRAopt, log(c(0.01 * mean(C_hist), 1000 * mean(C_hist))), 
+    #                 C_hist = C_hist, nys = length(C_hist), Mdb = Mdb, FMSY_M = FMSY_M, 
+    #                 BMSY_K = BMSY_K, Bt_K = Bt_K, adelay = adelay, tol = 0.01)
+    # scale catches for optimization
+    scaler <- 1000/mean(C_hist)
+    C_hist2 <- scaler * C_hist
+    opt <- optimize(DBSRAopt, log(c(0.01 * mean(C_hist2), 1000 * mean(C_hist2))), C_hist = C_hist2, 
+                    nys = length(C_hist2), Mdb = Mdb, FMSY_M = FMSY_M, BMSY_K = BMSY_K, 
+                    Bt_K = Bt_K, adelay = adelay, tol = 0.01)
+    
     # if(opt$objective<0.1){
     Kc <- exp(opt$minimum)
     BMSYc <- Kc * BMSY_K
@@ -3008,9 +3044,9 @@ SPmod <- function(x, Data, reps = 100, alp = c(0.8, 1.2), bet = c(0.8, 1.2)) {
   dependencies = "Data@Cat, Data@Ind, Data@Abun, Data@CV_Ind, Data@CV_Cat,  Data@CV_Abun"
   Ir <- length(Data@Ind[x, ])
   Cr <- length(Data@Cat[x, ])
-  rat <- trlnorm(reps, Data@Ind[x, Ir], Data@CV_Ind)/trlnorm(reps, Data@Ind[x, Ir - 1], Data@CV_Ind)
-  cct <- trlnorm(reps, Data@Cat[x, Cr], Data@CV_Cat)
-  Abun <- trlnorm(reps, Data@Abun[x], Data@CV_Abun)
+  rat <- trlnorm(reps, Data@Ind[x, Ir], Data@CV_Ind[x])/trlnorm(reps, Data@Ind[x, Ir - 1], Data@CV_Ind[x])
+  cct <- trlnorm(reps, Data@Cat[x, Cr], Data@CV_Cat[x])
+  Abun <- trlnorm(reps, Data@Abun[x], Data@CV_Abun[x])
   TAC <- rep(NA, reps)
   TAC[rat < alp[1]] <- cct[rat < alp[1]] * bet[1]
   TAC[rat > alp[1] & rat < alp[2]] <- cct[rat > alp[1] & rat < alp[2]]
@@ -3018,10 +3054,10 @@ SPmod <- function(x, Data, reps = 100, alp = c(0.8, 1.2), bet = c(0.8, 1.2)) {
   cond <- rat > alp[2]
   reps2 <- sum(cond)
   if (reps2 > 0) {
-    qq1 <- trlnorm(reps2, Data@Ind[x, Ir]/Abun[cond], Data@CV_Ind)
+    qq1 <- trlnorm(reps2, Data@Ind[x, Ir]/Abun[cond], Data@CV_Ind[x])
     bio1 <- Data@Ind[x, Ir - 1]/qq1
     bio2 <- Data@Ind[x, Ir]/qq1
-    cct1 <- trlnorm(reps2, Data@Cat[x, Cr - 1], Data@CV_Cat)
+    cct1 <- trlnorm(reps2, Data@Cat[x, Cr - 1], Data@CV_Cat[x])
     PP <- bio2 - bio1 + cct1
     TAC[cond] <- bet[2] * PP
   }
