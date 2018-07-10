@@ -21,14 +21,17 @@
 #' @param MSEobj An MSE object of class \code{'MSE'}
 #' @param PMs A list of PM objects
 #' @param maxMP Maximum number of MPs to include in a single plot
-#' @param thresh The convergence threshold (percentage). Maximum average difference in the 
-#' performance metric over the last `ref.it` iterations
+#' @param thresh The convergence threshold. Maximum root mean square deviation over the last `ref.it` iterations
 #' @param ref.it The number of iterations to calculate the convergence statistics. For example,
 #' a value of 20 means convergence diagnostics are calculated over last 20 simulations
 #' @param inc.leg Logical. Should the legend be displayed?
 #' @param all.its Logical. Plot all iterations? Otherwise only (nsim-ref.it):nsim
 #' @param nrow Numeric. Optional. Number of rows
 #' @param ncol Numeric. Optional. Number of columns
+#' 
+#' @templateVar url checking-convergence
+#' @templateVar ref NULL
+#' @template userguide_link
 #' 
 #' @examples 
 #' \dontrun{
@@ -39,7 +42,7 @@
 #' @author A. Hordyk
 #' @export 
 #' 
-Converge <- function(MSEobj, PMs=list(Yield, P10, AAVY), maxMP=15, thresh=2, ref.it=20,
+Converge <- function(MSEobj, PMs=list(Yield, P10, AAVY), maxMP=15, thresh=0.5, ref.it=20,
                      inc.leg=FALSE, all.its=FALSE, nrow=NULL, ncol=NULL) {
   
   
@@ -90,12 +93,12 @@ Converge <- function(MSEobj, PMs=list(Yield, P10, AAVY), maxMP=15, thresh=2, ref
     plist <- list()
     for (xx in 1:nPMs) {
       PMval <- PMs[[xx]](subMSE)
-      PMName[xx] <- PMval@name
+      PMName[xx] <- PMval@Name
       cum_mean <- apply(PMval@Prob, 2, cumsum)/apply(PMval@Prob, 2, seq_along) * 100
       vals <- as.vector(cum_mean) 
       mp <- rep(subMSE@MPs, each=subMSE@nsim)
       
-      df <- data.frame(it=1:subMSE@nsim, vals, MP=mp, name=PMval@name)
+      df <- data.frame(it=1:subMSE@nsim, vals, MP=mp, name=PMval@Name)
       if (!all.its) df <- subset(df, it %in% (nsim-ref.it+1):nsim)
   
       p <- ggplot2::ggplot(df, ggplot2::aes(x=it, y=vals, color=MP, linetype=MP)) + 
@@ -103,11 +106,11 @@ Converge <- function(MSEobj, PMs=list(Yield, P10, AAVY), maxMP=15, thresh=2, ref
         ggplot2::scale_color_manual(values=getPalette(nMPs)) + 
         ggplot2::geom_line() +
         ggplot2::theme_classic() +
-        ggplot2::labs(x="# Simulations", y=PMval@caption) +
-        ggplot2::ggtitle(PMval@name) +
+        ggplot2::labs(x="# Simulations", y=PMval@Caption) +
+        ggplot2::ggtitle(PMval@Name) +
         ggplot2::geom_vline(xintercept=MSEobj@nsim-ref.it+1, color="darkgray", linetype="dashed") +
         ggplot2::geom_vline(xintercept=MSEobj@nsim, color="darkgray", linetype="dashed") +
-        ggplot2::coord_cartesian(xlim = c(min(df$it), max(df$it) + 0.05*max(df$it))) 
+        ggplot2::coord_cartesian(xlim = c(min(df$it), max(df$it))) 
       if (!inc.leg) p <- p + ggplot2::theme(legend.position = "none")
       
       # check positions & convergence
@@ -138,7 +141,7 @@ Converge <- function(MSEobj, PMs=list(Yield, P10, AAVY), maxMP=15, thresh=2, ref
 
     }
     
-    if (inc.leg) grid_arrange_shared_legend(plist, nrow=nrow, ncol=ncol, position="right")
+    if (inc.leg) join_plots(plist, nrow=nrow, ncol=ncol, position="right")
     if (!inc.leg) gridExtra::grid.arrange(grobs=plist, nrow=nrow, ncol=ncol) 
     
     st <- st + maxMP 
@@ -162,12 +165,17 @@ Converge <- function(MSEobj, PMs=list(Yield, P10, AAVY), maxMP=15, thresh=2, ref
     } 
   }
 }
-  
+
+
+
+
 Chk <- function(X, MSEobj, thresh, ref.it) {
-  # checks if average difference in last ref.it iterations is greater than thresh
   L <- length(X)
-  Y <- 1:min(MSEobj@nsim, ref.it)
-  return(mean(abs((X[L - Y] - X[L])), na.rm = TRUE) > thresh)
+  Y <- min(MSEobj@nsim, ref.it) + 1 
+  x <- X[(L-Y):L]
+  
+  # root mean square deviation in last ref.it iterations is greater than thresh
+  sqrt((sum((x-mean(x))^2))/(L-1)) > thresh
 }
 
   
@@ -343,13 +351,27 @@ Chk <- function(X, MSEobj, thresh, ref.it) {
 # object by particular MPs (either MP number or name), or particular
 # simulations
 
-#' Check that MSE object includes all slots
+#' Utility functions for MSE objects
 #' 
-#' Check that an MSE object includes all slots in the latest version of DLMtool
-#' Use `updateMSE` to update the MSE object
-#' 
-#' @param MSEobj A MSE object.
+#' @param MSEobj A MSE object. For `updateMSE`, a MSE object from a previous version of 
+#' DLMtool. Also works with Stock, Fleet, Obs, Imp, and Data objects.
+#' @param MSEobjs A list of MSE objects. Must all have identical operating
+#' model and MPs. MPs which don't appear in all MSE objects will be dropped.
+#' @return An object of class \code{MSE}
+#' @examples 
+#' # An example of joinMSE
+#' \dontrun{
+#' OM1 <- DLMtool::testOM
+#' MSE1 <- runMSE(OM1) 
+#' OM2 <- OM1 
+#' OM2@seed <- OM1@seed + 1
+#' MSE2 <- runMSE(OM2)
+#' MSE <- joinMSE(list(MSE1, MSE2))
+#' MSE@nsim
+#' }
 #' @author A. Hordyk
+#' @describeIn checkMSE Check that an MSE object includes all slots in the latest version of DLMtool
+#' Use `updateMSE` to update the MSE object
 #' @export checkMSE
 checkMSE <- function(MSEobj) {
   nms <- slotNames(MSEobj)
@@ -382,6 +404,11 @@ checkMSE <- function(MSEobj) {
 #' @param years A numeric vector of projection years. Should start at 1 and
 #' increase by one to some value equal or less than the total number of
 #' projection years.
+#' 
+#' @templateVar url subsetting-the-mse-object
+#' @templateVar ref NULL
+#' @template userguide_link
+#' 
 #' @author A. Hordyk
 #' @examples
 #' \dontrun{
@@ -401,7 +428,14 @@ Sub <- function(MSEobj, MPs = NULL, sims = NULL, years = NULL) {
   if (Class == "integer" | Class == "numeric") subMPs <- MSEobj@MPs[as.integer(MPs)]
   if (Class == "character") subMPs <- MPs
   if (Class == "factor") subMPs <- as.character(MPs)
+  subMPs <- subMPs[!is.na(subMPs)]
+  
   SubMPs <- match(subMPs, MSEobj@MPs)  #  which(MSEobj@MPs %in% subMPs)
+  if (any(is.na(SubMPs))) {
+    missing <- subMPs[is.na(SubMPs)]
+    stop(paste0(missing, collapse=','), ' not found in MSE object', call.=FALSE)
+  }
+  
   not <- (subMPs %in% MSEobj@MPs)  # Check for MPs misspelled
   ind <- which(not == FALSE)
   newMPs <- MSEobj@MPs[SubMPs]
@@ -525,27 +559,9 @@ Sub <- function(MSEobj, MPs = NULL, sims = NULL, years = NULL) {
   return(SubResults)
 }
 
-#' Join multiple MSE objects together
-#' 
-#' Joins two or more MSE objects together. MSE objects must have identical
+#' @describeIn checkMSE Joins two or more MSE objects together. MSE objects must have identical
 #' number of historical years, and projection years.
-#' 
-#' 
-#' @param MSEobjs A list of MSE objects. Must all have identical operating
-#' model and MPs. MPs which don't appear in all MSE objects will be dropped.
-#' @return An object of class \code{MSE}
-#' @author A. Hordyk
-#' @export joinMSE
-#' @examples 
-#' \dontrun{
-#' OM1 <- DLMtool::testOM
-#' MSE1 <- runMSE(OM1) 
-#' OM2 <- OM1 
-#' OM2@seed <- OM1@seed + 1
-#' MSE2 <- runMSE(OM2)
-#' MSE <- joinMSE(list(MSE1, MSE2))
-#' MSE@nsim
-#' }
+#' @export
 joinMSE <- function(MSEobjs = NULL) {
   # join two or more MSE objects
   if (class(MSEobjs) != "list") stop("MSEobjs must be a list")
@@ -646,6 +662,13 @@ joinMSE <- function(MSEobjs = NULL) {
   
   names(outlist) <- sns
   
+  Misc<-list()
+  if (length(MSEobjs[[1]]@Misc)>0) {
+    if(class(MSEobjs[[1]]@Misc[[1]])=="Data"){ #Posterior predicted data joining
+      for(i in 1: length(MSEobjs[[1]]@Misc))Misc[[i]]<-joinData(lapply(MSEobjs,function(x)slot(x,"Misc")[[i]]))
+    } 
+  }
+  
   newMSE <- new("MSE", Name = outlist$Name, nyears = unique(outlist$nyears), 
                 proyears = unique(outlist$proyears), nMP = unique(outlist$nMP), 
                 MPs = unique(outlist$MPs), nsim = sum(outlist$nsim), OM = outlist$OM, 
@@ -653,7 +676,7 @@ joinMSE <- function(MSEobjs = NULL) {
                 outlist$B, outlist$SSB, outlist$VB,
                 outlist$FM, outlist$C, outlist$TAC, outlist$SSB_hist, 
                 outlist$CB_hist, outlist$FM_hist, outlist$Effort, outlist$PAA,
-                outlist$CAA, outlist$CAL, CALbins, Misc=list())
+                outlist$CAA, outlist$CAL, CALbins, Misc=Misc)
   
   newMSE
 }

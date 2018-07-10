@@ -4,18 +4,25 @@
 #' @param ... other parameters passed to plot (currently ignored)
 #' @export
 plot.MSE <- function(x, ...) {
-  Pplot(x)
+  Pplot(x, nam = deparse(substitute(x)))
   Kplot(x)
-  Tplot(x)
+  Tplot(x, nam = deparse(substitute(x)))
 }
      
 
 
-# modified from
-# https://github.com/tidyverse/ggplot2/wiki/share-a-legend-between-two-ggplot2-graphs
-grid_arrange_shared_legend <- function(plots, ncol = length(plots), nrow = 1, position = c("bottom", "right", "none")) {
-  
-  
+
+#' Plot several plots with a shared legend
+#'
+#' @param plots list of plot objects of class `gg` or `ggplot`  
+#' @param ncol Optional number of columns
+#' @param nrow Optional number of rows
+#' @param position position of the legend ("bottom" or "right")
+#'
+#' @export
+#'
+#' @note modified from https://github.com/tidyverse/ggplot2/wiki/share-a-legend-between-two-ggplot2-graphs
+join_plots <- function(plots, ncol = length(plots), nrow = 1, position = c("right", "bottom")) {
   position <- match.arg(position)
   g <- ggplot2::ggplotGrob(plots[[1]] + ggplot2::theme(legend.position = position))$grobs
   legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
@@ -23,7 +30,6 @@ grid_arrange_shared_legend <- function(plots, ncol = length(plots), nrow = 1, po
   lwidth <- sum(legend$width)
   gl <- lapply(plots, function(x) x + ggplot2::theme(legend.position="none"))
   gl <- c(gl, ncol = ncol, nrow = nrow)
-  
   combined <- switch(position,
                      "bottom" = gridExtra::arrangeGrob(do.call(gridExtra::arrangeGrob, gl),
                                                        legend,
@@ -33,7 +39,6 @@ grid_arrange_shared_legend <- function(plots, ncol = length(plots), nrow = 1, po
                                                       legend,
                                                       ncol = 2,
                                                       widths = grid::unit.c(grid::unit(1, "npc") - lwidth, lwidth)))
-  
   grid::grid.newpage()
   grid::grid.draw(combined)
   
@@ -568,71 +573,71 @@ barplot.MSE <- function(height, MSEobj = NULL, PMs = list(B_BMSY = 0.5,
 # }
 # 
 # 
-#' Plot the median biomass and yield relative to last historical year
-#' 
-#' Compare median biomass and yield in first year and last 5 years of
-#' projection
-#' 
-#' @param MSEobj An object of class MSE
-#' @param MPs Optional subset by MP
-#' @param lastYrs Last number of years of projection to calculate median
-#' @param XMin Optional minimum for the x-axis
-#' @param YMin Optional minimum for the y-axis
-#' @param ShowLabs Logical. Show the MP labels? Otherwise only plot points
-#' @return Invisibly returns a data frame containing information shown in the
-#' plot
-#' @author A. Hordyk
-#' @export Cplot
-Cplot <- function(MSEobj, MPs = NA, lastYrs = 5, XMin = NULL, YMin = NULL, 
-                  ShowLabs = FALSE) {
-  if (!all(is.na(MPs))) 
-    MSEobj <- Sub(MSEobj, MPs = MPs)
-  nsim <- MSEobj@nsim
-  Alpha <- 60
-  if (nsim < 10) 
-    Alpha <- 180
-  nMPs <- MSEobj@nMPs
-  MPs <- MSEobj@MPs
-  nyears <- MSEobj@nyears
-  proyears <- MSEobj@proyears
-  
-  Stat <- MPStats(MSEobj, lastYrs = lastYrs)$BySim
-  ny <- dim(Stat$Yield)[3]
-  Stat$Yield <- Stat$Yield[, , , drop = FALSE]/Stat$Yield[, , rep(1, 
-                                                                  ny), drop = FALSE]
-  
-  RelYield <- apply(Stat$Yield, 2, median, na.rm = TRUE)
-  
-  Bcurr <- Stat$B_BMSY[, , 1]  # Biomass at start of projections
-  Bend <- apply((Stat$B_BMSY[, , (proyears - lastYrs + 1):proyears]), 
-                c(1, 2), median, na.rm = TRUE)  # median biomass in last years
-  RelBio <- apply(Bend/Bcurr, 2, median, na.rm = TRUE)
-  
-  XMin <- ifelse(is.null(XMin), 0, XMin)
-  YMin <- ifelse(is.null(YMin), 0, YMin)
-  XLim <- c(YMin, ceiling(max(RelBio)/0.5) * 0.5) * c(0.95, 1.05)
-  YLim <- c(XMin, ceiling(max(RelYield)/0.5) * 0.5) * c(0.95, 1.05)
-  op <- par(mfrow = c(1, 1), oma = c(3, 5, 1, 1), mar = c(2, 2, 0, 0))
-  plot(RelBio, RelYield, xlim = XLim, ylim = YLim, type = "n", bty = "l", 
-       xlab = "", ylab = "", xaxs = "i", yaxs = "i", las = 1)
-  if (ShowLabs) 
-    text(RelBio, RelYield, MSEobj@MPs)
-  if (!ShowLabs) 
-    points(RelBio, RelYield, pch = 21, cex = 2, bg = "lightgray")
-  abline(h = 1, lty = 3, col = "lightgray")
-  abline(v = 1, lty = 3, col = "lightgray")
-  mtext(side = 1, line = 3.5, paste("Median Biomass (last", lastYrs, 
-                                    "years)\n relative to current"), cex = 1.25)
-  mtext(side = 2, line = 3, paste("Median Yield (last", lastYrs, "years)\n relative to current"), 
-        cex = 1.25)
-  par(op)
-  DF <- data.frame(MP = MSEobj@MPs, Biomass = RelBio, Catch = RelYield, 
-                   stringsAsFactors = FALSE)
-  invisible(DF)
-  
-}
-
-
+# #' Plot the median biomass and yield relative to last historical year
+# #' 
+# #' Compare median biomass and yield in first year and last 5 years of
+# #' projection
+# #' 
+# #' @param MSEobj An object of class MSE
+# #' @param MPs Optional subset by MP
+# #' @param lastYrs Last number of years of projection to calculate median
+# #' @param XMin Optional minimum for the x-axis
+# #' @param YMin Optional minimum for the y-axis
+# #' @param ShowLabs Logical. Show the MP labels? Otherwise only plot points
+# #' @return Invisibly returns a data frame containing information shown in the
+# #' plot
+# #' @author A. Hordyk
+# #' @export Cplot
+# Cplot <- function(MSEobj, MPs = NA, lastYrs = 5, XMin = NULL, YMin = NULL, 
+#                   ShowLabs = FALSE) {
+#   if (!all(is.na(MPs))) 
+#     MSEobj <- Sub(MSEobj, MPs = MPs)
+#   nsim <- MSEobj@nsim
+#   Alpha <- 60
+#   if (nsim < 10) 
+#     Alpha <- 180
+#   nMPs <- MSEobj@nMPs
+#   MPs <- MSEobj@MPs
+#   nyears <- MSEobj@nyears
+#   proyears <- MSEobj@proyears
+#   
+#   Stat <- MPStats(MSEobj, lastYrs = lastYrs)$BySim
+#   ny <- dim(Stat$Yield)[3]
+#   Stat$Yield <- Stat$Yield[, , , drop = FALSE]/Stat$Yield[, , rep(1, 
+#                                                                   ny), drop = FALSE]
+#   
+#   RelYield <- apply(Stat$Yield, 2, median, na.rm = TRUE)
+#   
+#   Bcurr <- Stat$B_BMSY[, , 1]  # Biomass at start of projections
+#   Bend <- apply((Stat$B_BMSY[, , (proyears - lastYrs + 1):proyears]), 
+#                 c(1, 2), median, na.rm = TRUE)  # median biomass in last years
+#   RelBio <- apply(Bend/Bcurr, 2, median, na.rm = TRUE)
+#   
+#   XMin <- ifelse(is.null(XMin), 0, XMin)
+#   YMin <- ifelse(is.null(YMin), 0, YMin)
+#   XLim <- c(YMin, ceiling(max(RelBio)/0.5) * 0.5) * c(0.95, 1.05)
+#   YLim <- c(XMin, ceiling(max(RelYield)/0.5) * 0.5) * c(0.95, 1.05)
+#   op <- par(mfrow = c(1, 1), oma = c(3, 5, 1, 1), mar = c(2, 2, 0, 0))
+#   plot(RelBio, RelYield, xlim = XLim, ylim = YLim, type = "n", bty = "l", 
+#        xlab = "", ylab = "", xaxs = "i", yaxs = "i", las = 1)
+#   if (ShowLabs) 
+#     text(RelBio, RelYield, MSEobj@MPs)
+#   if (!ShowLabs) 
+#     points(RelBio, RelYield, pch = 21, cex = 2, bg = "lightgray")
+#   abline(h = 1, lty = 3, col = "lightgray")
+#   abline(v = 1, lty = 3, col = "lightgray")
+#   mtext(side = 1, line = 3.5, paste("Median Biomass (last", lastYrs, 
+#                                     "years)\n relative to current"), cex = 1.25)
+#   mtext(side = 2, line = 3, paste("Median Yield (last", lastYrs, "years)\n relative to current"), 
+#         cex = 1.25)
+#   par(op)
+#   DF <- data.frame(MP = MSEobj@MPs, Biomass = RelBio, Catch = RelYield, 
+#                    stringsAsFactors = FALSE)
+#   invisible(DF)
+#   
+# }
+# 
+# 
 
 # #' Joint probability plot
 # #' 
@@ -1070,13 +1075,12 @@ NOAA_plot <- function(MSEobj, nam = NA, type = NA, panel = T) {
 #' @author T. Carruthers 
 #' @export Pplot
 Pplot <- function(MSEobj, nam = NA, maxMP = 10,MPs=NA,maxsims=20) {
-  
+  op <- par(no.readonly = TRUE)
+  on.exit(par(op))
   if(!is.na(MPs)){
-    
     maxMP<-length(MPs)
     MSEobj<-Sub(MSEobj,MPs=MPs)
-    
-  }else{
+  } else{
     
     if(MSEobj@nMPs>maxMP)MSEobj<-Sub(MSEobj,MPs=MSEobj@MPs[1:maxMP])
     
@@ -1128,12 +1132,11 @@ Pplot <- function(MSEobj, nam = NA, maxMP = 10,MPs=NA,maxsims=20) {
   for (c in 1:nc) {
     for (r in 1:nr) {
       i <- i + 1
-      temp[(ceiling(r/2) - 1) + (1:2) + (r - 1) * 2, (1:2) + (c - 
-                                                                1) * 2] <- ((c - 1) * nr) + r
+      temp[(ceiling(r/2) - 1) + (1:2) + (r - 1) * 2, (1:2) + (c - 1) * 2] <- ((c - 1) * nr) + r
     }
   }
-  op <- par(mfcol = c(nr, nc), mai = c(0.2, 0.35, 0.3, 0.01), omi = c(0.5, 
-                                                                      0.4, 0.4, 0.05))
+  
+  par(mfcol = c(nr, nc), mar = c(2, 2, 2, 1), oma = c(3, 2, 2, 0))
   layout(temp)
   # dev.new2(width=nc*3,height=nr*3)
   lwdy <- 2.5
@@ -1166,10 +1169,12 @@ Pplot <- function(MSEobj, nam = NA, maxMP = 10,MPs=NA,maxsims=20) {
   }
   mtext("Projection year", 1, outer = T, line = 1.2)
   if (is.na(nam)) 
-    mtext(deparse(substitute(MSEobj)), 3, outer = T, line = 0.3, font = 2)
-  if (!is.na(nam)) 
+    mtext(deparse(quote(MSEobj)), 3, outer = T, line = 0.3, font = 2)
+  if (!is.na(nam) & !is.character(nam)) 
     mtext(MSEobj@Name, 3, outer = T, line = 0.3, font = 2)
-  par(op)
+  if (!is.na(nam) & is.character(nam)) 
+    mtext(nam, 3, outer = T, line = 0.3, font = 2)
+  return(invisible())
 }
 
 
@@ -1209,14 +1214,16 @@ Pplot <- function(MSEobj, nam = NA, maxMP = 10,MPs=NA,maxsims=20) {
 #' @param ...  Additional arguments to be passed to plotting functions
 #' @author T. Carruthers & A.Hordyk
 #' @export Pplot2
-Pplot2 <- function(MSEobj, YVar = c("SSB_SSBMSY", "F_FMSY"), MPs = NA, sims = NULL, 
+Pplot2 <- function(MSEobj, YVar = c("F_FMSY", "SSB_SSBMSY"), MPs = NA, sims = NULL, 
                    traj = c("all", "quant"), quants = c(0.1, 0.9), incquant = TRUE, quantcol = "lightgray", 
                    RefYield = c("lto", "curr"), LastYr = TRUE, maxMP = 6, alpha = 60, 
-                   cex.axis = 1.35, cex.lab = 1.4, YLab = NULL, incMP = TRUE, MPcex = 1.4, 
+                   cex.axis = 1, cex.lab = 1, YLab = NULL, incMP = TRUE, MPcex = 1, 
                    incLeg = TRUE, cex.leg = 1.5, legPos = "topleft", yline = NULL, parOR = FALSE, 
                    xaxis = TRUE, yaxis = TRUE, oneIt=TRUE, ...) {
-  YVars <- c("SSB_SSB0", "SSB_SSBMSY", "F_FMSY", "Yield")
+  old_par <- par(no.readonly = TRUE)
+  on.exit(par(old_par))
   
+  YVars <- c("SSB_SSB0", "SSB_SSBMSY", "F_FMSY", "Yield")
   YVar <- match.arg(YVar, choices = YVars, several.ok = TRUE)
   op <- par(no.readonly=TRUE)
   if (!is.null(YLab) & length(YLab) != length(YVar)) 
@@ -1605,17 +1612,21 @@ PWhisker<-function(MSEobj){#},Pnames=c("POF","C30","D30","LD","DNC","LDNC","PGK"
 # }
 # 
 
-#' A trade-off plot for an MSE object
+#' Trade-off plots for an MSE object
 #' 
-#' A shorter version of the plot method for MSEs that just shows the overall
-#' trade-offs
-#' 
+#' Three figures showing trade-offs between fishing mortality, biomass, and yield.
 #' 
 #' @param MSEobj An object of class 'MSE'
 #' @param nam Name of the plot
-#' @author T. Carruthers
-#' @export Tplot
-Tplot <- function(MSEobj, nam = NA) {
+#' @author T. Carruthers & A. Hordyk
+#' @seealso \link{TradePlot} \link{PerformanceMetric}
+#' @describeIn Tplot Used in the plot method for MSE objects that shows trade-off between
+#' yield versus probability of overfishing and biomass levels (relative to BMSY).
+#' @export
+Tplot_old <- function(MSEobj, nam = NA) {
+  old_par <- par(no.readonly = TRUE)
+  on.exit(par(old_par))
+  
   FMSYr <- quantile(MSEobj@F_FMSY, c(0.001, 0.9), na.rm = T)
   BMSYr <- quantile(MSEobj@B_BMSY, c(0.001, 0.975), na.rm = T)
   
@@ -1651,8 +1662,7 @@ Tplot <- function(MSEobj, nam = NA) {
   }
   
   # dev.new2(width=7,height=7)
-  old_par <- par(mfrow = c(2, 2), mai = c(0.9, 1, 0.1, 0.1), 
-                 omi = c(0.1, 0.1, 0.4, 0))
+  par(mfrow = c(2, 2), mar = c(5, 4, 1, 1), oma = c(0, 0, 2, 0))
   
   tradeoffplot(POF, Yd, "Prob. of overfishing (%)", "Relative yield", 
                MSEobj@MPs[1:MSEobj@nMPs], vl = 50, hl = 100)
@@ -1669,28 +1679,23 @@ Tplot <- function(MSEobj, nam = NA) {
     mtext(MSEobj@Name, 3, outer = T, line = 0.3, font = 2)
   if (!is.na(nam) & is.character(nam)) 
     mtext(nam, 3, outer = T, line = 0.3, font = 2)
-  par(old_par)
+  return(invisible())
 }
 
 
 
-#' A shorter version of the plot method for MSEs that just shows the overall
-#' trade-offs
-#' 
-#' A trade-off plot for an MSE object that compares long-term yield (LTY:
+#' @describeIn Tplot Simpler plot that compares long-term yield (LTY:
 #' fraction of simulations getting over half FMSY yield in the last ten years
 #' of the projection), short-term yield (STY: fraction of simulations getting
 #' over half FMSY yield in the first ten years of the projection), variability
 #' in yield (VY: fraction of simulations where average annual variability in
 #' yield is less than 10 per cent) and biomass level (B10: the fraction of
 #' simulations in which biomass stays above 10 percent of BMSY).
-#' 
-#' 
-#' @param MSEobj An object of class 'MSE'
-#' @param nam Name of the plot
-#' @author T. Carruthers
-#' @export Tplot2
-Tplot2 <- function(MSEobj, nam = NA) {
+#' @export
+Tplot2_old  <- function(MSEobj, nam = NA) {
+  old_par <- par(no.readonly = TRUE)
+  on.exit(par(old_par))
+  
   LTY <- rep(NA, MSEobj@nMPs)
   STY <- rep(NA, MSEobj@nMPs)
   VY <- rep(NA, MSEobj@nMPs)
@@ -1711,118 +1716,106 @@ Tplot2 <- function(MSEobj, nam = NA) {
     B10[mm] <- round(sum(MSEobj@B_BMSY[, mm, ] > 0.1, na.rm = T)/prod(dim(MSEobj@B_BMSY[, 
                                                                                         mm, ])), 3) * 100
   }
-  op <- par(mfrow = c(1, 2), mai = c(1.5, 1.5, 0.1, 0.1), omi = c(0.1, 0.1, 
-                                                                  0.4, 0))
-  tradeoffplot(STY, LTY, "P(Short term yield over half FMSY)", "P(Long term yield over half FMSY)", 
+  par(mfrow = c(1, 2), mar = c(5, 4, 1, 1), oma = c(0, 0, 2, 0))
+
+  tradeoffplot(STY, LTY, "P(Short term yield > 0.5 FMSY)", "P(Long term yield > 0.5 FMSY)", 
                MSEobj@MPs[1:MSEobj@nMPs], vl = 1, hl = 1)
-  tradeoffplot(B10, VY, "P(Biomass > 0.1 BMSY)", "P(CV in yield less than 0.1)", 
+  tradeoffplot(B10, VY, "P(Biomass > 0.1 BMSY)", "P(CV in yield < 0.1)", 
                MSEobj@MPs[1:MSEobj@nMPs], vl = 1, hl = 1)
   if (is.na(nam)) 
     mtext(deparse(substitute(MSEobj)), 3, outer = T, line = 0.3, font = 2)
   if (!is.na(nam)) 
     mtext(MSEobj@Name, 3, outer = T, line = 0.3, font = 2)
-  par(op)
-}
-
-#' Test Trade-Off Plot
-#'
-#' @param MSEobj An object of class MSE
-#' @param ... Names of PM methods to plot
-#' @param lims Numeric vector of satisficing limits. Recycled to number of PM methods
-#' @return produces a plot 
-#' @author A. Hordyk
-#' @importFrom ggplot2 ggplot aes geom_rect geom_point xlim ylim xlab ylab theme theme_classic labs ggplotGrob
-#' @importFrom ggrepel geom_text_repel
-#' @importFrom gridExtra arrangeGrob
-#' @importFrom grid unit.c unit grid.newpage grid.draw
-#' @importFrom utils combn
-#' @export
-#'
-#' @examples 
-#' \dontrun{
-#'  Tplot3(myMSE)
-#' }
-Tplot3 <- function(MSEobj, ..., lims=c(0.2, 0.2, 0.8, 0.8)) {
-  PMlist <- unlist(list(...))
-  if(length(PMlist) == 0) PMlist <- c("LTY", "STY", "P50", "AAVY")
-  if (class(PMlist) != 'character') stop("Must provide names of PM methods")
-  # check
-  
-  for (X in seq_along(PMlist))
-    if (!PMlist[X] %in% avail("PM")) stop(PMlist[X], " is not a valid PM method")
-  if (length(PMlist)<2) stop("Must provided more than 1 PM method")
-  
-  runPM <- vector("list", length(PMlist))
-  for (X in 1:length(PMlist)) runPM[[X]] <- eval(call(PMlist[X], MSEobj))
-  
-  PlotList <- combn(unique(PMlist), 2)
-  lims <- rep(lims, 100)[1:length(PMlist)]
-  
-  n.col <- ceiling(sqrt(ncol(PlotList)))
-  n.row <- ceiling(ncol(PlotList)/n.col)
-  
-  m <- matrix(1:(n.col*n.row), ncol=n.col, nrow=n.row, byrow=FALSE)
-  xmin <- xmax <- ymin <- ymax <- x <- y <- Class <- label <- fontface <- NULL
-  plots <- listout <- list()
-  for (pp in 1:ncol(PlotList)) {
-    yPM <- PlotList[1,pp]
-    yvals <- runPM[[match(yPM, PMlist)]]@Mean
-    ycap <-  runPM[[match(yPM, PMlist)]]@caption
-    yname <-  runPM[[match(yPM, PMlist)]]@name
-    yline <- lims[match(yPM, PMlist)]
-    
-    xPM <- PlotList[2,pp]
-    xvals <- runPM[[match(xPM, PMlist)]]@Mean
-    xcap <-  runPM[[match(xPM, PMlist)]]@caption
-    xname <-  runPM[[match(xPM, PMlist)]]@name
-    xline <- lims[match(xPM, PMlist)]
-    
-    xlim <- c(0, max(max(xvals, 1)))
-    ylim <- c(0, max(max(yvals, 1)))
-    
-    xrect <- data.frame(xmin=0, xmax=xline, ymin=0, ymax=max(ylim))
-    yrect <- data.frame(xmin=0, xmax=max(xlim), ymin=0, ymax=yline)
-    
-    MPType <- MPtype(MSEobj@MPs)
-    Class <- MPType[match(MSEobj@MPs, MPType[,1]),2]
-    
-    df <- data.frame(x=xvals, y=yvals, label=MSEobj@MPs, Class=Class,
-                     pass=xvals>xline & yvals>yline, fontface="plain", xPM=xPM, yPM=yPM)
-    df$fontface <- as.character(df$fontface)
-    df$fontface[!df$pass] <- "italic"
-    df$fontface <- factor(df$fontface)
-    listout[[pp]] <- df
-    plots[[pp]] <- ggplot2::ggplot() + 
-      ggplot2::geom_rect(data=xrect, ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill='gray80', alpha=0.4) +
-      ggplot2::geom_rect(data=yrect, ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill='gray80', alpha=0.4)
-    
-    # plots[[pp]] <- ggplot(df, aes(x, y, shape=Class, color=Class, label=label)) +
-    plots[[pp]] <-   plots[[pp]] + 
-      ggplot2::geom_point(data=df, ggplot2::aes(x, y, shape=Class, color=Class), size=2) +
-      ggrepel::geom_text_repel(data=df, ggplot2::aes(x, y, color=Class, label=label, fontface = fontface), show.legend=FALSE) + 
-      ggplot2::xlab(xcap) + ggplot2::ylab(ycap) +
-      ggplot2::xlim(xlim) + ggplot2::ylim(ylim) +
-      ggplot2::theme_classic() +
-      ggplot2::theme(axis.title.x = ggplot2::element_text(size=11),
-                     axis.title.y = ggplot2::element_text(size=11),
-                     legend.text=ggplot2::element_text(size=12)) + 
-      ggplot2::labs(shape= "MP Type", color="MP Type")
-    
-  }
-  out <- do.call("rbind", listout)
-  tab <- table(out$label, out$pass)
-  passall <- rownames(tab)[tab[,ncol(tab)] == ncol(PlotList)]
-  tt <- summary(MSEobj, PMlist, silent=TRUE)
-  tt$Satisificed <- FALSE
-  tt$Satisificed[match(passall, tt$MP)] <- TRUE
-  
-  grid_arrange_shared_legend(plots, n.col, n.row)
-  tt
-  
+  return(invisible())
 }
 
 
-
+# #' @describeIn Tplot By default, trade-off plots among LTY, STY, and biomass level B50 
+# #' (fraction of simulations in which biomass stays above 50 percent of BMSY), and 
+# #' Average Annual Variability in Yield (AAVY).
+# 
+# #' @export
+# Tplot3_old  <- function(MSEobj, ..., lims=c(0.2, 0.2, 0.8, 0.8)) {
+#   PMlist <- unlist(list(...))
+#   if(length(PMlist) == 0) PMlist <- c("LTY", "STY", "P50", "AAVY")
+#   if (class(PMlist) != 'character') stop("Must provide names of PM methods")
+#   # check
+#   
+#   for (X in seq_along(PMlist))
+#     if (!PMlist[X] %in% avail("PM")) stop(PMlist[X], " is not a valid PM method")
+#   if (length(PMlist)<2) stop("Must provided more than 1 PM method")
+#   
+#   runPM <- vector("list", length(PMlist))
+#   for (X in 1:length(PMlist)) runPM[[X]] <- eval(call(PMlist[X], MSEobj))
+#   
+#   PlotList <- combn(unique(PMlist), 2)
+#   lims <- rep(lims, 100)[1:length(PMlist)]
+#   
+#   n.col <- ceiling(sqrt(ncol(PlotList)))
+#   n.row <- ceiling(ncol(PlotList)/n.col)
+#   
+#   m <- matrix(1:(n.col*n.row), ncol=n.col, nrow=n.row, byrow=FALSE)
+#   xmin <- xmax <- ymin <- ymax <- x <- y <- Class <- label <- fontface <- NULL
+#   plots <- listout <- list()
+#   for (pp in 1:ncol(PlotList)) {
+#     yPM <- PlotList[1,pp]
+#     yvals <- runPM[[match(yPM, PMlist)]]@Mean
+#     ycap <-  runPM[[match(yPM, PMlist)]]@Caption
+#     yname <-  runPM[[match(yPM, PMlist)]]@Name
+#     yline <- lims[match(yPM, PMlist)]
+#     
+#     xPM <- PlotList[2,pp]
+#     xvals <- runPM[[match(xPM, PMlist)]]@Mean
+#     xcap <-  runPM[[match(xPM, PMlist)]]@Caption
+#     xname <-  runPM[[match(xPM, PMlist)]]@Name
+#     xline <- lims[match(xPM, PMlist)]
+#     
+#     xlim <- c(0, max(max(xvals, 1)))
+#     ylim <- c(0, max(max(yvals, 1)))
+#     
+#     xrect <- data.frame(xmin=0, xmax=xline, ymin=0, ymax=max(ylim))
+#     yrect <- data.frame(xmin=0, xmax=max(xlim), ymin=0, ymax=yline)
+#     
+#     MPType <- MPtype(MSEobj@MPs)
+#     Class <- MPType[match(MSEobj@MPs, MPType[,1]),2]
+#     
+#     df <- data.frame(x=xvals, y=yvals, label=MSEobj@MPs, Class=Class,
+#                      pass=xvals>xline & yvals>yline, fontface="plain", xPM=xPM, yPM=yPM)
+#     df$fontface <- as.character(df$fontface)
+#     df$fontface[!df$pass] <- "italic"
+#     df$fontface <- factor(df$fontface)
+#     listout[[pp]] <- df
+#     plots[[pp]] <- ggplot2::ggplot() + 
+#       ggplot2::geom_rect(data=xrect, ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill='gray80', alpha=0.4) +
+#       ggplot2::geom_rect(data=yrect, ggplot2::aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), fill='gray80', alpha=0.4)
+#     
+#     # plots[[pp]] <- ggplot(df, aes(x, y, shape=Class, color=Class, label=label)) +
+#     plots[[pp]] <-   plots[[pp]] + 
+#       ggplot2::geom_point(data=df, ggplot2::aes(x, y, shape=Class, color=Class), size=2) +
+#       ggrepel::geom_text_repel(data=df, ggplot2::aes(x, y, color=Class, label=label, fontface = fontface), show.legend=FALSE) + 
+#       ggplot2::xlab(xcap) + ggplot2::ylab(ycap) +
+#       ggplot2::xlim(xlim) + ggplot2::ylim(ylim) +
+#       ggplot2::theme_classic() +
+#       ggplot2::theme(axis.title.x = ggplot2::element_text(size=11),
+#                      axis.title.y = ggplot2::element_text(size=11),
+#                      legend.text=ggplot2::element_text(size=12)) + 
+#       ggplot2::labs(shape= "MP Type", color="MP Type")
+#     
+#   }
+#   out <- do.call("rbind", listout)
+#   tab <- table(out$label, out$pass)
+#   passall <- rownames(tab)[tab[,ncol(tab)] == ncol(PlotList)]
+#   tt <- summary(MSEobj, PMlist, silent=TRUE)
+#   tt$Satisificed <- FALSE
+#   tt$Satisificed[match(passall, tt$MP)] <- TRUE
+#   
+#   join_plots(plots, n.col, n.row)
+#   tt
+#   
+# }
+# 
+# 
+# 
 #' Generic Trade-off Plot
 #' 
 #' Creates a trade-off plot (up to four panels) of built-in performance
@@ -1851,14 +1844,15 @@ Tplot3 <- function(MSEobj, ..., lims=c(0.2, 0.2, 0.8, 0.8)) {
 #' @param ShowLabs Logical to specify if MP labels are shown
 #' @param ShowCols Logical to specify if background colors are shown
 #' @author A. Hordyk
-#' @export TradePlot
-TradePlot <- function(MSEobj, XAxis = c("Overfishing", "Biomass:BMSY"), 
-                      YAxis = c("Long-term Yield", "AnnualVar"), XThresh = c(30, 80), YThresh = c(0, 
-                                                                                                  50), maxVar = 15, BmsyRef = 0.5, B0Ref = 0.2, AvailMPs = NULL, 
-                      ShowLabs = FALSE, ShowCols = TRUE) {
+#' @export 
+TradePlot_old <- function(MSEobj, XAxis = c("Overfishing", "Biomass:BMSY"), 
+                      YAxis = c("Long-term Yield", "AnnualVar"), XThresh = c(30, 80), 
+                      YThresh = c(0, 50), maxVar = 15, BmsyRef = 0.5, B0Ref = 0.2, 
+                      AvailMPs = NULL, ShowLabs = FALSE, ShowCols = TRUE) {
   PMs <- c("Long-term Yield", "Short-term Yield", "Overfishing", "Biomass:BMSY", 
            "Biomass:B0", "AnnualVar")
   op <- par(no.readonly=TRUE)
+  on.exit(par(op))
   # Error Checks
   if (prod(XAxis %in% PMs) != 1) {
     message("Available Performance Metrics")
@@ -1960,8 +1954,7 @@ TradePlot <- function(MSEobj, XAxis = c("Overfishing", "Biomass:BMSY"),
     OutList[[xx]] <- tempDF
   }
   
-  # print(OutList)
-  par(op)
+  
   OutList
   
 }
@@ -1983,9 +1976,10 @@ TradePlot <- function(MSEobj, XAxis = c("Overfishing", "Biomass:BMSY"),
 #' @param Ut A matrix of user-specified utility values of nsim rows and nMPs
 #' columns
 #' @param Utnam The name of the utility measure for plotting
+#' @param plot Logical. Show the plot?
 #' @author T. Carruthers
 #' @export VOI
-VOI <- function(MSEobj, ncomp = 6, nbins = 8, maxrow = 8, Ut = NA, Utnam = "Utility") {
+VOI <- function(MSEobj, ncomp = 6, nbins = 8, maxrow = 8, Ut = NA, Utnam = "Utility", plot=TRUE) {
   objnam <- deparse(substitute(MSEobj))
   nsim <- MSEobj@nsim
   
@@ -2082,94 +2076,97 @@ VOI <- function(MSEobj, ncomp = 6, nbins = 8, maxrow = 8, Ut = NA, Utnam = "Util
   mbyp <- split(1:nMPs, ceiling(1:nMPs/maxrow))
   ylimy = c(0, max(OMv, na.rm = T) * 1.2)
   
-  
-  for (pp in 1:length(mbyp)) {
-    
-    op <- par(mfrow = c(length(mbyp[[pp]]), ncomp), mai = c(0.15, 0.1, 0.15, 
-                                                            0.05), omi = c(0.1, 0.9, 0.3, 0.05))
-    
-    for (mm in mbyp[[pp]]) {
-      for (cc in 1:ncomp) {
-        rind <- (mm - 1) * 2 + 1
-        y <- Ut[, mm]
-        cind <- match(OMstr[rind, 1 + cc], names(MSEobj@OM))
-        x <- MSEobj@OM[, cind]
-        plot(x, y, col = "white", axes = F, ylim = ylimy)
-        axis(1, pretty(OMp[, cind]), pretty(OMp[, cind]), cex.axis = 0.8, 
-             padj = -1.5)
-        abline(v = OMp[, cind], col = "#99999960")
-        points(x, y, col = colsse[coly[mm, cind]], pch = 19, cex = 0.8)
-        x2 <- (OMp[1:nbins, cind] + OMp[2:(nbins + 1), cind])/2
-        y2 <- OMv[mm, cind, ]
-        lines(x2, y2)
-        legend("bottomright", legend = round(OMs[mm, cind], 2), bty = "n", cex = 0.8)
-        legend("topleft", legend = OMstr[rind, 1 + cc], bty = "n", cex = 0.85)
-        if (cc == 1)  {
-          mtext(MPs[mm], 2, font = 2, outer = F, cex = 0.8, line = 2)
-          ytick <- pretty(seq(ylimy[1], ylimy[2] * 1.3, length.out = 10))
-          axis(2, ytick, ytick, cex.axis = 0.8)
-        }  # only first column
-      }  # parameters (columns)
-    }  # MPs (rows)
-    
-    mtext(Utnam, 2, outer = T, cex = 0.9, line = 3.5)
-    mtext(paste("Operating model parameters: ", objnam, "@OM", sep = ""), 3, outer = T, font = 2, cex = 0.9)
-    
-  }  # Plots
-  
-  # Observation model values
-  
-  ylimy = c(0, max(Obsv, na.rm = T) * 1.2)
-  minsd <- 0
-  maxsd <- max(Obss)
-  coly <- ceiling(Obss/maxsd * ncols)
-  
-  if (sum(is.na(Obsstr) | Obsstr == "") < (ncomp + 1) * nMPs * 2 - nMPs) 
-  {
-    # only if there is data to plot
-    
+  if (plot) {
     for (pp in 1:length(mbyp)) {
       
-      op <- par(mfrow = c(length(mbyp[[pp]]), ncomp), mai = c(0.15, 
-                                                              0.1, 0.15, 0.05), omi = c(0.1, 0.9, 0.3, 0.05))
+      op <- par(mfrow = c(length(mbyp[[pp]]), ncomp), mai = c(0.15, 0.1, 0.15, 
+                                                              0.05), omi = c(0.1, 0.9, 0.3, 0.05))
       
       for (mm in mbyp[[pp]]) {
-        rind <- (mm - 1) * 2 + 1
-        npres <- sum(Obsstr[rind + 1, ] != "")
         for (cc in 1:ncomp) {
-          if (!is.na(npres) & cc < (npres + 1)) {
-            y <- Ut[, mm]
-            cind <- match(Obsstr[rind, 1 + cc], names(MSEobj@Obs))
-            x <- MSEobj@Obs[, cind]
-            plot(x, y, col = "white", axes = F, ylim = ylimy)
-            axis(1, pretty(Obsp[, cind]), pretty(Obsp[, cind]), cex.axis = 0.8, padj = -2)
-            abline(v = Obsp[, cind], col = "#99999960")
-            points(x, y, col = colsse[coly[mm, cind]], pch = 19, cex = 0.8)
-            x2 <- (Obsp[1:nbins, cind] + Obsp[2:(nbins + 1), cind])/2
-            y2 <- Obsv[mm, cind, ]
-            lines(x2, y2)
-            legend("bottomright", legend = round(Obss[mm, cind], 2), bty = "n", cex = 0.8)
-            legend("topleft", legend = Obsstr[rind, 1 + cc], bty = "n", cex = 0.75)
-            if (cc == 1)    {
-              mtext(MPs[mm], 2, font = 2, outer = F, cex = 0.6, line = 2)
-              ytick <- pretty(seq(ylimy[1], ylimy[2] * 1.3, length.out = 10))
-              axis(2, ytick, ytick, cex.axis = 0.8)
-            }  # only first column
-          } else {
-            plot(0, type = "n", axes = FALSE, ann = FALSE)
-            if (cc == 1)  {
-              mtext(MPs[mm], 2, font = 2, outer = F, cex = 0.6, line = 2)
-            }  # only first column
-          }
+          rind <- (mm - 1) * 2 + 1
+          y <- Ut[, mm]
+          cind <- match(OMstr[rind, 1 + cc], names(MSEobj@OM))
+          x <- MSEobj@OM[, cind]
+          plot(x, y, col = "white", axes = F, ylim = ylimy)
+          axis(1, pretty(OMp[, cind]), pretty(OMp[, cind]), cex.axis = 0.8, 
+               padj = -1.5)
+          abline(v = OMp[, cind], col = "#99999960")
+          points(x, y, col = colsse[coly[mm, cind]], pch = 19, cex = 0.8)
+          x2 <- (OMp[1:nbins, cind] + OMp[2:(nbins + 1), cind])/2
+          y2 <- OMv[mm, cind, ]
+          lines(x2, y2)
+          legend("bottomright", legend = round(OMs[mm, cind], 2), bty = "n", cex = 0.8)
+          legend("topleft", legend = OMstr[rind, 1 + cc], bty = "n", cex = 0.85)
+          if (cc == 1)  {
+            mtext(MPs[mm], 2, font = 2, outer = F, cex = 0.8, line = 2)
+            ytick <- pretty(seq(ylimy[1], ylimy[2] * 1.3, length.out = 10))
+            axis(2, ytick, ytick, cex.axis = 0.8)
+          }  # only first column
         }  # parameters (columns)
       }  # MPs (rows)
       
       mtext(Utnam, 2, outer = T, cex = 0.9, line = 3.5)
-      mtext(paste("Observation model parameters: ", objnam, "@Obs", sep = ""), 3, outer = T, font = 2, cex = 0.9)
+      mtext(paste("Operating model parameters: ", objnam, "@OM", sep = ""), 3, outer = T, font = 2, cex = 0.9)
       
     }  # Plots
-  }  # if there is data to plot
-  par(op)
+    
+    # Observation model values
+    
+    ylimy = c(0, max(Obsv, na.rm = T) * 1.2)
+    minsd <- 0
+    maxsd <- max(Obss)
+    coly <- ceiling(Obss/maxsd * ncols)
+    
+    if (sum(is.na(Obsstr) | Obsstr == "") < (ncomp + 1) * nMPs * 2 - nMPs) 
+    {
+      # only if there is data to plot
+      
+      for (pp in 1:length(mbyp)) {
+        
+        op <- par(mfrow = c(length(mbyp[[pp]]), ncomp), mai = c(0.15, 
+                                                                0.1, 0.15, 0.05), omi = c(0.1, 0.9, 0.3, 0.05),no.readonly=TRUE)
+        on.exit(par(op))
+        
+        for (mm in mbyp[[pp]]) {
+          rind <- (mm - 1) * 2 + 1
+          npres <- sum(Obsstr[rind + 1, ] != "")
+          for (cc in 1:ncomp) {
+            if (!is.na(npres) & cc < (npres + 1)) {
+              y <- Ut[, mm]
+              cind <- match(Obsstr[rind, 1 + cc], names(MSEobj@Obs))
+              x <- MSEobj@Obs[, cind]
+              plot(x, y, col = "white", axes = F, ylim = ylimy)
+              axis(1, pretty(Obsp[, cind]), pretty(Obsp[, cind]), cex.axis = 0.8, padj = -2)
+              abline(v = Obsp[, cind], col = "#99999960")
+              points(x, y, col = colsse[coly[mm, cind]], pch = 19, cex = 0.8)
+              x2 <- (Obsp[1:nbins, cind] + Obsp[2:(nbins + 1), cind])/2
+              y2 <- Obsv[mm, cind, ]
+              lines(x2, y2)
+              legend("bottomright", legend = round(Obss[mm, cind], 2), bty = "n", cex = 0.8)
+              legend("topleft", legend = Obsstr[rind, 1 + cc], bty = "n", cex = 0.75)
+              if (cc == 1)    {
+                mtext(MPs[mm], 2, font = 2, outer = F, cex = 0.6, line = 2)
+                ytick <- pretty(seq(ylimy[1], ylimy[2] * 1.3, length.out = 10))
+                axis(2, ytick, ytick, cex.axis = 0.8)
+              }  # only first column
+            } else {
+              plot(0, type = "n", axes = FALSE, ann = FALSE)
+              if (cc == 1)  {
+                mtext(MPs[mm], 2, font = 2, outer = F, cex = 0.6, line = 2)
+              }  # only first column
+            }
+          }  # parameters (columns)
+        }  # MPs (rows)
+        
+        mtext(Utnam, 2, outer = T, cex = 0.9, line = 3.5)
+        mtext(paste("Observation model parameters: ", objnam, "@Obs", sep = ""), 3, outer = T, font = 2, cex = 0.9)
+        
+      }  # Plots
+    }  # if there is data to plot
+    
+  }
+
   list(OMstr, Obsstr)
   
 }  # VOI
@@ -2422,7 +2419,7 @@ VOI2 <- function(MSEobj, ncomp = 6, nbins = 4, Ut = NA, Utnam = "yield",
   mtext(paste("% Change in ", Utnam, " relative to today", sep = ""), 
         2, outer = T, line = 0.6, font = 2, cex = 0.9)
   par(op)
-  list(Obscost, Obsv, Obsval, cb, Obsname, MSEobj@MPs)
+  invisible(list(Obscost, Obsv, Obsval, cb, Obsname, MSEobj@MPs))
   
 }  # VOI2
 

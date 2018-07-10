@@ -4,28 +4,64 @@
 \alias{GB_CC}
 \title{Geromont and Butterworth Constant Catch Harvest Control Rule}
 \usage{
-GB_CC(x, Data, reps = 100)
+GB_CC(x, Data, reps = 100, plot = FALSE)
 }
 \arguments{
-\item{x}{A position in data-limited methods data object}
+\item{x}{A position in a data-limited methods data object}
 
 \item{Data}{A data-limited methods data object}
 
-\item{reps}{The number of TAC samples}
+\item{reps}{The number of stochastic samples of the MP recommendation(s)}
+
+\item{plot}{Logical. Show the plot?}
+}
+\value{
+An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
-A simple MP that aims for average historical catches (as a proxy for MSY)
+A simple MP that aims for a reference catch (as a proxy for MSY)
 subject to imperfect information.
 }
 \details{
 Note that this is my interpretation of their MP and is now stochastic.
 Currently it is generalized and is not 'tuned' to more detailed assessment
 data which might explain why in some cases it leads to stock declines.
+
+The TAC is calculated as:
+\deqn{\textrm{TAC} = C_\textrm{ref}}
+where \eqn{C_\textrm{ref}} is a reference catch assumed to be a proxy for MSY.
+In the MSE \eqn{C_\textrm{ref}} is the calculated MSY subject to observation error
+defined in \code{Obs@CV_Cref}.
+
+The TAC is subject to the following conditions:
+\enumerate{
+\item if next TAC > 1.2 last catch, then TAC = 1.2 last catch
+\item if next TAC < 0.8 last catch, then TAC = 0.8 last catch
+}
+}
+\section{Required Data}{
+
+See \linkS4class{Data} for information on the \code{Data} object \cr
+
+
+\code{GB_CC}: Cref
+}
+
+\section{Rendered Equations}{
+ 
+See \href{https://dlmtool.github.io/DLMtool/reference/GB_CC.html}{Online Documentation} for correctly rendered equations
+}
+
+\examples{
+GB_CC(1, DLMtool::SimulatedData, plot=TRUE)
 }
 \references{
 Geromont, H.F. and Butterworth, D.S. 2014. Complex assessment or
 simple management procedures for efficient fisheries management: a
 comparative study. ICES J. Mar. Sci. doi:10.1093/icesjms/fsu017
+}
+\seealso{
+Other Constant Catch MPs: \code{\link{CC1}}
 }
 \author{
 T. Carruthers

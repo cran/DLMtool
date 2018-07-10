@@ -2,17 +2,35 @@
 % Please edit documentation in R/MPs_Output.R
 \name{Ltarget1}
 \alias{Ltarget1}
-\title{A management procedure that incrementally adjusts the TAC to reach a target
-mean length in catches.}
+\alias{Ltarget2}
+\alias{Ltarget3}
+\alias{Ltarget4}
+\alias{L95target}
+\title{Length Target TAC MP}
 \usage{
-Ltarget1(x, Data, reps = 100, yrsmth = 5, xx=0, xL=1.05)
+Ltarget1(x, Data, reps = 100, plot = FALSE, yrsmth = 5, xx = 0,
+  xL = 1.05)
+
+Ltarget2(x, Data, reps = 100, plot = FALSE, yrsmth = 5, xx = 0,
+  xL = 1.1)
+
+Ltarget3(x, Data, reps = 100, plot = FALSE, yrsmth = 5, xx = 0,
+  xL = 1.15)
+
+Ltarget4(x, Data, reps = 100, plot = FALSE, yrsmth = 5, xx = 0.2,
+  xL = 1.15)
+
+L95target(x, Data, reps = 100, plot = FALSE, yrsmth = 5, xx = 0,
+  xL = 1.05)
 }
 \arguments{
-\item{x}{A position in data-limited methods data object}
+\item{x}{A position in a data-limited methods data object}
 
 \item{Data}{A data-limited methods data object}
 
-\item{reps}{The number of TAC samples}
+\item{reps}{The number of stochastic samples of the MP recommendation(s)}
+
+\item{plot}{Logical. Show the plot?}
 
 \item{yrsmth}{Years over which to smooth recent estimates of surplus
 production}
@@ -24,22 +42,95 @@ first year}
 catches relative to average length in catches.}
 }
 \value{
-A numeric vector of TAC recommendations
+An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
-The least biologically precautionary of four target length MPs proposed by
-Geromont and Butterworth 2014. Tested by Carruthers et al. 2015
+A management procedure that incrementally adjusts the TAC to reach
+a target mean length in catches.
 }
 \details{
+Four target length MPs proposed by Geromont and Butterworth 2014.
 Tested by Carruthers et al. 2015.
+
+The TAC is calculated as:
+
+If \eqn{L_\textrm{recent} \geq L_0}:
+\deqn{\textrm{TAC} = 0.5 \textrm{TAC}^* \left[1+\left(\frac{L_\textrm{recent}-L_0}{L_\textrm{target}-L_0}\right)\right]  }
+
+else:
+\deqn{\textrm{TAC} = 0.5 \textrm{TAC}^* \left[\frac{L_\textrm{recent}}{L_0}^2\right] }
+
+where \eqn{\textrm{TAC}^*} is (1 - \code{xx}) mean catches from the last \code{yrsmth} historical years (pre-projection),
+\eqn{L_\textrm{recent}} is mean length in last \code{yrmsth} years, \eqn{L_0} is (except for \code{L95target}) 0.9 average catch in the last
+2 x \code{yrsmth} historical (pre-projection years) (\eqn{L_\textrm{ave}}), and \eqn{L_\textrm{target}} is
+(except for \code{L95target}) \code{xL} \eqn{L_\textrm{ave}}.
+}
+\section{Functions}{
+\itemize{
+\item \code{Ltarget1}: The least biologically precautionary TAC-based MP.
+
+\item \code{Ltarget2}: Increasingly biologically precautionary (\code{xL} = 1.1).
+
+\item \code{Ltarget3}: Increasingly biologically precautionary (\code{xL} = 1.1).
+
+\item \code{Ltarget4}: The most biologically precautionary TAC-based MP (\code{xL} = 1.1, \code{xx}=0.2).
+
+\item \code{L95target}: Same as Ltarget1 but here the target and limit
+mean lengths are based on the length at maturity distribution rather
+than an arbitrary multiplicative of the mean length
+}}
+
+\section{Required Data}{
+
+See \linkS4class{Data} for information on the \code{Data} object \cr
+
+
+\code{Ltarget1}: Cat, LHYear, ML, Year
+
+
+\code{Ltarget2}: Cat, LHYear, ML, Year
+
+
+\code{Ltarget3}: Cat, LHYear, ML, Year
+
+
+\code{Ltarget4}: Cat, LHYear, ML, Year
+
+
+\code{L95target}: Cat, L50, LHYear, ML, Year
+}
+
+\section{Rendered Equations}{
+ 
+See \href{https://dlmtool.github.io/DLMtool/reference/Ltarget1.html}{Online Documentation} for correctly rendered equations
+
+
+
+
+
+
+
+
+}
+
+\examples{
+Ltarget1(1, Data=DLMtool::SimulatedData, plot=TRUE)
+Ltarget2(1, Data=DLMtool::SimulatedData, plot=TRUE)
+Ltarget3(1, Data=DLMtool::SimulatedData, plot=TRUE)
+Ltarget4(1, Data=DLMtool::SimulatedData, plot=TRUE)
+L95target(1, Data=DLMtool::SimulatedData, plot=TRUE)
 }
 \references{
 Carruthers et al. 2015. Performance evaluation of simple
-management procedures. Fish and Fisheries. In press.
+management procedures. ICES J. Mar Sci. 73, 464-482.
 
 Geromont, H.F., Butterworth, D.S. 2014. Generic management procedures for
 data-poor fisheries; forecasting with few data. ICES J. Mar. Sci.
 doi:10.1093/icesjms/fst232
+}
+\seealso{
+Other Length target MPs: \code{\link{Lratio_BHI}},
+  \code{\link{LtargetE1}}
 }
 \author{
 T. Carruthers

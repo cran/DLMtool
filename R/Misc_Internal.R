@@ -4,12 +4,31 @@ proportionMat <- TL <- Wa <- SurvWeiMat <- r <- lx <- logNormDensity <- sumlogNo
 proportionMat = vector()
 
 
+#' What Data objects can be used to run this MP?
+#'
+#' @param MP Name of the MP
+#'
+#' @export
+#'
+#' @keywords internal
+CanMP <- function(MP) {
+  avData <- avail("Data")
+  log <- rep(FALSE, length(avData))
+  for (x in seq_along(avData)) {
+    log[x] <- MP %in% Can(get(avData[x]))
+  }
+  return(avData[log])
+}
+
+
+
 #' Check that a DLM object is valid 
 #' 
 #' Check that all slots in Object are valid and contain values
 #' 
 #' @param OM An object of class OM, Stock, Fleet, Obs, or Imp
-ChkObj <- function(OM) {
+#' @param error Logical. Stop on missing parameter values? FALSE = warning
+ChkObj <- function(OM, error=TRUE) {
   if (!class(OM) %in% c("OM", "Stock", "Fleet", "Obs", "Imp"))
     stop("Argument must be of class: OM, Stock, Fleet, Obs, or Imp", call.=FALSE)
   
@@ -37,9 +56,37 @@ ChkObj <- function(OM) {
   if (any(RecSlots %in% slots[Ok])) Ignore <- Ignore[!Ignore %in% RecSlots] 
   
   probSlots <- slots[!Ok][!slots[!Ok] %in% Ignore]
-  if (length(probSlots) > 0) 
-    stop("Slots in Object have missing values:\n ", paste(probSlots, " "), call.=FALSE)
-  return(OM)
+  probSlots <- probSlots[!probSlots %in% names(OM@cpars)]
+  if ('Len_age' %in% names(OM@cpars)) {
+    probSlots <- probSlots[!probSlots %in% c("Linf", "K", "t0")]
+  }
+  
+  if (length(probSlots) > 0) {
+    if (error) stop("Slots in Object have missing values:\n ", paste(probSlots, " "), call.=FALSE)
+    if (!error) warning("Slots in Object have missing values:\n ", paste(probSlots, " "), call.=FALSE)
+  }
+
+  
+  ## Add variability - variability required in all values otherwise
+  # OMs are not reproducible. 
+  # for (sl in slotNames(OM)) {
+  #   slt <- slot(OM, sl)
+  #   if (class(slt) == "numeric") {
+  #     if (length(slt) ==2) {
+  #       if (!all(is.na(slt)) && slt[1] == slt[2]) {
+  #         slt[1] <- slt[1]
+  #         slt[2] <- slt[2]+tiny
+  #       }
+  #      
+  #     }
+  #     if (length(slt)==1) {
+  #       if (!all(is.na(slt)) && slt == 0) slt <- tiny
+  #     }
+  #     slot(OM,sl) <- slt
+  #   }
+  # }?
+  OM
+  
   
 }
 
@@ -62,33 +109,8 @@ OptionalSlots <- function() {
 }
 
 
-# Demographic model
-demofn <- function(log.r, M, amat, sigma, K, Linf, to, hR, maxage, a, b) {
-  demographic2(log.r, M, amat, sigma, K, Linf, to, hR, maxage = maxage, a, b)$epsilon
-}
 
-demographic2 = function(log.r, M, amat, sigma, K, Linf, to, hR, maxage, a, b) {
-  # switch on and off to use either S or m in MC simulations
-  r = exp(log.r)
-  lx = exp(-M)^((1:maxage) - 1)  #survivorship
-  logNormDensity = (dnorm(x = log((1:maxage)), mean = log(amat), sd = sigma))/(1:maxage)  #Maturity ogive calculation
-  logNormDensity[1] = 0
-  sumlogNormDen = sum(logNormDensity)
-  NormalisedMaturity = logNormDensity/sumlogNormDen
-  proportionMat[1] = NormalisedMaturity[1]
-  for (i in 2:maxage) proportionMat[i] = proportionMat[i - 1] + NormalisedMaturity[i]
-  TL = Linf * (1 - exp(-K * ((1:maxage) - to)))  #length at age
-  Wa = a * TL^b  #wegith at age
-  SurvWeiMat = lx * Wa * proportionMat  #survivorship X weight X maturity
-  SBPR = sum(SurvWeiMat)  #Spawner biomass per recruit
-  RPS = 1/(SBPR * (1 - hR)/(4 * hR))  # Beverton Holt
-  # RPS=(5*hR)^(5/4)/SBPR # Ricker Recruitment per spawner biomass
-  RPF = Wa * proportionMat * RPS  #Recruits per female
-  Lotka = lx * RPF * exp(-(1:maxage) * r)
-  sumLotka = sum(Lotka)
-  epsilon = (1 - sumLotka)^2  #objective function
-  return(list(epsilon = epsilon, r = r))
-}
+
 
 #' Calculate historical fishing mortality
 #' 
@@ -131,17 +153,24 @@ getEffhist <- function(Esd, nyears, EffYears, EffLower, EffUpper) {
     
     Effs <- mapply(runif, n = nsim, min = EffLower, max = EffUpper)  # sample Effort
     if (nsim > 1) {
-      effort <- t(sapply(1:nsim, function(x) approx(x = refYear, 
-                                                    y = Effs[x, ], method = "linear", n = nyears)$y))  # linear interpolation
-    }
-    
-    
+      if (ncol(Effs) == 1) {
+        effort <- matrix(Effs, nrow=nsim, ncol=nyears)
+      } else {
+        effort <- t(sapply(1:nsim, function(x) approx(x = refYear, 
+                                                      y = Effs[x, ], method = "linear", n = nyears)$y))  # linear interpolation
+      }
+      
+    } 
     if (nsim == 1) {
-      # Effs <- Effs/max(Effs)
-      effort <- matrix(approx(x = refYear, y = Effs, method = "linear", n = nyears)$y, nrow = 1)
+      if (length(Effs) == 1) {
+        effort <- matrix(Effs, nrow=nsim, ncol=nyears)
+      } else {
+        effort <- matrix(approx(x = refYear, y = Effs, method = "linear", n = nyears)$y, nrow = 1)
+      }
     }
+  
+    if (!all(effort == mean(effort))) effort <- range01(effort)  
     
-    effort <- range01(effort)
     effort[effort == 0] <- 0.01
     
     Emu <- -0.5 * Esd^2
@@ -240,6 +269,7 @@ gettempvar <- function(targ, targsd, targgrad, nyears, nsim, rands=NULL) {
 #' @param ascending Are the the x values supposed to be ordered before interpolation
 #' @param zeroint is there a zero-zero x-y intercept?
 #' @author T. Carruthers
+#' @keywords internal
 #' @export LinInterp
 LinInterp<-function(x,y,xlev,ascending=F,zeroint=F){
   
@@ -272,6 +302,7 @@ condmet <- function(vec) TRUE %in% vec
 #'  Sample vector
 #' 
 #' @param x vector of values 
+#' @keywords internal
 sampy <- function(x) sample(x, 1, prob = !is.na(x))
 
 
@@ -281,6 +312,7 @@ sampy <- function(x) sample(x, 1, prob = !is.na(x))
 #' @param x vector of values 
 #' @param Max Maximum value
 #' @param Min Minimum value 
+#' @keywords internal
 Range <- function(x, Max, Min) {
   (x - Min)/(Max - Min)  
 }
@@ -289,14 +321,7 @@ range01 <- function(x) {
   (x - min(x))/(max(x) - min(x)) 
 }
 
-#' runMSE with no messages - for testing 
-#'
-#' For testing purposes only 
-#' @param ... Arguments to runMSE function 
-#'
-#' @keywords internal
-#' @importFrom utils capture.output
-#'
+
 runMSEnomsg <- function(...) {
   capture.output(out <- suppressMessages(runMSE(...)))
   out
@@ -311,6 +336,21 @@ run_parallel <- function(i, itsim, OM, MPs, CheckMPs, timelimit, Hist, ntrials, 
   mse <- runMSE_int(OM, MPs, CheckMPs, timelimit, Hist, ntrials, fracD, CalcBlow, 
                     HZN, Bfrac, AnnualMSY, silent, PPD)
   return(mse)
+}
+
+assign_DLMenv <- function() {
+  DLMenv_list <- snowfall::sfClusterEval(mget(ls(DLMenv), envir = DLMenv)) # Grab objects from cores' DLMenv
+  clean_env <- snowfall::sfClusterEval(rm(list = ls(DLMenv), envir = DLMenv)) # Remove cores' DLMenv objects
+  env_names <- unique(do.call(c, lapply(DLMenv_list, names)))
+  
+  if(length(env_names) > 0) {
+    for(i in 1:length(env_names)) {
+      temp <- lapply(DLMenv_list, getElement, env_names[i])
+      assign(env_names[i], do.call(c, temp), envir = DLMenv) # Assign objects to home DLMenv
+    }
+  }
+  
+  return(invisible(env_names))
 }
 
 
@@ -350,7 +390,35 @@ getsel <- function(x, lens, lfs, sls, srs) {
 
 
 # Generate size comps
-genSizeCompWrap <- function(i, vn, CAL_binsmid,
+genSizeCompWrap <- function(i, vn, CAL_binsmid, retL,
+                            CAL_ESS, CAL_nsamp,
+                            Linfarray, Karray, t0array,
+                            LenCV, truncSD=2) {
+  
+  VulnN <- as.matrix(vn[i,,]) 
+  VulnN <- round(VulnN,0)
+  nyrs <- nrow(as.matrix(Linfarray[i,]))
+  if (nyrs == 1) VulnN <- t(VulnN)
+
+  lens <- genSizeComp(VulnN, CAL_binsmid, retL[i,,],
+              CAL_ESS=CAL_ESS[i], CAL_nsamp=CAL_nsamp[i],
+              Linfs=Linfarray[i,], Ks=Karray[i,], t0s=t0array[i,],
+              LenCV=LenCV[i], truncSD)
+  
+  lens[!is.finite(lens)] <- 0
+  lens
+  
+}
+
+getfifth <- function(lenvec, CAL_binsmid) {
+  temp <- rep(CAL_binsmid, lenvec)
+  if(sum(lenvec)==0) return(NA)
+  dens <- try(density(temp), silent=TRUE)
+  if(class(dens)!="density") return(NA)
+  dens$x[min(which(cumsum(dens$y/sum(dens$y)) >0.05))]
+}
+
+genSizeCompWrap2<- function(i, vn, CAL_binsmid, 
                             CAL_ESS, CAL_nsamp,
                             Linfarray, Karray, t0array,
                             LenCV, truncSD=2) {
@@ -361,13 +429,24 @@ genSizeCompWrap <- function(i, vn, CAL_binsmid,
   if (nyrs == 1) VulnN <- t(VulnN)
   
   
-  genSizeComp(VulnN, CAL_binsmid,
-              CAL_ESS=CAL_ESS[i], CAL_nsamp=CAL_nsamp[i],
-              Linfs=Linfarray[i,], Ks=Karray[i,], t0s=t0array[i,],
-              LenCV=LenCV[i], truncSD)
+  lens <- genSizeComp2(VulnN, CAL_binsmid, 
+                      CAL_ESS=CAL_ESS[i], CAL_nsamp=CAL_nsamp[i],
+                      Linfs=Linfarray[i,], Ks=Karray[i,], t0s=t0array[i,],
+                      LenCV=LenCV[i], truncSD)
+  
+  lens
   
 }
 
+
+userguide_link <- function(url, ref=NULL) {
+  url <- paste0('https://dlmtool.github.io/DLMtool/userguide/', url, '.html')
+  if (ref!="NULL") url <- paste0(url, "#", ref)
+  paste0("See relevant section of the \\href{", url, "}{DLMtool User Guide} for more information.")
+}
+
+  
+  
 # 
 # makeSizeCompW <- function(i, maxage, Linfarray, Karray, t0array, LenCV,
 #                           CAL_bins, CAL_binsmid, retL, CAL_ESS, CAL_nsamp, 

@@ -215,7 +215,7 @@ StochasticSRAcpp <-function(OM,CAA,Chist,Ind,Cobs=0.1,sigmaR=0.5,Umax=0.9,nsim=4
   SampCpars <- list() # empty list 
   # custom parameters exist - sample and write to list
   if(length(OM@cpars)>0){
-    ncparsim<-cparscheck(OM@cpars)   # check each list object has the same length and if not stop and error report
+    # ncparsim<-cparscheck(OM@cpars)   # check each list object has the same length and if not stop and error report
     SampCpars <- SampleCpars(OM@cpars, nsim) 
   }
   
@@ -615,7 +615,7 @@ StochasticSRA<-function(OM,CAA,Chist,Ind=NA,ML=NA,CAL=NA,mulen=NA,wts=c(1,1,0.5,
   SampCpars <- list() # empty list 
   # custom parameters exist - sample and write to list
   if(length(OM@cpars)>0){
-    ncparsim<-cparscheck(OM@cpars)   # check each list object has the same length and if not stop and error report
+    # ncparsim<-cparscheck(OM@cpars)   # check each list object has the same length and if not stop and error report
     SampCpars <- SampleCpars(OM@cpars, nsim) 
   }
 
@@ -803,8 +803,9 @@ StochasticSRA<-function(OM,CAA,Chist,Ind=NA,ML=NA,CAL=NA,mulen=NA,wts=c(1,1,0.5,
       PredVW<-PredVN*Wt_age                   # Predicted vulnerable weight
       Predfrac<-PredVW/apply(PredVW,1,sum)    # Catch weight distribution over ages
       
-      Cat<-(Chist_a[,y]*Predfrac)/Wt_age        # Guess at catch numbers by age
+      Cat<-(Chist_a[,y]*Predfrac)/Wt_age      # Guess at catch numbers by age
       predU<-Cat/PredN                        # Which means this harvest rate
+      predU[!is.finite(predU)] <- Inf
       cond<-predU>Umax                        # Check max U
       Reject[apply(cond,1,sum)>0]<-TRUE       # Reject sims where U > Umax for any age class
       Cat[cond]<-Cat[cond]/(predU[cond]/Umax) # Set catch to Umax
@@ -814,7 +815,7 @@ StochasticSRA<-function(OM,CAA,Chist,Ind=NA,ML=NA,CAL=NA,mulen=NA,wts=c(1,1,0.5,
       
       N[,2:maxage]<-N[,1:(maxage-1)] # aging
       N[,1]<-RD[,maxage+y]*(0.8*R0*hs*SSB[,y])/(0.2*SSBpR*R0*(1-hs)+(hs-0.2)*SSB[,y])
-      
+      N[N<0] <- tiny
     }
     
     Ipred<-SSB

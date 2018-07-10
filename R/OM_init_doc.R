@@ -26,6 +26,10 @@ OMexample <- function(dir) {
 #' to use as templates for the Operating Model.
 #' @param dir Optional file path to create the xlsx and rmd files. Default is `getwd()`
 #' @param overwrite Logical. Should files be overwritten if they already exist?
+#' 
+#' @templateVar url creating-a-new-operating-model
+#' @templateVar ref initialize-a-new-om
+#' @template userguide_link
 #'
 #' @return name.xlsx and name.rmd files are created in the working directory.  
 #' @export
@@ -136,8 +140,7 @@ OMinit <- function(name=NULL, ..., files=c('xlsx', 'rmd'), dir=NULL, overwrite=F
     
     # Check if file exists 
     exist <- file.exists(pathout)
-    if (exist & !overwrite) stop(name, " already exists in working directory. Use 'overwrite=TRUE' to overwrite", 
-                                 call.=FALSE)
+    if (exist & !overwrite) stop(name, " already exists in working directory. Use 'overwrite=TRUE' to overwrite", call.=FALSE)
     copy <- file.copy(path, pathout, overwrite = overwrite)
     if (!copy) stop("Excel file not copied from ", path)
     
@@ -169,6 +172,7 @@ OMinit <- function(name=NULL, ..., files=c('xlsx', 'rmd'), dir=NULL, overwrite=F
       
       # OM tab not currently updated
       openxlsx::saveWorkbook(wb, file.path(dir,name), overwrite = TRUE)
+    
       
     }
     
@@ -241,8 +245,6 @@ OMinit <- function(name=NULL, ..., files=c('xlsx', 'rmd'), dir=NULL, overwrite=F
 #' 
 #' }
 XL2OM <- function(name=NULL, cpars=NULL, msg=TRUE) {
-  
-
   # Load the Excel File ####
   if (is.null(name)) {
     fls <- list.files(pattern=".xlsx", ignore.case = TRUE)
@@ -285,7 +287,8 @@ XL2OM <- function(name=NULL, cpars=NULL, msg=TRUE) {
     writeCSV2(inobj = sht, tmpfile, objtype = obj)
     if (ncol(sht)<2) {
       unlink(tmpfile)
-      stop("No parameter values found in Sheet ", obj, call.=FALSE)
+      warning("No parameter values found in Sheet: ", obj, ". Using defaults", call.=FALSE)
+      tempObj[[count]] <- new(obj)
     } else {
       tempObj[[count]] <- new(obj, tmpfile)  
     }
@@ -332,7 +335,7 @@ XL2OM <- function(name=NULL, cpars=NULL, msg=TRUE) {
       stop("'cpars' must be a list", call.=FALSE)
     }
   }
-  ChkObj(OM)
+  ChkObj(OM, FALSE)
   if (msg) {
     message('OM successfully imported\n')
     message("Document OM slots in .rmd file (probably ", tools::file_path_sans_ext(name), ".rmd),
@@ -361,10 +364,14 @@ XL2OM <- function(name=NULL, cpars=NULL, msg=TRUE) {
 #' @param openFile Logical. Should the compiled file be opened in web browser?
 #' @param quiet TRUE to supress printing of the pandoc command line.
 #' @param dir Optional file path to read the xlsx and rmd files. Default is `getwd()`
+#' @param ... Optional additional named arguments provided to `runMSE`
+#' 
+#' @templateVar url creating-a-new-operating-model
+#' @templateVar ref populate-and-document-om
+#' @template userguide_link
+#' 
 #' @return Creates a Rmarkdown file and compiles a HTML report file in the working directory.
 #' @export
-#' @importFrom methods getSlots
-#' @importFrom knitr kable
 #' @author A. Hordyk
 #' @examples 
 #' \dontrun{
@@ -375,7 +382,7 @@ XL2OM <- function(name=NULL, cpars=NULL, msg=TRUE) {
 #' }
 OMdoc <- function(OM=NULL, rmd.source=NULL, overwrite=FALSE, out.file=NULL,  
                   inc.plot=TRUE, render=TRUE, output="html_document", openFile=TRUE, quiet=FALSE,
-                  dir=NULL) {
+                  dir=NULL, ...) {
   # markdown compile options
   toc=TRUE; color="blue";  theme="flatly"
   if (is.null(dir)) dir <- getwd()
@@ -545,44 +552,51 @@ OMdoc <- function(OM=NULL, rmd.source=NULL, overwrite=FALSE, out.file=NULL,
     fileName <- OM@Name
     fileName <- gsub(" ", "", gsub("[[:punct:]]", "", fileName))
     if (nchar(fileName)>15) fileName <-  substr(fileName, 1, 15)
-      
-    if (file.exists(paste0(file.path(dir, 'build/', fileName, '.dat')))) {
-      # OM has been documented before - check if it has changed
-      testOM <- readRDS(file.path(dir,paste0("build/", fileName, '.dat')))
-      if (class(testOM) == 'OM') {
-        # check if OM has changed 
-        changed <- rep(FALSE, length(slotNames(OM)))
-        for (sl in seq_along(slotNames(OM))) {
-      
-          oldOM <- slot(OM, slotNames(OM)[sl])
-          newOM <- slot(testOM, slotNames(OM)[sl])
-          if (class(oldOM) !='character') {
-            if (class(oldOM) != 'list') {
-              if (length(oldOM)<1 || !is.finite(oldOM)) oldOM <- 0
-              if (length(newOM)<1 || !is.finite(newOM)) newOM <- 0
-              if (any(oldOM != newOM)) changed[sl] <- TRUE
-            } else {
-              if (length(oldOM) != length(newOM)) {
-                changed[sl] <- TRUE
-              } else if (length(oldOM)>0){
-                for (xx in 1:length(oldOM)) {
-                  if(any(oldOM[[xx]] != newOM[[xx]]))changed[sl] <- TRUE
-                  
+    
+    if (file.exists(paste0(file.path(dir, 'build/', paste0(fileName, '.dat'))))) {
+      chkFile <- file.exists(paste0(file.path(dir, 'build/', paste0(fileName, 'Hist.dat'))))
+      if (chkFile) {
+        # OM has been documented before - check if it has changed
+        testOM <- readRDS(file.path(dir,paste0("build/", fileName, '.dat')))
+        if (class(testOM) == 'OM') {
+          # check if OM has changed 
+          changed <- rep(FALSE, length(slotNames(OM)))
+          for (sl in seq_along(slotNames(OM))) {
+            
+            oldOM <- slot(OM, slotNames(OM)[sl])
+            newOM <- slot(testOM, slotNames(OM)[sl])
+            if (class(oldOM) !='character') {
+              if (class(oldOM) != 'list') {
+                if (length(oldOM)<1 || !is.finite(oldOM)) oldOM <- 0
+                if (length(newOM)<1 || !is.finite(newOM)) newOM <- 0
+                if (any(oldOM != newOM)) changed[sl] <- TRUE
+              } else {
+                if (length(oldOM) != length(newOM)) {
+                  changed[sl] <- TRUE
+                } else if (length(oldOM)>0){
+                  for (xx in 1:length(oldOM)) {
+                    if(any(oldOM[[xx]] != newOM[[xx]]))changed[sl] <- TRUE
+                    
+                  }
                 }
               }
             }
           }
-        }
-        if (sum(changed)>0) runSims <- TRUE 
-        if (sum(changed) == 0) {
-          out <-  readRDS(file.path(dir,paste0('build/', fileName, 'Hist.dat')))
-          Pars <- c(out$SampPars, out$TSdata, out$MSYs)  
+          if (sum(changed)>0) runSims <- TRUE 
+          if (sum(changed) == 0) {
+            out <-  readRDS(file.path(dir,paste0('build/', fileName, 'Hist.dat')))
+            Pars <- c(out$SampPars, out$TSdata, out$MSYs)  
+          }
+        } else {
+          file.remove(file.path(dir,paste0('build/',fileName, '.dat')))
+          runSims <- TRUE
         }
       } else {
         file.remove(file.path(dir,paste0('build/',fileName, '.dat')))
         runSims <- TRUE
       }
-     
+ 
+      
     } else{
       saveRDS(OM, file=file.path(dir,paste0('build/', fileName, '.dat')))
       runSims <- TRUE
@@ -595,7 +609,7 @@ OMdoc <- function(OM=NULL, rmd.source=NULL, overwrite=FALSE, out.file=NULL,
         message("nsim too high for documentation purposes. Running here with nsim=48")
         OM2@nsim <- 48
       }
-      out<- runMSE(OM2,Hist=T, parallel = FALSE, silent=TRUE)
+      out<- runMSE(OM2,Hist=T, parallel = FALSE, silent=TRUE, ...)
       Pars <- c(out$SampPars, out$TSdata, out$MSYs)  
       saveRDS(out, file=file.path(dir,paste0('build/', fileName, 'Hist.dat')))
     }
@@ -714,10 +728,19 @@ OMdoc <- function(OM=NULL, rmd.source=NULL, overwrite=FALSE, out.file=NULL,
     if (output == "pdf_document") RMDfileout <- paste0(basename(RMDfileout), ".pdf")
 
     message("\n\nRendering markdown document as ", RMDfileout)
+    
     EffYears <- seq(from=(OM@CurrentYr -  OM@nyears + 1), to=OM@CurrentYr, length.out=length(OM@EffYears))
     EffYears <- round(EffYears,0)
-    Effvals <- data.frame(EffYears=EffYears, EffLower=OM@EffLower, EffUpper=OM@EffUpper)
+    if (length(OM@cpars$Find)>0) {
+      lower <- as.numeric(signif(apply(OM@cpars$Find, 2, min),3))
+      upper <- as.numeric(signif(apply(OM@cpars$Find, 2, max),3))
+      Effvals <- data.frame(EffYears=EffYears, EffLower=lower, EffUpper=upper)
+    } else {
+      Effvals <- data.frame(EffYears=EffYears, EffLower=signif(OM@EffLower,3), EffUpper=signif(OM@EffUpper,3))
+    }
+  
     params <- list(OM=OM, Pars=Pars, Effvals=Effvals, out=out)
+    knitr::knit_meta(class=NULL, clean = TRUE)
     rmarkdown::render(input=RMDfile, output_file=RMDfileout, output_format=output, 
                       output_dir=dir, param=params, quiet=quiet)
     
@@ -790,7 +813,6 @@ writeSection <- function(class=c("Intro", "Stock", "Fleet", "Obs", "Imp", "Refer
   class <- match.arg(class)
   
   useCpars <- length(OM@cpars) > 0
-  
   
   fLH <- grep("^#[^##]", textIn)
   fstH <- trimws(gsub("#", "", textIn[fLH])) # first level headings
@@ -873,7 +895,7 @@ writeSection <- function(class=c("Intro", "Stock", "Fleet", "Obs", "Imp", "Refer
     
     # loop through template and write section 
     for (rr in 1:nrow(ClTemp)) {
-      if(grepl("^Currently unused", ClTemp[rr,1])) {
+      if (grepl("^Currently unused", ClTemp[rr,1])) {
         temptext <- trimws(unlist(strsplit(ClTemp[rr,], "-")))
         cat("### ", temptext[1], "\n\n", append=TRUE, file=RMDfile, sep="")
         cat("*", temptext[2], "*\n\n", append=TRUE, file=RMDfile, sep="")
@@ -893,11 +915,17 @@ writeSection <- function(class=c("Intro", "Stock", "Fleet", "Obs", "Imp", "Refer
             val <- gsub('"', "", paste(val, collapse="\", \""))
             valtext <- paste0("Specified in cpars: ", "<span style='color:", color, "'>", " ", trimws(val), "</span>", "\n\n")
           } else {
-            if (length(Pars[[sl]])>0) {
-              val <- range(Pars[[sl]])
-            } else {
-              val <- slot(OM, sl)  
-            }
+            val <- slot(OM, sl) 
+            # if (length(Pars[[sl]])>0) {
+            #   if (length(Pars[[sl]])==1) val <- (Pars[[sl]])
+            #   if (length(Pars[[sl]])>1) {
+            #     if (all(Pars[[sl]] == mean(Pars[[sl]]))) {
+            #       val <- mean(Pars[[sl]])
+            #     } else  val <- range(Pars[[sl]])
+            #   }
+            # } else {
+            #   val <- slot(OM, sl)  
+            # }
             if (is.numeric(val)) val <- round(val,2)
             used <- length(val)>0 && !is.na(val) && !is.null(val) # is the slot used?
             if (used) {
@@ -950,11 +978,10 @@ writeSection <- function(class=c("Intro", "Stock", "Fleet", "Obs", "Imp", "Refer
             cat("</style>\n", append=TRUE, file=RMDfile, sep="")
             
             cat("```{r, echo=FALSE, results='asis'}\n", append=TRUE, file=RMDfile, sep="")
-            cat("knitr::kable(round(Effvals,2), format='markdown', caption='')\n", append=TRUE, file=RMDfile, sep="")
+            cat("knitr::kable(Effvals, format='markdown', caption='')\n", append=TRUE, file=RMDfile, sep="")
             cat("```\n\n", append=TRUE, file=RMDfile, sep="")
             
           }
-          
           
           # Plots ####
           if (inc.plot) {
@@ -976,7 +1003,7 @@ writeSection <- function(class=c("Intro", "Stock", "Fleet", "Obs", "Imp", "Refer
 
 
 writeCSV2 <- function(inobj, tmpfile = NULL, objtype = c("Stock", "Fleet", 
-                                                         "Obs", "Imp", "Data", "OM", "Fease")) {
+                                                         "Obs", "Imp", "Data", "OM")) {
   objtype <- match.arg(objtype)
   
   for (X in 1:nrow(inobj)) {
@@ -1062,32 +1089,32 @@ plotSelHists <- function(OM, Pars, nsamp=3, col="darkgray",
   its <- sample(1:OM@nsim, nsamp)
   
   hist2(Pars$L5, col=col, axes=FALSE, main="L5", breaks=breaks)
-  abline(v=Pars$L5[,its], col=1:nsamp, lwd=lwd)
+  abline(v=Pars$L5[OM@nyears,its], col=1:nsamp, lwd=lwd)
   axis(side=1)
   
   hist2(Pars$LFS, col=col, axes=FALSE, main="LFS", breaks=breaks)
-  abline(v=Pars$LFS[,its], col=1:nsamp, lwd=lwd)
+  abline(v=Pars$LFS[OM@nyears,its], col=1:nsamp, lwd=lwd)
   axis(side=1)
   
   hist2(Pars$Vmaxlen, col=col, axes=FALSE, main="Vmaxlen", breaks=breaks)
-  abline(v=Pars$Vmaxlen[,its], col=1:nsamp, lwd=lwd)
+  abline(v=Pars$Vmaxlen[OM@nyears,its], col=1:nsamp, lwd=lwd)
   axis(side=1)
   
   
   hist2(Pars$LR5, col=col, axes=FALSE, main="LR5", breaks=breaks)
-  abline(v=Pars$LR5[,its], col=1:nsamp, lwd=lwd)
+  abline(v=Pars$LR5[OM@nyears,its], col=1:nsamp, lwd=lwd)
   axis(side=1)
   
   hist2(Pars$LFR, col=col, axes=FALSE, main="LFR", breaks=breaks)
-  abline(v=Pars$LFR[,its], col=1:nsamp, lwd=lwd)
+  abline(v=Pars$LFR[OM@nyears,its], col=1:nsamp, lwd=lwd)
   axis(side=1)
   
   hist2(Pars$Rmaxlen, col=col, axes=FALSE, main="Rmaxlen", breaks=breaks)
-  abline(v=Pars$Rmaxlen[,its], col=1:nsamp, lwd=lwd)
+  abline(v=Pars$Rmaxlen[OM@nyears,its], col=1:nsamp, lwd=lwd)
   axis(side=1)
   
   hist2(Pars$DR, col=col, axes=FALSE, main="DR", breaks=breaks)
-  abline(v=Pars$DR[,its], col=1:nsamp, lwd=lwd)
+  abline(v=Pars$DR[OM@nyears,its], col=1:nsamp, lwd=lwd)
   axis(side=1)
   
 }
@@ -1411,7 +1438,7 @@ plotRec <- function(OM, Pars=NULL, nsim=48, nyears=50, proyears=50, nsamp=3, col
   
   
   # Recruitment
-  matplot(t(Pars$Perr[its,]), type="l", bty="l", main="Rec Devs by Year", lwd=lwd, lty=1, ylab="")
+  matplot(t(Pars$Perr_y[its,]), type="l", bty="l", main="Rec Devs by Year", lwd=lwd, lty=1, ylab="")
   
   
 }
@@ -1689,49 +1716,49 @@ Data_xl <- function(fname, stkname, fpath = "", saveCSV = FALSE) {
   
 }
 
-#' Read in feasibility parameters from Excel spreadsheet
-#' 
-#' A function to read in feasibility parameters from an Excel spreadsheet with
-#' tabs named following specific convention
-#' 
-#' The Excel spreadsheet must have tabs named with the following convention.
-#' For example if \code{stkname} is 'myFish', the tab must be named
-#' 'myFishFease,
-#' 
-#' @usage Fease_xl(fname, stkname, fpath = '', saveCSV = FALSE)
-#' @param fname Name of the Excel spreadsheet file. Must include file
-#' extension.
-#' @param stkname Name of the Stock.
-#' @param fpath Full file path, if file is not in current working directory
-#' @param saveCSV Do you also want to save the Stock, Fleet and Observation
-#' parameters to CSV files?
-#' @return A object of class Fease
-#' @author A. Hordyk
-#' @examples
-#' 
-#'  \dontrun{
-#'  myFease <- Fease_xl(fname='FeaseTables.xlsx', stkname='myFish')
-#' }
-#' 
-#' @export Fease_xl
-Fease_xl <- function(fname, stkname, fpath = "", saveCSV = FALSE) {
-  infile <- paste0(fpath, fname)  # full path and name 
-  shtname <- readxl::excel_sheets(infile)  # names of the sheets 
-  # Fease
-  feasedat <- readxl::read_excel(infile, sheet = grep(paste0(stkname, "Fease"), 
-                                                      shtname), col_names = FALSE)
-  feasedat <- feasedat[, 1:2]
-  tmpfile <- paste0(fpath, stkname, "Fease.csv")
-  if (file.exists(tmpfile)) 
-    unlink(tmpfile)
-  writeCSV(inobj = feasedat, tmpfile, objtype = "Fease")
-  fease <- new("Fease", tmpfile)
-  if (!saveCSV) 
-    unlink(tmpfile)
-  
-  fease
-}
-
+# #' Read in feasibility parameters from Excel spreadsheet
+# #' 
+# #' A function to read in feasibility parameters from an Excel spreadsheet with
+# #' tabs named following specific convention
+# #' 
+# #' The Excel spreadsheet must have tabs named with the following convention.
+# #' For example if \code{stkname} is 'myFish', the tab must be named
+# #' 'myFishFease,
+# #' 
+# #' @usage Fease_xl(fname, stkname, fpath = '', saveCSV = FALSE)
+# #' @param fname Name of the Excel spreadsheet file. Must include file
+# #' extension.
+# #' @param stkname Name of the Stock.
+# #' @param fpath Full file path, if file is not in current working directory
+# #' @param saveCSV Do you also want to save the Stock, Fleet and Observation
+# #' parameters to CSV files?
+# #' @return A object of class Fease
+# #' @author A. Hordyk
+# #' @examples
+# #' 
+# #'  \dontrun{
+# #'  myFease <- Fease_xl(fname='FeaseTables.xlsx', stkname='myFish')
+# #' }
+# #' 
+# #' @export Fease_xl
+# Fease_xl <- function(fname, stkname, fpath = "", saveCSV = FALSE) {
+#   infile <- paste0(fpath, fname)  # full path and name 
+#   shtname <- readxl::excel_sheets(infile)  # names of the sheets 
+#   # Fease
+#   feasedat <- readxl::read_excel(infile, sheet = grep(paste0(stkname, "Fease"), 
+#                                                       shtname), col_names = FALSE)
+#   feasedat <- feasedat[, 1:2]
+#   tmpfile <- paste0(fpath, stkname, "Fease.csv")
+#   if (file.exists(tmpfile)) 
+#     unlink(tmpfile)
+#   writeCSV(inobj = feasedat, tmpfile, objtype = "Fease")
+#   fease <- new("Fease", tmpfile)
+#   if (!saveCSV) 
+#     unlink(tmpfile)
+#   
+#   fease
+# }
+# 
 
 
 #' Internal function to write CSVs for objects
@@ -1740,13 +1767,13 @@ Fease_xl <- function(fname, stkname, fpath = "", saveCSV = FALSE) {
 #' DLMtool object
 #' 
 #' 
-#' @param inobj A object of class Stock, Fleet, Obs, Imp, Data, OM, or
-#' Fease
+#' @param inobj A object of class Stock, Fleet, Obs, Imp, Data, or OM
+#' 
 #' @param tmpfile The full file path and name for the saved CSV file
 #' @param objtype The class corresonding to the \code{inobj}
 #' @author A. Hordyk
 writeCSV <- function(inobj, tmpfile = NULL, objtype = c("Stock", "Fleet", 
-                                                        "Obs", "Imp", "Data", "OM", "Fease")) {
+                                                        "Obs", "Imp", "Data", "OM")) {
   objtype <- match.arg(objtype)
   
   for (X in 1:nrow(inobj)) {

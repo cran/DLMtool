@@ -2,27 +2,65 @@
 % Please edit documentation in R/MPs_Reference.R
 \name{FMSYref}
 \alias{FMSYref}
-\title{A reference FMSY method (uses perfect information about FMSY)}
+\alias{FMSYref50}
+\alias{FMSYref75}
+\alias{NFref}
+\title{Reference management procedures}
 \usage{
-FMSYref(x, Data, reps = 100)
+FMSYref(x, Data, reps = 100, plot = FALSE)
+
+FMSYref50(x, Data, reps = 100, plot = FALSE)
+
+FMSYref75(x, Data, reps = 100, plot = FALSE)
+
+NFref(x, Data, reps = 100, plot = FALSE)
 }
 \arguments{
-\item{x}{A position in data-limited methods data object}
+\item{x}{A position in a data-limited methods data object}
 
 \item{Data}{A data-limited methods data object}
 
-\item{reps}{The number of TAC samples}
+\item{reps}{The number of stochastic samples of the MP recommendation(s)}
+
+\item{plot}{Logical. Show the plot?}
+}
+\value{
+An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
-FMSY is taken from the operating model stored at DLM@OM$FMSY
+Several reference MPs for your operating model to use in the management strategy
+evaluation. FMSYref (and related) assume perfect information about FMSY (FMSY
+is taken from the operating model stored at Data@OM$FMSY). NFref sets annual catch
+to zero (or close to it) and is used for looking at variability in stock with no fishing.
 }
 \details{
-Note that you can out-perform this MP even though it has perfect
-information of FMSY and current abundance. The requirement for fixed F is
-actually quite strict and is by no means the upper limit in terms of yield.
-Don't panic if your method beats this one for yield, especially for
+Note that you can out-perform \code{FMSYref} easily. The requirement for fixed
+F is actually quite strict and is by no means the upper limit in terms of
+yield. Don't panic if your method beats this one for yield, especially for
 short-lived species of high temporal variability in productivity!
 }
+\section{Functions}{
+\itemize{
+\item \code{FMSYref}: A reference FMSY method that fishes at FMSY
+
+\item \code{FMSYref50}: A reference FMSY method that fishes at 50\% of FMSY
+
+\item \code{FMSYref75}: A reference FMSY method that fishes at 75\% of FMSY
+
+\item \code{NFref}: A reference MP that sets annual catch to almost zero (0.01)
+}}
+
+\section{Required Data}{
+
+See \linkS4class{Data} for information on the \code{Data} object \cr
+}
+
+\examples{
+FMSYref(1, DLMtool::SimulatedData, plot=TRUE)
+FMSYref50(1, DLMtool::SimulatedData, plot=TRUE)
+FMSYref75(1, DLMtool::SimulatedData, plot=TRUE)
+NFref(1, DLMtool::SimulatedData, plot=TRUE)
+}
 \author{
-T. Carruthers
+T. Carruthers, A. Hordyk
 }

@@ -75,22 +75,142 @@ XL2Data <- function(name="Data", dir=NULL) {
     Data <- new("Data", file.path(dir,name))
   } else {
     sheetnames <- readxl::excel_sheets(file.path(dir,name))  # names of the sheets
-    datasheet <- as.data.frame(readxl::read_excel(file.path(dir,name), sheet = 1, col_names = FALSE))
-    if (datasheet[1,1]== "Slot") datasheet <- as.data.frame(readxl::read_excel(file.path(dir,name), sheet = 1, col_names = FALSE, skip=1))
-   
-    if (all(dim(datasheet) == 0)) stop("Nothing found in first sheet", call.=FALSE)
-    tmpfile <- tempfile(fileext=".csv")
-    writeCSV2(inobj = datasheet, tmpfile, objtype = "Data")
     
-    if (ncol(datasheet)<2) {
-      unlink(tmpfile)
-      stop("No parameter values found in first worksheet ", call.=FALSE)
-    } else {
-      Data <- new("Data", tmpfile)
-      unlink(tmpfile)
+    # DataXLSlot <- DLMtool:::DataXLSlot
+    NewSheetNames <- names(DataXLSlot)
+    if (all(NewSheetNames %in% sheetnames)) {
+      Data <- new("Data", silent=TRUE)
+      BlankDat <-new("Data", silent=TRUE)
+      ignoreSheet <- NULL
+      for (sh in sheetnames) {
+        
+        datasheet <- as.data.frame(readxl::read_excel(file.path(dir,name), 
+                                                      sheet = sh, col_names = FALSE))
+        if (dim(datasheet)[2] > 1 ) {
+          dname <- datasheet[, 1]
+          dat  <- datasheet[, 2:ncol(datasheet), drop=FALSE]
+          df <- data.frame(XLRow=DataXLSlot[[sh]]$XLRow, 
+                           Slot=DataXLSlot[[sh]]$Slot, 
+                           Class=DataXLSlot[[sh]]$Class, 
+                           Ignore=DataXLSlot[[sh]]$Ignore,
+                           stringsAsFactors = FALSE)
+          df$Ignore[is.na(df$Slot)] <- TRUE
+          df$Ignore <- as.logical(df$Ignore)
+          df <- df[!df$Ignore,]
+          
+          if (sh %in% c("Main", "Biology", "Reference")) {
+            for (sl in 1:nrow(df)) {
+              temp <- dat[match(df$XLRow[sl], dname),1]
+              if (substr(df$Class[sl],start=1, stop=1) == "c") slot(Data, df$Slot[sl]) <- temp
+              if (substr(df$Class[sl],start=1, stop=1) == "n") slot(Data, df$Slot[sl]) <- as.numeric(temp)
+            }
+          } else if (sh == "Time-Series") {
+            YearInd <- match("Year", dname)
+            Year <- dat[YearInd,]
+            Year <- Year[!is.na(Year)]
+            Data@Year <- Year 
+            ncol_ts <- length(Year)
+            ncol_cv <- 1
+            for (sl in 1:nrow(df)) {
+              ncol <- ifelse(grepl("CV_", df$Slot[sl]), ncol_cv, ncol_ts)
+              temp <- dat[match(df$XLRow[sl], dname),1:ncol]
+              if (substr(df$Class[sl],start=1, stop=1) == "c") 
+                slot(Data, df$Slot[sl]) <- temp
+              if (substr(df$Class[sl],start=1, stop=1) == "n")
+                slot(Data, df$Slot[sl]) <- as.numeric(temp)
+              if (substr(df$Class[sl],start=1, stop=1) == "m")
+                slot(Data, df$Slot[sl]) <- as.matrix(temp, nrow=1)
+              if(all(is.na(slot(Data, df$Slot[sl]))))  
+                slot(Data, df$Slot[sl]) <- slot(BlankDat, df$Slot[sl]) 
+            }
+            
+          } else if (sh == "CAA") {
+          
+            CAAMat <- array(NA, dim=c(1,length(Data@Year),Data@MaxAge))
+            Year <- Data@Year
+            CAAYr <-as.numeric(dname[2:length(dname)])
+            if(length(CAAYr[!CAAYr %in% Year])>0) 
+              stop("Some CAA Years not in Time-Series Year", call.=FALSE)
+            
+            YrInd <- match(CAAYr, Year) # match years 
+            CAAdat <- (dat[2:nrow(dat),])
+            if (ncol(CAAdat)> Data@MaxAge) 
+              stop("Number of age-classes in CAA data > MaxAge", call.=FALSE)
+
+            CAAMat[1, YrInd, 1:ncol(CAAdat)] <- as.matrix(CAAdat)
+            Data@CAA <- CAAMat
+            ignoreSheet <- append(ignoreSheet, sh)
+          } else if (sh == "CAL") {
+            CAL_bins <- as.matrix(dat[1,])
+            if(class(CAL_bins[1]) == 'character') {
+              CAL_bins <- as.numeric(gsub("[[:space:]]", "", CAL_bins))
+            } else {
+              CAL_bins <- as.numeric(CAL_bins)
+            }
+          
+            CAL_dat <- dat[2:nrow(dat), ]
+            nlendat <- sum(apply(apply(CAL_dat, 2, is.na), 2, prod) == 0)
+            if (nlendat != (length(CAL_bins)-1)) 
+              stop("Number of columns of CAL data should be one less than length of CAL_bins", call.=FALSE)
+            CAL_dat <- CAL_dat[,1:(length(CAL_bins)-1)]
+            CALMat <- array(NA, dim=c(1,length(Data@Year),(length(CAL_bins)-1)))
+            Year <- Data@Year
+            CALYr <-as.numeric(dname[2:length(dname)])
+            if(length(CALYr[!CALYr %in% Year])>0) 
+              stop("Some CAL Years not in Time-Series Year", call.=FALSE)
+            
+            YrInd <- match(CALYr, Year) # match years
+            
+            CALMat[1, YrInd, 1:ncol(CAL_dat)] <- as.matrix(CAL_dat)
+            Data@CAL_bins <- CAL_bins
+            Data@CAL <- CALMat
+            ignoreSheet <- append(ignoreSheet, sh)
+          } else {
+            message('Ignoring sheet: ', sh )
+            ignoreSheet <- append(ignoreSheet, sh)
+          }
+          
+          notRead <- dname[!dname %in% DataXLSlot[[sh]]$XLRow]
+          notRead <- notRead[!is.na(notRead)] 
+          if (!sh %in% ignoreSheet) if (length(notRead)>0) message("Rows not imported from sheet ",  sh, ": ", paste(notRead, collapse=", "))
+          
+        }
+        
+        
     }
+    
+     
+      # loop over rows in Excel - record all data that is not stored in slots
+      
+      
+      # checks 
+      # - all data is imported correctly
+      # - CAA and CAL are correct dimensions
+      # write function and run at end of new data if imported or else here
+      # - email 
+     
+    
+        
+    } else {
+      
+      datasheet <- as.data.frame(readxl::read_excel(file.path(dir,name), sheet = 1, col_names = FALSE))
+      if (datasheet[1,1]== "Slot") 
+        datasheet <- as.data.frame(readxl::read_excel(file.path(dir,name), sheet = 1, col_names = FALSE, skip=1))
+      
+      if (all(dim(datasheet) == 0)) stop("Nothing found in first sheet", call.=FALSE)
+      tmpfile <- tempfile(fileext=".csv")
+      writeCSV2(inobj = datasheet, tmpfile, objtype = "Data")
+      
+      if (ncol(datasheet)<2) {
+        unlink(tmpfile)
+        stop("No parameter values found in first worksheet ", call.=FALSE)
+      } else {
+        Data <- new("Data", tmpfile)
+        unlink(tmpfile)
+      }
+    }
+    return(Data)
   }
-  return(Data)
 }
 
   
@@ -188,7 +308,7 @@ applyMP <- function(Data, MPs = NA, reps = 100, nsims=NA, silent=FALSE) {
   TACout <- array(NA, dim=c(nMPs, reps, nsims))
   # if (!sfIsRunning() | (nMPs < 8 & nsims < 8)) {
   for (mp in 1:nMPs) {
-    temp <- sapply(1:nsims, MPs[mp], Data = Data, reps = reps)  
+    temp <- lapply(1:nsims, MPs[mp], Data = Data, reps = reps)  
     slots <- slotNames(temp[[1]])
     for (X in slots) { # sequence along recommendation slots 
       if (X == "Misc") { # convert to a list nsim by nareas
@@ -309,48 +429,38 @@ applyMP <- function(Data, MPs = NA, reps = 100, nsims=NA, silent=FALSE) {
 # }
 
 
-#' What management procedures can be applied to this Data object?
+#' Identify management procedures (MPs) based on data availability
 #' 
-#' An diagnostic tool that looks up the slot requirements of each MP and
-#' compares this to the data available to limit the analysis to methods that
-#' have the correct data, do not produce errors and run within a time limit.
-#' Time limit is the maximum time taken to carry out five reps (stochastic
-#' samples) of a given method and is in units of seconds.
-#' 
-#' 
+#' Diagnostic tools that look up the slot requirements of each MP and
+#' compares to the data available in the Data object.
+#'  
 #' @param Data A data-limited methods data object (class Data)
-#' @param timelimit The maximum time (seconds) taken for a method to undertake
-#' 10 reps (this filters out methods that are too slow)
+#' @param timelimit The maximum time (seconds) taken for an MP to undertake
+#' 5 reps (this filters out methods that are too slow)
 #' @param MPs Optional list of MP names
-#' 
-#' @seealso \link{Cant} \link{Needed} \link{avail}
+#' @param dev Logical. Run in development mode?
+#' @seealso \link{avail} \linkS4class{Data}
 #' @examples 
 #' CanMPs <- Can(DLMtool::Cobia)
+#' CantMPs <- Cant(DLMtool::Cobia)
+#' Needs <- Needed(DLMtool::Cobia)
+#' @describeIn Can Identifies MPs that have the correct data, do not produce errors,
+#' and run within the time limit.
 #' @export 
-Can <- function(Data, timelimit = 1, MPs=NA) {
-  DLMdiag(Data, "available",  timelimit = timelimit, funcs1=MPs)
+Can <- function(Data, timelimit = 1, MPs=NA, dev=FALSE) {
+  DLMdiag(Data, "available",  timelimit = timelimit, funcs1=MPs, dev=dev)
 }
 
 
-#' What management procedures can't be applied to this DLM data object
-#' 
-#' The MPs that don't have sufficient data, lead to errors or don't run in
-#' time along with a list of their data requirments.
-#' 
-#' 
-#' @param Data A data-limited methods data object (class Data)
-#' @param timelimit The maximum time (seconds) taken for a method to undertake
-#' 10 reps (this filters out methods that are too slow)
-#' @seealso \link{Can} \link{Needed} \link{avail}
-#' #' @examples 
-#' CantMPs <- Cant(DLMtool::Cobia)
+#' @describeIn Can Identifies MPs that don't have sufficient data, lead to errors, or don't run in
+#' time along with a list of their data requirements.
 #' @export Cant
 Cant <- function(Data, timelimit = 1) {
   DLMdiag(Data, "not available", timelimit = timelimit)
 }
 
 DLMdiag <- function(Data, command = c("available", "not available", "needed"), reps = 5, 
-                    timelimit = 1, funcs1=NA) {
+                    timelimit = 1, funcs1=NA, dev=FALSE) {
   command <- match.arg(command)
   if (class(Data) != "Data") stop("First argument must be object of class 'Data'", call.=FALSE)
   set.seed(101)
@@ -366,12 +476,28 @@ DLMdiag <- function(Data, command = c("available", "not available", "needed"), r
   
   rr <- try(slot(Data, "Misc"), silent = TRUE)
   if (class(rr) == "try-error") Data@Misc <- list()
-  
-  temp <- lapply(funcs1, function(x) paste(format(match.fun(x)), collapse = " "))
-  
-  repp <- vapply(temp, match_slots, character(1), Data = Data)
-  
-  chk_needed <- nzchar(repp) # TRUE = has missing data
+  if (!dev) {
+    ReqData <- DLMtool::ReqData
+    builtin <- funcs1[funcs1 %in% ReqData$MP]
+    custom <- funcs1[!funcs1 %in% ReqData$MP]
+    inMPind <- which(funcs1 %in% builtin)
+    cMPind <- which(funcs1 %in% custom)
+    repp <- rep('', length(funcs1))
+    # built in MPs (doesn't require 'dependencies' line)
+    reqdata <-  ReqData[match(builtin, ReqData$MP),2]
+    
+    repp[inMPind] <- vapply(reqdata, match_slots, character(1), Data = Data, internal=TRUE)
+    
+    # custom MPs 
+    temp <- lapply(custom, function(x) paste(format(match.fun(x)), collapse = " "))
+    repp[cMPind] <- vapply(temp, match_slots, character(1), Data = Data)
+    
+    chk_needed <- nzchar(repp) # TRUE = has missing data
+  } else {
+    repp <- rep('', length(funcs1))
+    chk_needed <- rep(FALSE, length(funcs1))
+  }
+
   
   if (command == "needed") {
     # repp[!chk_needed] <- "All required data are present. Test MP with Can()"
@@ -388,7 +514,7 @@ DLMdiag <- function(Data, command = c("available", "not available", "needed"), r
     if(!chk_needed[y]) {
       setTimeLimit(timelimit * 1.5)
       time1 <- Sys.time()
-      test[[y]] <- tryCatch(do.call(funcs1[y], list(x = 1, Data = Data, reps = 5)), 
+      test[[y]] <- tryCatch(do.call(funcs1[y], list(x = 1, Data = Data, reps = reps)), 
                             error = function(e) as.character(e))
       time2 <- Sys.time()
       setTimeLimit(Inf)
@@ -491,34 +617,24 @@ needed <- function(Data, funcs) {
 ## needed(): matches slotnames of Data class to those that are required in an MP func
 ##           but also return NAor0 = TRUE
 match_slots <- function(func, slotnams = paste0("Data@", slotNames("Data")), 
-                        slots = slotNames("Data"), Data = NULL) {
-  # check if each slotname in Data class is required in an MP
-  ind_MP <- vapply(slotnams, grepl, numeric(1), x = func)
+                        slots = slotNames("Data"), Data = NULL, internal=FALSE) {
+  # check if each slotname in Data class is required in an MP (T/F)
+  
+  if(internal) ind_MP <- vapply(slots, grepl, logical(1), x = func)
+  if(!internal) ind_MP <- vapply(slotnams, grepl, logical(1), x = func)
   if(!is.null(Data) && inherits(Data, "Data")) { # check if Data slots return NA or zero
     ind_NAor0 <- vapply(slots, function(x) all(NAor0(slot(Data, x))), logical(1))
     repp <- slots[ind_MP & ind_NAor0] # returns slots where both tests are true
-  }
-  else {
+  } else {
     repp <- slots[ind_MP]
   }
   return(paste(repp, collapse = ", "))
 }
 
-#' Data needed to get MPs running
-#' 
-#' A funtion that lists what data are needed to run
-#' data-limited methods that are currently not able to run given a Data
+#' @describeIn Can Identifies what data are needed to run
+#' the MPs that are currently not able to run given a Data
 #' object
-#' 
-#' 
-#' @usage Needed(Data, timelimit=1)
-#' @param Data A data-limited methods data object
-#' @param timelimit The maximum time (seconds) taken to complete 10 reps
-#' @author T. Carruthers
-#' @seealso \link{Can} \link{Cant} \link{avail}
 #' @export Needed
-#' @examples 
-#' Needs <- Needed(DLMtool::Cobia)
 Needed <- function(Data, timelimit = 1) {
   DLMdiag(Data, "needed", timelimit = timelimit)
 }
@@ -801,6 +917,59 @@ TAC <- function(Data, MPs = NA, reps = 100, timelimit = 1) {
   }
   
 }
+
+
+#' Join Data objects present in a list 
+#' 
+#' A function that combined a list of data objects into a single data object (same dimensions but can have different numbers of simulations)
+#' 
+#' 
+#' @param DataList A list of data objects of identical dimension (except for simulation)
+#' @author T. Carruthers
+#' @export 
+joinData<-function(DataList){
+  
+  if (class(DataList) != "list") stop("DataList must be a list")
+  if (length(DataList) < 2) stop("DataList list doesn't contain multiple MSE objects")
+  
+  Data<-DataList[[1]]
+  nD<-length(DataList)
+ 
+  slots<-slotNames(Data)
+  slots <- slots[!slots%in%c("Name","Ref","OM","MaxAge","CAL_bins","Year","Units","Ref","Ref_type","Log","params","PosMPs","MPs","Obs","Misc","nareas","LHYear")]
+  
+  nslots<-length(slots)
+  getslot<-function(obj,name)slot(obj,name) # weird issue with namespace conflict and the @Cat slot
+  getslotclass<-function(obj,name)class(slot(obj,name))
+  sclass<-sapply(1:nslots,function(x,obj,slots)getslotclass(obj,slots[x]),obj=DataList[[1]],slots=slots)
+  #getdim<-function(x){
+  #  dim<-dim(x)
+  #  if(is.null(dim))dim=length(x)
+  #  dim
+  #}
+  #sdims<-sapply(1:nslots,function(x,obj,slots)getdim(getslot(obj,slots[x])),obj=DataList[[1]],slots=slots)
+  #nsims<-sapply(1:nD,function(x,DataList)length(DataList[[x]]@Dt),DataList)
+
+  for (sn in 1:nslots){
+     
+    templist<-lapply(DataList,getslot,name=slots[sn])
+     
+    if (sclass[sn] == "numeric"|sclass[sn]=="integer") {
+      attr(Data, slots[sn]) <- unlist(templist)
+    } else if (sclass[sn]== "matrix"|sclass[sn]=="array") {
+      attr(Data, slots[sn]) <- abind(templist, along=1)
+    } 
+  } 
+    
+  #checkdims<-sapply(1:nslots,function(x,obj,slots)getdim(getslot(obj,slots[x])),obj=Data,slots=slots)
+  Data  
+
+}
+
+
+
+
+
 
 
 

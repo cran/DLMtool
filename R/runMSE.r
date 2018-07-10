@@ -14,7 +14,8 @@ Names <- c("maxage", "R0", "Mexp", "Msd", "dep", "D", "Mgrad", "SRrel", "hs", "p
            "Linfarray", "Karray", "t0array", "mov",  "nareas", "AC", "LenCV", "a", "b", "FinF", 
            "Fdisc", "R50", "Rslope", "retA", "retL", "LR5", "LFR", "Rmaxlen",
            "V2", "SLarray2", "DR", "Asize", "Size_area_1", "L50array", "L95array",
-           "Fdisc_array", "Fdisc_array2", "Pinitdist", "incProgress")
+           "Fdisc_array", "Fdisc_array2", "Pinitdist", "incProgress", "DataOut",
+           'Perr_y', "Cobs", "Iobs", "Dobs", "Btbiascv", 'Btobs', "h")
 
 
 if(getRversion() >= "2.15.1") utils::globalVariables(Names)
@@ -29,9 +30,8 @@ if(getRversion() >= "2.15.1") utils::globalVariables(Names)
 #' 
 #' 
 #' @param OM An operating model object (class 'OM')
-#' @param MPs A vector of methods (character string) of class Output or
-#' Input.
-#' @param CheckMPs Logical to indicate if Can function should be used to check
+#' @param MPs A vector of methods (character string) of class MP
+#' @param CheckMPs Logical to indicate if \link{Can} function should be used to check
 #' if MPs can be run.
 #' @param timelimit Maximum time taken for a method to carry out 10 reps
 #' (methods are ignored that take longer)
@@ -40,7 +40,7 @@ if(getRversion() >= "2.15.1") utils::globalVariables(Names)
 #' @param ntrials Maximum of times depletion and recruitment deviations are 
 #' resampled to optimize for depletion. After this the model stops if more than 
 #' percent of simulations are not close to the required depletion
-#' @param fracD maximum allowed proportion of simulations where depletion is not 
+#' @param fracD Maximum allowed proportion of simulations where depletion is not 
 #' close to sampled depletion from OM before model stops with error
 #' @param CalcBlow Should low biomass be calculated where this is the spawning
 #' biomass at which it takes HZN mean generation times of zero fishing to reach 
@@ -56,11 +56,25 @@ if(getRversion() >= "2.15.1") utils::globalVariables(Names)
 #' @param save_name Character. Optional name to save parallel MSE list
 #' @param checks Logical. Run tests?
 #' @param control control options for testing and debugging
-#' @return An object of class MSE
-#' @author T. Carruthers and A. Hordyk
-#' @importFrom utils ls.str
-#' @export
+#' @param maxsims Maximum number of simulations per packet
+#' @param name Character string for name of saved MSE packets (if \code{savePack=TRUE}) 
+#' and final MSE object. If none provided, it uses the first five letters from the \code{OM} name
+#' @param unique Logical. Should the name be unique? Current date and time appended to name. 
+#' @param maxCrash Maximum number of consecutive crashes before the MSE stops
+#' @param saveMSE Logical to indicate if final MSE object should be saved to current 
+#' working directory (this is probably a good idea)
+#' @param savePack Logical to indicate if packets should be save to current working directory
+#' @param ... Arguments to runMSE function 
 #' 
+#' @templateVar url running-the-mse
+#' @templateVar ref NULL 
+#' @template userguide_link
+#' 
+#' @return An object of class \linkS4class{MSE}
+#' @author T. Carruthers and A. Hordyk
+#' @describeIn runMSE Default function to use.
+#' @seealso \link{joinMSE} \link{checkMSE} \link{updateMSE}
+#' @export
 runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","matlenlim", "MRreal"), 
                    CheckMPs = FALSE, timelimit = 1, Hist=FALSE, ntrials=50, fracD=0.05, CalcBlow=TRUE, 
                    HZN=2, Bfrac=0.5, AnnualMSY=TRUE, silent=FALSE, PPD=FALSE, parallel=FALSE, 
@@ -72,22 +86,30 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
     parallel <- FALSE
   }
   
+  # Set DLMenv to be empty. Currently updated by Assess models in MSEtool
+  rm(list = ls(DLMenv), envir = DLMenv)
+  
   # check if custom MP names already exist in DLMtool
-  gl.funs <- as.vector(lsf.str(envir=globalenv()))
-  pkg.funs <- as.vector(ls.str('package:DLMtool'))
-  if (length(gl.funs)>0) {
-    gl.clss <- unlist(lapply(lapply(gl.funs, get), class))
-    gl.MP <- gl.funs[gl.clss %in% 'MP']
-    if (length(gl.MP)>0) {
-      inc.gl <- gl.MP[gl.MP %in% MPs]
-      if (length(inc.gl)>0) {
-        dup.MPs <- inc.gl[inc.gl %in% pkg.funs]
-        if (length(dup.MPs)>0) {
-          stop("Custom MP names already in DLMtool: ", paste0(dup.MPs, ""), "\nRename Custom MPs")
+  tt <-  suppressWarnings(try(lsf.str(envir=globalenv()), silent=TRUE))
+  if (class(tt)!="try-error") {
+    gl.funs <- as.vector(tt)
+    pkg.funs <- as.vector(ls.str('package:DLMtool'))
+    if (length(gl.funs)>0) {
+      gl.clss <- unlist(lapply(lapply(gl.funs, get), class))
+      gl.MP <- gl.funs[gl.clss %in% 'MP']
+      if (length(gl.MP)>0) {
+        inc.gl <- gl.MP[gl.MP %in% MPs]
+        if (length(inc.gl)>0) {
+          dup.MPs <- inc.gl[inc.gl %in% pkg.funs]
+          if (length(dup.MPs)>0) {
+            stop("Custom MP names already in DLMtool: ", paste0(dup.MPs, " "), "\nRename Custom MPs")
+          }
         }
-      }
-    } 
+      } 
+    }
   }
+  
+
   
   # Check MPs 
   if (!all(is.na(MPs))) {
@@ -105,12 +127,13 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
       setup()
     }
     
+    if (all(is.na(MPs))) MPs <- avail("MP")
     # Export Custom MPs # 
     cMPs <- MPs[!MPs %in% pkg.funs]
     if (length(cMPs)>0) snowfall::sfExport(list=cMPs)
     
     ncpu <- snowfall::sfCpus()
-    
+
     if (OM@nsim<48) stop("nsim must be >=48")
     nits <- ceiling(OM@nsim/48)
     
@@ -120,27 +143,35 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
       nits <- ncpu
       itsim <- rep(ceiling(OM@nsim/ncpu), ncpu)
     }
-    if(sum(itsim) != OM@nsim) {
-      itsim[length(itsim)] <- OM@nsim - sum(itsim[1:(length(itsim)-1)] )
+    cnt <- 1
+    while(sum(itsim) != OM@nsim | any(itsim<2)) {
+      diff <-  OM@nsim - sum(itsim)
+      if (diff >0) {
+        itsim[cnt] <- itsim[cnt]+1
+      } 
+      if(diff < 0) {
+        itsim[cnt] <- itsim[cnt]-1
+      }
+      cnt <- cnt+1 
+      if (cnt > length(itsim)) cnt <- 1 
     }
-    if (itsim[length(itsim)]==1) {
-      itsim[length(itsim)] <- 2
-      itsim[length(itsim)-1] <- itsim[length(itsim)-1] - 1
-    }
+    
+   
     if (!silent) message("Running MSE in parallel on ", ncpu, ' processors')
     
     temp <- snowfall::sfClusterApplyLB(1:nits, run_parallel, itsim=itsim, OM=OM, MPs=MPs,  
                              CheckMPs=CheckMPs, timelimit=timelimit, Hist=Hist, ntrials=ntrials, 
                              fracD=fracD, CalcBlow=CalcBlow, 
                              HZN=HZN, Bfrac=Bfrac, AnnualMSY=AnnualMSY, silent=TRUE, PPD=PPD)
+    #assign_DLMenv() # grabs objects from DLMenv in cores, then merges and assigns to 'home' environment
   
     if (!is.null(save_name) && is.character(save_name)) saveRDS(temp, paste0(save_name, '.rdata'))
     
     MSE1 <- joinMSE(temp) 
     if (class(MSE1) == "MSE") {
-      message("MSE completed")
+      if (!silent) message("MSE completed")
     } else {
-      message("MSE completed but could not join MSE objects. Re-run with `save_name ='MyName'` to debug")
+      warning("MSE completed but could not join MSE objects. Re-run with `save_name ='MyName'` to debug")
     }
   }
 
@@ -163,7 +194,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   
  
   
-  # For debugging - assign default argument values to to current workspace if they don't exist ####
+  # For development - assign default argument values to to current workspace if they don't exist ####
   if (interactive()) { 
     # devtools::load_all()
     DFargs <- formals(runMSE)
@@ -218,8 +249,8 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   SampCpars <- list() # empty list 
   # custom parameters exist - sample and write to list
   if(length(OM@cpars)>0){
-    ncparsim<-cparscheck(OM@cpars)   # check each list object has the same length and if not stop and error report
-    SampCpars <- SampleCpars(OM@cpars, nsim) 
+    # ncparsim<-cparscheck(OM@cpars)   # check each list object has the same length and if not stop and error report
+    SampCpars <- SampleCpars(OM@cpars, nsim, msg=!silent) 
   }
   
   # --- Sample Stock Parameters ----
@@ -227,7 +258,6 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   # Assign Stock pars to function environment
   for (X in 1:length(StockPars)) assign(names(StockPars)[X], StockPars[[X]])
 
-  
   # --- Sample Fleet Parameters ----
   FleetPars <- SampleFleetPars(SubOM(OM, "Fleet"), Stock=StockPars, nsim, nyears, proyears, 
                                cpars=SampCpars)
@@ -316,7 +346,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     M_ageArrayp <- array(M_ageArray[,,1], dim=c(dim(M_ageArray)[1:2], Nyrs))
     Wt_agep <- array(Wt_age[,,1], dim=c(dim(Wt_age)[1:2], Nyrs))
     Mat_agep <- array(Mat_age[,,1], dim=c(dim(Mat_age)[1:2], Nyrs))
-    Perrp <- array(1, dim=c(dim(Perr)[1], Nyrs+maxage)) # no process error 
+    Perr_yp <- array(1, dim=c(dim(Perr_y)[1], Nyrs+maxage)) # no process error 
     # Not used but make the arrays anyway
     retAp <- array(retA[,,1], dim=c(dim(retA)[1:2], Nyrs))
     Vp <- array(V[,,1], dim=c(dim(V)[1:2], Nyrs))
@@ -334,7 +364,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     # Project unfished for Nyrs to calculate equilibrium spatial distribution
     runProj <- lapply(1:nsim, projectEq, Asize, nareas=nareas, maxage=maxage, N=N, pyears=Nyrs,
            M_ageArray=M_ageArrayp, Mat_age=Mat_agep, Wt_age=Wt_agep, V=Vp, retA=retAp,
-           Perr=Perrp, mov=mov, SRrel=SRrel, Find=Find, Spat_targ=Spat_targ, hs=hs,
+           Perr=Perr_yp, mov=mov, SRrel=SRrel, Find=Find, Spat_targ=Spat_targ, hs=hs,
            R0a=R0a, SSBpR=SSBpR, aR=aR, bR=bR, SSB0=SSB0, B0=B0, MPA=noMPA, maxF=maxF,
            Nyrs)
     
@@ -378,8 +408,8 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   aR <- matrix(exp(bR * SSB0a)/SSBpR, nrow=nsim)  # Ricker SR params
   
   #  --- Non-equilibrium calcs ----
-  SSN[SAYR] <- Nfrac[SA] * R0[S] * initdist[SAR]*Perr[Sa]  # Calculate initial spawning stock numbers
-  N[SAYR] <- R0[S] * surv[SA] * initdist[SAR]*Perr[Sa]  # Calculate initial stock numbers
+  SSN[SAYR] <- Nfrac[SA] * R0[S] * initdist[SAR]*Perr_y[Sa]  # Calculate initial spawning stock numbers
+  N[SAYR] <- R0[S] * surv[SA] * initdist[SAR]*Perr_y[Sa]  # Calculate initial stock numbers
   
   Biomass[SAYR] <- N[SAYR] * Wt_age[SAY]  # Calculate initial stock biomass
   SSB[SAYR] <- SSN[SAYR] * Wt_age[SAY]    # Calculate spawning stock biomass
@@ -402,7 +432,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   
   bounds <- c(0.0001, 15) # q bounds for optimizer
   qs <- sapply(1:nsim, getq3, D, SSB0, nareas, maxage, N, pyears=nyears, 
-               M_ageArray, Mat_age, Asize, Wt_age, V, retA, Perr, mov, SRrel, Find, 
+               M_ageArray, Mat_age, Asize, Wt_age, V, retA, Perr_y, mov, SRrel, Find, 
                Spat_targ, hs, R0a, SSBpR, aR, bR, bounds=bounds, MPA=MPA, maxF=maxF) # find the q that gives current stock depletion
 
   # --- Check that q optimizer has converged ---- 
@@ -436,7 +466,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
       # Re-sample recruitment deviations
       procsd[probQ] <- ResampStockPars$procsd 
       AC[probQ] <- ResampStockPars$AC
-      Perr[probQ,] <- ResampStockPars$Perr
+      Perr_y[probQ,] <- ResampStockPars$Perr_y
       hs[probQ] <- ResampStockPars$hs
       
       # Re-sample historical fishing effort
@@ -448,7 +478,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
       
       # Optimize for q 
       qs[probQ] <- sapply(probQ, getq3, D, SSB0, nareas, maxage, N, pyears=nyears, 
-                          M_ageArray, Mat_age, Asize, Wt_age, V, retA, Perr, mov, SRrel, Find, 
+                          M_ageArray, Mat_age, Asize, Wt_age, V, retA, Perr_y, mov, SRrel, Find, 
                           Spat_targ, hs, R0a, SSBpR, aR, bR, bounds=bounds, MPA=MPA, maxF=maxF)
       
       probQ <- which(qs > max(LimBound) | qs < min(LimBound))
@@ -476,7 +506,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   
   # --- Simulate historical years ----
   histYrs <- sapply(1:nsim, simYears, nareas, maxage, N, pyears=nyears, M_ageArray, Asize,
-                    Mat_age, Wt_age, V, retA, Perr, mov, SRrel, Find, Spat_targ, hs, R0a, 
+                    Mat_age, Wt_age, V, retA, Perr_y, mov, SRrel, Find, Spat_targ, hs, R0a, 
                     SSBpR, aR, bR, qs, MPA, maxF, SSB0=SSB0)
   
   N <- aperm(array(as.numeric(unlist(histYrs[1,], use.names=FALSE)), dim=c(maxage, nyears, nareas, nsim)), c(4,1,2,3))
@@ -505,6 +535,13 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   
   MSYrefs <- sapply(1:nsim, optMSY_eq, M_ageArray, Wt_age, Mat_age, V, maxage, 
                     R0, SRrel, hs, yr=nyears)
+  
+  # M_ageArray2 <- M_ageArray
+  # M_ageArray2 <- M_ageArray[,,rep(1, 100)]
+  # Wt_age2 <- Wt_age
+  # Wt_age2 <- Wt_age[,,rep(1, 100)]
+  # MSYrefs <- sapply(1:nsim, optMSY_eq, M_ageArray2, Wt_age2, Mat_age, V, maxage, 
+  #                   R0, SRrel, hs, yr=nyears)
 
   MSY <- MSYrefs[1, ]  # record the MSY results (Vulnerable)
   FMSY <- MSYrefs[2, ]  # instantaneous FMSY (Vulnerable)
@@ -522,8 +559,6 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     y <-D/SSBMSY_SSB0
     plot(x,y, xlim=c(0,max(x)), ylim=c(0,max(y)), xlab="SSB/SSBMSY", ylab="D/SSBMSY_SSB0")
     lines(c(-10,10),c(-10,10))
-    
-
   }
   
   
@@ -540,7 +575,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     MGThorizon<-floor(HZN*MGT)
     
     Blow <- sapply(1:nsim,getBlow, N, Asize, MSYrefs[3,],SSBpR, MPA, SSB0, nareas, retA, MGThorizon,
-                   Find,Perr,M_ageArray,hs,Mat_age, Wt_age,R0a,V,nyears,maxage,mov,
+                   Find,Perr_y,M_ageArray,hs,Mat_age, Wt_age,R0a,V,nyears,maxage,mov,
                    Spat_targ,SRrel,aR,bR,Bfrac, maxF) 
   }else{
     Blow<-rep(NA,nsim)
@@ -555,7 +590,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
                  Wt_age=Wt_age[,,nyears:(nyears+proyears)], 
                  V=retA[, , (nyears + 1):(nyears + proyears), drop=FALSE], 
                  retA=retA[, , (nyears + 1):(nyears + proyears), drop=FALSE],  
-                 Perr=Perr[,(nyears):(nyears+maxage+proyears-1)], mov, SRrel, Find, 
+                 Perr=Perr_y[,(nyears):(nyears+maxage+proyears-1)], mov, SRrel, Find, 
                  Spat_targ, hs, R0a, SSBpR, aR, bR, MPA=MPA, maxF=maxF, SSB0=SSB0)
 
   # --- Calculate catch-at-age ----
@@ -601,19 +636,16 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   vn <- aperm(vn, c(1,3, 2))
 
   # Generate size comp data with variability in age
-  tempSize <- lapply(1:nsim, genSizeCompWrap, vn, CAL_binsmid, CAL_ESS, CAL_nsamp,
+  tempSize <- lapply(1:nsim, genSizeCompWrap, vn, CAL_binsmid, retL, CAL_ESS, CAL_nsamp,
                      Linfarray, Karray, t0array, LenCV, truncSD=2)
+  
   CAL <- aperm(array(as.numeric(unlist(tempSize, use.names=FALSE)), dim=c(nyears, length(CAL_binsmid), nsim)), c(3,1,2))
 
-  for (i in 1:nsim) {
-    ind <- round(CAL[i,nyears, ],0) >= 1
-    if (sum(ind)>0) {
-      LFC[i] <- CAL_binsmid[min(which(ind))] # get the smallest CAL observation
-    } else {
-      LFC[i] <- 0
-    }
-  }
-
+  # calculate LFC 
+  LFC <- unlist(lapply(tempSize, function(x) getfifth(x[nyears, ], CAL_binsmid)))
+  LFC[is.na(LFC)] <- 1
+  LFC[LFC<1] <- 1
+    
   # --- Simulate index of abundance from total biomass ----
   Ierr <- array(rlnorm((nyears + proyears) * nsim, mconv(1, rep(Isd, nyears + proyears)), 
                        sdconv(1, rep(Isd, nyears + proyears))), c(nsim, nyears + proyears))
@@ -636,15 +668,30 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   if (nsim == 1) Iref <- mean(I3[1:5]) * SSBMSY_SSB0
   
   # --- Simulate observed values in steepness ----
-  hsim <- rep(NA, nsim)  
-  cond <- hs > 0.6
-  hsim[cond] <- 0.2 + rbeta(sum(hs > 0.6), alphaconv((hs[cond] - 0.2)/0.8, (1 - (hs[cond] - 0.2)/0.8) * OM@hbiascv), 
-                            betaconv((hs[cond] - 0.2)/0.8,  (1 - (hs[cond] - 0.2)/0.8) * OM@hbiascv)) * 0.8
-  hsim[!cond] <- 0.2 + rbeta(sum(hs <= 0.6), alphaconv((hs[!cond] - 0.2)/0.8,  (hs[!cond] - 0.2)/0.8 * OM@hbiascv), 
-                             betaconv((hs[!cond] - 0.2)/0.8, (hs[!cond] - 0.2)/0.8 * OM@hbiascv)) * 0.8
-  hbias <- hsim/hs  # back calculate the simulated bias
-  if (OM@hbiascv == 0) hbias <- rep(1, nsim) 
-  ObsPars$hbias <- hbias
+  if (is.null(OM@cpars[['l_hbias']])) {
+    hsim <- rep(NA, nsim)  
+    cond <- hs > 0.6
+    hsim[cond] <- 0.2 + rbeta(sum(hs > 0.6), alphaconv((hs[cond] - 0.2)/0.8, (1 - (hs[cond] - 0.2)/0.8) * OM@hbiascv), 
+                              betaconv((hs[cond] - 0.2)/0.8,  (1 - (hs[cond] - 0.2)/0.8) * OM@hbiascv)) * 0.8
+    hsim[!cond] <- 0.2 + rbeta(sum(hs <= 0.6), alphaconv((hs[!cond] - 0.2)/0.8,  (hs[!cond] - 0.2)/0.8 * OM@hbiascv), 
+                               betaconv((hs[!cond] - 0.2)/0.8, (hs[!cond] - 0.2)/0.8 * OM@hbiascv)) * 0.8
+    hbias <- hsim/hs  # back calculate the simulated bias
+    if (OM@hbiascv == 0) hbias <- rep(1, nsim) 
+    ObsPars$hbias <- hbias 
+  } else {
+    l_hbias <- sample(OM@cpars$l_hbias, OM@nsim, replace=TRUE)
+  
+    P <- (hs-.2)/0.8
+    hs_logit <- log(P/(1-P))
+    P2 <- exp(hs_logit * l_hbias)/(1+exp(hs_logit * l_hbias))
+    P2[is.nan(P2)] <- 1
+    hsim <- (P2 * 0.8) + 0.2
+    hbias <- hsim/hs  # back calculate the simulated bias
+    
+    ObsPars$hbias <- hbias
+
+   }
+
   
   # --- Simulate error in observed recruitment index ----
   Recerr <- array(rlnorm((nyears + proyears) * nsim, mconv(1, rep(Recsd, (nyears + proyears))), 
@@ -710,6 +757,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   Data@L95[Data@L95 > 0.9 * Data@vbLinf] <- 0.9 * Data@vbLinf[Data@L95 > 0.9 * Data@vbLinf]  # Set a hard limit on ratio of L95 to Linf
   Data@L50[Data@L50 > 0.9 * Data@L95] <- 0.9 * Data@L95[Data@L50 > 0.9 * Data@L95]  # Set a hard limit on ratio of L95 to Linf
   Data@steep <- hs * hbias
+  Data@sigmaR <- procsd # sigmaR assumed no obs error
   Data@CAL_bins <- CAL_bins
   Data@CAL <- CAL
   MLbin <- (CAL_bins[1:(length(CAL_bins) - 1)] + CAL_bins[2:length(CAL_bins)])/2
@@ -729,16 +777,20 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   Data@nareas <- nareas
   
   # put all the operating model parameters in one table
-  Data@OM <- data.frame(RefY, M, Depletion, A, SSBMSY_SSB0, FMSY_M, Mgrad, Msd, procsd, Esd, dFfinal, 
+  OMtable <- data.frame(RefY, M, Depletion, A, SSBMSY_SSB0, FMSY_M, Mgrad, Msd, procsd, Esd, dFfinal, 
                         MSY=MSY, qinc, qcv, FMSY=FMSY, Linf, K, t0, hs, Linfgrad, Kgrad, Linfsd, Ksd, 
                         ageM=ageM[,nyears], L5=L5[nyears, ], LFS=LFS[nyears, ], Vmaxlen=Vmaxlen[nyears, ], LFC, OFLreal, 
                         Spat_targ, Size_area_1, Frac_area_1, Prob_staying, AC, L50, L95, B0, N0, SSB0, BMSY_B0,
                         TACSD,TACFrac,TAESD,TAEFrac,SizeLimSD,SizeLimFrac,Blow,MGT,
                         BMSY, SSBMSY=SSBMSY, Mexp, Fdisc, 
                         LR5=LR5[nyears,], LFR=LFR[nyears,], Rmaxlen=Rmaxlen[nyears,], DR=DR[nyears,]) 
+  OMtable <- OMtable[,order(names(OMtable))]
+  
+  Data@OM <- OMtable
 
-
-  Data@Obs <- as.data.frame(ObsPars) # put all the observation error model parameters in one table
+  ObsTable <- as.data.frame(ObsPars)
+  ObsTable <- ObsTable[,order(names(ObsTable))]
+  Data@Obs <- ObsTable # put all the observation error model parameters in one table
   
   Data@LHYear <- OM@nyears  # Last historical year is nyears (for fixed MPs)
   Data@MPrec <- Cobs[, nyears]
@@ -853,12 +905,17 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     if(!silent) cat("\n")
   }
 
+  if (length(interval) != nMP) interval <- rep(interval, nMP)[1:nMP]
+  if (!all(interval == interval[1])) {
+    message("Variable management intervals:")
+    df <- data.frame(MP=MPs,interval=interval)
+    message(paste(capture.output(print(df)), collapse = "\n"))
+  }
   
   # --- Begin loop over MPs ----
   mm <- 1 # for debugging
   
   for (mm in 1:nMP) {  # MSE Loop over methods
-    
     if(!silent) message(mm, "/", nMP, " Running MSE for ", MPs[mm])  # print a progress report
     
     # reset selectivity parameters for projections
@@ -914,7 +971,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
    
     NextYrN <- lapply(1:nsim, function(x)
       popdynOneTScpp(nareas, maxage, SSBcurr=colSums(SSB[x,,nyears, ]), Ncurr=N[x,,nyears,],
-                     Zcurr=Z[x,,nyears,], PerrYr=Perr[x, nyears+maxage-1], hs=hs[x],
+                     Zcurr=Z[x,,nyears,], PerrYr=Perr_y[x, nyears+maxage-1], hs=hs[x],
                      R0a=R0a[x,], SSBpR=SSBpR[x,], aR=aR[x,], bR=bR[x,],
                      mov=mov[x,,,], SRrel=SRrel[x]))
     
@@ -929,6 +986,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     # -- apply MP in initial projection year ----
     # Combined MP ----
     runMP <- applyMP(MSElist[[mm]], MPs = MPs[mm], reps = reps)  # Apply MP
+    
     MPRecs <- runMP[[1]][[1]] # MP recommendations
     Data <- runMP[[2]] # Data object object with saved info from MP 
     Data@TAC <- MPRecs$TAC
@@ -972,7 +1030,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     V_P <- MPCalcs$V_P  # vulnerable-at-age
     SLarray_P <- MPCalcs$SLarray_P # vulnerable-at-length 
     
-    upyrs <- 1 + (0:(floor(proyears/interval) - 1)) * interval  # the years in which there are updates (every three years)
+    upyrs <- 1 + (0:(floor(proyears/interval[mm]) - 1)) * interval[mm]  # the years in which there are updates (every three years)
     if(!silent) {
       cat(".")
       flush.console()
@@ -1019,7 +1077,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
       
       NextYrN <- lapply(1:nsim, function(x)
         popdynOneTScpp(nareas, maxage, SSBcurr=colSums(SSB_P[x,,y-1, ]), Ncurr=N_P[x,,y-1,],
-                       Zcurr=Z_P[x,,y-1,], PerrYr=Perr[x, y+nyears+maxage-1], hs=hs[x],
+                       Zcurr=Z_P[x,,y-1,], PerrYr=Perr_y[x, y+nyears+maxage-1], hs=hs[x],
                        R0a=R0a[x,], SSBpR=SSBpR[x,], aR=aR[x,], bR=bR[x,],
                        mov=mov[x,,,], SRrel=SRrel[x]))
   
@@ -1045,38 +1103,51 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         
         Cobs <- Cbiasa[, nyears + yind] * Cerr[, nyears + yind] * apply(CBtemp, c(1, 3), sum, na.rm = T)
         Cobs[is.na(Cobs)] <- tiny
-        Recobs <- Recerr[, nyears + yind] * apply(array(N_P[, 1, yind, ], c(nsim, interval, nareas)), c(1, 2), sum)
+        Recobs <- Recerr[, nyears + yind] * apply(array(N_P[, 1, yind, ], c(nsim, interval[mm], nareas)), c(1, 2), sum)
        
-        CAA <- array(0, dim = c(nsim, interval, maxage))  # Catch  at age array
+        CAA <- array(0, dim = c(nsim, interval[mm], maxage))  # Catch  at age array
+        
         # # a multinomial observation model for catch-at-age data
         for (i in 1:nsim) {
-          for (j in 1:interval) {
+          for (j in 1:interval[mm]) {
+            if (all(CNtemp[i, , j]<1)) { # this is a fix for low sample sizes. If CAA is zero across the board a single fish is caught in age class of model selectivity (dumb I know)
+              CNtemp[i, floor(maxage/3), j] <- 1
+            }
             CAA[i, j, ] <- ceiling(-0.5 + rmultinom(1, CAA_ESS[i], CNtemp[i, , j]) * CAA_nsamp[i]/CAA_ESS[i])   # a multinomial observation model for catch-at-age data
           }
         }	  
         
         ## Calculate CAL ####
-        CAL <- array(NA, dim = c(nsim, interval, nCALbins))  # the catch at length array
+        CAL <- array(NA, dim = c(nsim, interval[mm], nCALbins))  # the catch at length array
         # # a multinomial observation model for catch-at-length data
         
         vn <- (apply(N_P[,,,], c(1,2,3), sum) * retA_P[,,(nyears+1):(nyears+proyears)]) # numbers at age that would be retained
         vn <- aperm(vn, c(1,3,2))
         
         nyrs <- length(yind)
-        tempSize <- lapply(1:nsim, genSizeCompWrap, vn[,yind,, drop=FALSE], CAL_binsmid, CAL_ESS, CAL_nsamp,
+        tempSize <- lapply(1:nsim, genSizeCompWrap, vn[,yind,, drop=FALSE], CAL_binsmid, retL_P, 
+                           CAL_ESS, CAL_nsamp,
                            Linfarray[,nyears + yind, drop=FALSE],  
                            Karray[,nyears + yind, drop=FALSE], 
                            t0array[,nyears + yind,drop=FALSE], LenCV, truncSD=2)
         CAL <- aperm(array(as.numeric(unlist(tempSize, use.names=FALSE)), dim=c(length(yind), length(CAL_binsmid), nsim)), c(3,1,2))
         
-        for (i in 1:nsim) {
-          ind <- round(CAL[i,nyrs, ],0) >= 1
-          if (sum(ind)>0) {
-            LFC[i] <- CAL_binsmid[min(which(ind))] # get the smallest CAL observation
-          } else {
-            LFC[i] <- 0
+        # check CAL 
+        chkCAL <- apply(CAL, c(1,2), sum)
+        if (any(chkCAL==0)) {
+          for (ss in 1:nrow(chkCAL)) {
+            for (yy in 1:ncol(chkCAL)) {
+              if (chkCAL[ss,yy]==0) {
+                bn <- ceiling(c(0.5*nCALbins, 0.5*nCALbins+1))
+                CAL[ss,yy,bn] <- 1 # if CAL is empty - put 1 individual in two middle bins - for robustness
+              }
+            }
           }
         }
+        
+        # calculate LFC - approx 5th percentile 
+        LFC <- unlist(lapply(tempSize, function(x) getfifth(x[nrow(x), ], CAL_binsmid)))
+        LFC[is.na(LFC)] <- 1
         LFC[LFC<1] <- 1
         
         I2 <- cbind(apply(Biomass, c(1, 3), sum), apply(Biomass_P, c(1, 3), sum)[, 1:(y - 1)]) * 
@@ -1090,7 +1161,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         NextYrNtemp <- lapply(1:nsim, function(x)
           popdynOneTScpp(nareas, maxage, SSBcurr=colSums(SSB_P[x,,y, ]), Ncurr=N_P[x,,y,],
                          Zcurr=matrix(M_ageArray[x,,y+nyears], ncol=nareas, nrow=maxage), 
-                         PerrYr=Perr[x, y+nyears+maxage-1], hs=hs[x],
+                         PerrYr=Perr_y[x, y+nyears+maxage-1], hs=hs[x],
                          R0a=R0a[x,], SSBpR=SSBpR[x,], aR=aR[x,], bR=bR[x,],
                          mov=mov[x,,,], SRrel=SRrel[x]))
 
@@ -1118,7 +1189,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         MSElist[[mm]]@Dt <- Dbias * Depletion * rlnorm(nsim, mconv(1, Derr), sdconv(1, Derr))
         oldCAA <- MSElist[[mm]]@CAA
         MSElist[[mm]]@CAA <- array(0, dim = c(nsim, nyears + y - 1, maxage))
-        MSElist[[mm]]@CAA[, 1:(nyears + y - interval - 1), ] <- oldCAA[, 1:(nyears + y - interval - 1), ] # there is some bug here sometimes oldCAA (MSElist[[mm]]@CAA previously) has too many years of observations
+        MSElist[[mm]]@CAA[, 1:(nyears + y - interval[mm] - 1), ] <- oldCAA[, 1:(nyears + y - interval[mm] - 1), ] # there is some bug here sometimes oldCAA (MSElist[[mm]]@CAA previously) has too many years of observations
         MSElist[[mm]]@CAA[, nyears + yind, ] <- CAA
         MSElist[[mm]]@Dep <- Dbias * Depletion * rlnorm(nsim, mconv(1, Derr), sdconv(1, Derr))
         MSElist[[mm]]@Abun <- A * Abias * rlnorm(nsim, mconv(1, Aerr), sdconv(1, Aerr))
@@ -1126,15 +1197,15 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         MSElist[[mm]]@CAL_bins <- CAL_bins
         oldCAL <- MSElist[[mm]]@CAL
         MSElist[[mm]]@CAL <- array(0, dim = c(nsim, nyears + y - 1, nCALbins))
-        MSElist[[mm]]@CAL[, 1:(nyears + y - interval - 1), ] <- oldCAL[, 1:(nyears + y - interval - 1), ]# there is some bug here: sometimes oldCAL (MSElist[[mm]]@CAL previously) has too many years of observations
-        MSElist[[mm]]@CAL[, nyears + yind, ] <- CAL[, 1:interval, ]
+        MSElist[[mm]]@CAL[, 1:(nyears + y - interval[mm] - 1), ] <- oldCAL[, 1:(nyears + y - interval[mm] - 1), ]# there is some bug here: sometimes oldCAL (MSElist[[mm]]@CAL previously) has too many years of observations
+        MSElist[[mm]]@CAL[, nyears + yind, ] <- CAL[, 1:interval[mm], ]
         
-        temp <- CAL * rep(MLbin, each = nsim * interval)
+        temp <- CAL * rep(MLbin, each = nsim * interval[mm])
         MSElist[[mm]]@ML <- cbind(MSElist[[mm]]@ML, apply(temp, 1:2, sum)/apply(CAL, 1:2, sum))
-        MSElist[[mm]]@Lc <- cbind(MSElist[[mm]]@Lc, array(MLbin[apply(CAL, 1:2, which.max)], dim = c(nsim, interval)))
+        MSElist[[mm]]@Lc <- cbind(MSElist[[mm]]@Lc, array(MLbin[apply(CAL, 1:2, which.max)], dim = c(nsim, interval[mm])))
         nuCAL <- CAL
-        for (i in 1:nsim) for (j in 1:interval) nuCAL[i, j, 1:match(max(1, MSElist[[mm]]@Lc[i, j]), MLbin,nomatch=1)] <- NA 
-        temp <- nuCAL * rep(MLbin, each = nsim * interval)
+        for (i in 1:nsim) for (j in 1:interval[mm]) nuCAL[i, j, 1:match(max(1, MSElist[[mm]]@Lc[i, j]), MLbin,nomatch=1)] <- NA 
+        temp <- nuCAL * rep(MLbin, each = nsim * interval[mm])
         MSElist[[mm]]@Lbar <- cbind(MSElist[[mm]]@Lbar, apply(temp,1:2, sum, na.rm=TRUE)/apply(nuCAL, 1:2, sum, na.rm=TRUE))
         
         MSElist[[mm]]@LFC <- LFC * LFCbias
@@ -1154,12 +1225,16 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         MSElist[[mm]]@Ref <- OFLreal
         MSElist[[mm]]@Ref_type <- "Simulated OFL"
         MSElist[[mm]]@Misc <- Data@Misc
+        MSElist[[mm]]@MPrec <- MPCalcs$TACrec # last MP  TAC recommendation
+        MSElist[[mm]]@MPeff <- Effort[, mm, y-1] # last recommended effort
         
         # assign('Data',MSElist[[mm]],envir=.GlobalEnv) # for debugging fun
         
         # apply combined MP ----
+        if("DataOut"%in%names(control))if(control$DataOut == y) return(MSElist)
+          
         runMP <- applyMP(MSElist[[mm]], MPs = MPs[mm], reps = reps)  # Apply MP
-        
+       
         MPRecs <- runMP[[1]][[1]] # MP recommendations
         Data <- runMP[[2]] # Data object object with saved info from MP 
         Data@TAC <- MPRecs$TAC
@@ -1199,7 +1274,6 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         V_P <- MPCalcs$V_P  # vulnerable-at-age
         SLarray_P <- MPCalcs$SLarray_P # vulnerable-at-length
         
-        MSElist[[mm]]@MPrec <- apply(CB_Pret[, , y, ], 1, sum)
         
       } else {
         # --- Not an update yr ----
@@ -1293,87 +1367,88 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
 #' @export cparscheck
 #' @author T. Carruthers
 cparscheck<-function(cpars){
-
+  
   dim1check<-function(x){
-    if(class(x)=="numeric")length(x)
+    if(class(x)=="numeric" | class(x)=="integer")length(x)
     else dim(x)[1]
   }
+  
+  dims <- sapply(cpars,dim1check)
+  
+  # drop invalid names 
+  dims <- dims[!unlist(lapply(dims, is.null))]
+  
+  # Check Stock names 
+  slts <- slotNames("Stock")
+  ind <- which(names(cpars) %in% slts)
+  if (length(ind)>0) {
+    chkdim <- !unlist(lapply(lapply(cpars[ind], dim), is.null))
+    if (any(chkdim)) {
+      err <- names(chkdim[chkdim])
+      stop("Incorrect dimensions in Stock parameter slots in OM@cpars:", paste(err, collapse=", "))
+    }
+  }
+  
 
-  dims<-sapply(cpars,dim1check)
-  if(length(unique(dims))!=1){
-    print(dims)
-    stop("The custom parameters in your operating model @cpars have varying number of simulations. For each simulation each parameter / variable should correspond with one another")
-  }else{
-    as.integer(dims[1])
+  # check if EffYears etc are in cpars
+  effNames <- c("EffYears", "EffLower", "EffUpper")
+  temp <- effNames %in%  names(dims)
+  # all 3?
+  if (any(temp) & !all(temp)) stop(paste(effNames[!temp], collapse=", "), " missing")
+  # can't have Find as well
+  if (any(temp & 'Find' %in% names(dims))) stop("Can't provide both Find and EffYears etc in cpars")
+  # same length 
+  if (all(temp)) {
+    if (!all(dims[effNames]==dims[effNames][1])) stop(paste(effNames, collapse=", "), " are not equal length")
   }
 
+  # ignore 
+  if (any(effNames %in% names(dims))) dims <- dims[-match(effNames,names(dims))]  # ignore effNames
+  dims <- dims[!grepl("CAL_bins", names(dims))]  # ignore CAL_bins
+  dims <- dims[!grepl("maxage", names(dims))]  # ignore CAL_bins
+  if (length(dims) > 0) {
+    if(length(unique(dims))!=1){
+      print(dims)
+      stop("The custom parameters in your operating model @cpars have varying number of simulations. For each simulation each parameter / variable should correspond with one another")
+    }else{
+      as.integer(dims[1])
+    }
+  }
+  
 }
 
 
-cparnamecheck<-function(cpars){
+# cparnamecheck<-function(cpars){
+# 
+#   Sampnames <- c("D","Esd","Find","procsd","AC","M","Msd",
+#                  "Mgrad","hs","Linf","Linfsd","Linfgrad",
+#                  "K","Ksd","Kgrad","t0","L50","L50_95","Spat_targ",
+#                  "Frac_area_1","Prob_staying",
+#                  "Csd","Cbias","CAA_nsamp","CAA_ESS","CAL_nsamp",
+#                  "CAL_ESS","betas","Isd","Derr","Dbias",
+#                  "Mbias","FMSY_Mbias","lenMbias","LFCbias",
+#                  "LFSbias","Aerr","Abias","Kbias","t0bias",
+#                  "Linfbias","Irefbias","Crefbias","Brefbias",
+#                  "Recsd","qinc","qcv","L5","LFS","Vmaxlen","L5s",
+#                  "LFSs","Vmaxlens","Perr","R0","Mat_age",
+#                  "Mrand","Linfrand","Krand","maxage","V","Depletion", # end of OM variables
+#                  "ageM", "age95", "V", "EffYears", "EffLower", "EffUpper","Mat_age", # start of runMSE derived variables
+#                  "Wt_age")
+# 
+# }
 
-  Sampnames <- c("D","Esd","Find","procsd","AC","M","Msd",
-                 "Mgrad","hs","Linf","Linfsd","Linfgrad",
-                 "K","Ksd","Kgrad","t0","L50","L50_95","Spat_targ",
-                 "Frac_area_1","Prob_staying",
-                 "Csd","Cbias","CAA_nsamp","CAA_ESS","CAL_nsamp",
-                 "CAL_ESS","betas","Isd","Derr","Dbias",
-                 "Mbias","FMSY_Mbias","lenMbias","LFCbias",
-                 "LFSbias","Aerr","Abias","Kbias","t0bias",
-                 "Linfbias","Irefbias","Crefbias","Brefbias",
-                 "Recsd","qinc","qcv","L5","LFS","Vmaxlen","L5s",
-                 "LFSs","Vmaxlens","Perr","R0","Mat_age",
-                 "Mrand","Linfrand","Krand","maxage","V","Depletion", # end of OM variables
-                 "ageM", "age95", "V", "EffYears", "EffLower", "EffUpper","Mat_age", # start of runMSE derived variables
-                 "Wt_age")
 
-}
-
-
-#' Run a Management Strategy Evaluation
-#' 
-#' Run a Management Strategy Evaluation and save out the results to a Rdata
+#' @describeIn runMSE Save out the results to a Rdata
 #' file.  To increase speed and efficiency, particulary for runs with a large
 #' number simulations (\code{nsim}), the simulations are split into a number of
 #' packets.  The functions loops over the packets and combines the output into
 #' a single MSE object. If the MSE model crashes during a run, the MSE is run
 #' again until it is successfully completed. The MSE is stopped if the number
-#' of consecutive crashes exceeds \code{maxCrash}.  There is an ption to save
+#' of consecutive crashes exceeds \code{maxCrash}.  There is an option to save
 #' the packets as Rdata files to the current working directory (default is
 #' FALSE). By default, the functions saves the completed MSE object as a Rdata
 #' file (to the current working directory).
-#' 
-#' @param OM An operating model object (class OM)
-#' @param MPs A vector of methods (character string) of class Output or
-#' Input.
-#' @param timelimit Maximum time taken for a method to carry out 10 reps
-#' (methods are ignored that take longer)
-#' @param CheckMPs Logical to indicate if Can function should be used to check
-#' if MPs can be run.
-#' @param Hist Should model stop after historical simulations? Returns a list 
-#' containing all historical data
-#' @param ntrials Maximum of times depletion and recruitment deviations are 
-#' resampled to optimize for depletion. After this the model stops if more than 
-#' percent of simulations are not close to the required depletion
-#' @param fracD maximum allowed proportion of simulations where depletion is not 
-#' close to sampled depletion from OM before model stops with error
-#' @param CalcBlow Should low biomass be calculated where this is the spawning
-#' biomass at which it takes HZN mean generation times of zero fishing to reach 
-#' @param HZN The number of mean generation times required to reach Bfrac SSBMSY
-#' in the Blow calculation
-#' @param Bfrac fraction of SSBMSY
-#' @param AnnualMSY Logical. Should MSY statistics be calculated for each projection year? 
-#' @param maxsims Maximum number of simulations per packet
-#' @param name Character string for name of saved MSE packets (if \code{savePack=TRUE}) 
-#' and final MSE object. If none provided, it uses the first five letters from the \code{OM} name
-#' @param unique Logical. Should the name be unique? Current date and time appended to name. 
-#' @param maxCrash Maximum number of consecutive crashes before the MSE stops
-#' @param saveMSE Logical to indicate if final MSE object should be saved to current 
-#' working directory (this is probably a good idea)
-#' @param savePack Logical to indicate if packets should be save to current working directory
-#' @return An object of class MSE
-#' @author A. Hordyk and T. Carruthers
-#' @export runMSErobust
+#' @export
 runMSErobust <- function(OM = DLMtool::testOM, MPs = c("AvC", "DCAC", "FMSYref", "curE", "matlenlim", "MRreal"), 
                          timelimit = 1, CheckMPs = FALSE, Hist = FALSE, 
                          ntrials = 50, fracD = 0.05, CalcBlow = FALSE, HZN = 2, Bfrac = 0.5, AnnualMSY=TRUE,
@@ -1389,7 +1464,7 @@ runMSErobust <- function(OM = DLMtool::testOM, MPs = c("AvC", "DCAC", "FMSYref",
   cpars <- NULL
   ncparsim <- nsim
   if(length(OM@cpars)>0){
-    ncparsim<-cparscheck(OM@cpars)   # check each list object has the same length and if not stop and error report
+    # ncparsim<-cparscheck(OM@cpars)   # check each list object has the same length and if not stop and error report
     cpars <- OM@cpars
   }
   

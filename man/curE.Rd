@@ -2,26 +2,59 @@
 % Please edit documentation in R/MPs_Input.R
 \name{curE}
 \alias{curE}
+\alias{curE75}
 \title{Fishing at current effort levels}
 \usage{
-curE(x, Data, ...)
+curE(x, Data, reps, plot = FALSE)
+
+curE75(x, Data, reps, plot = FALSE)
 }
 \arguments{
-\item{x}{A position in a data-limited methods data object.}
+\item{x}{A position in a data-limited methods data object}
 
-\item{Data}{A data-limited methods data object.}
+\item{Data}{A data-limited methods data object}
 
-\item{...}{Optional additional arguments that are ignored. Note arguments
-\code{reps} or \code{...} are required for all input controls}
+\item{reps}{The number of stochastic samples of the MP recommendation(s)}
+
+\item{plot}{Logical. Show the plot?}
+}
+\value{
+An object of class \code{\link[=Rec-class]{Rec}} with the TAE slot(s) populated
 }
 \description{
 Constant fishing effort set at final year of historical simulations subject
-to changes in catchability determined by OM@qinc and interannual variability
-in catchability determined by OM@qcv. This MP is intended to represent a
+to changes in catchability determined by \code{OM@qinc} and interannual variability
+in catchability determined by \code{OM@qcv}. This MP is intended to represent a
 'status quo' management approach.
 }
-\note{
-Made up for this package.
+\section{Functions}{
+\itemize{
+\item \code{curE}: Set effort to 100\% of that in final year of historical simulations.
+
+\item \code{curE75}: Set effort to 75\% of that in final year.
+}}
+
+\section{Required Data}{
+
+See \linkS4class{Data} for information on the \code{Data} object \cr
+
+
+\code{curE}: MPeff
+
+
+\code{curE75}: MPeff
+}
+
+\section{Rendered Equations}{
+ 
+See \href{https://dlmtool.github.io/DLMtool/reference/curE.html}{Online Documentation} for correctly rendered equations
+
+
+}
+
+\examples{
+curE(1, DLMtool::Atlantic_mackerel, plot=TRUE)
+curE75(1, DLMtool::Atlantic_mackerel, plot=TRUE)
 }
 \author{
 T. Carruthers.

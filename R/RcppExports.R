@@ -13,12 +13,53 @@ get_freq <- function(x, width, origin = 0, outlen = 0L) {
     .Call('_DLMtool_get_freq', PACKAGE = 'DLMtool', x, width, origin, outlen)
 }
 
+which_maxC <- function(x) {
+    .Call('_DLMtool_which_maxC', PACKAGE = 'DLMtool', x)
+}
+
 rnormSelect2 <- function(N, mi, ma) {
     .Call('_DLMtool_rnormSelect2', PACKAGE = 'DLMtool', N, mi, ma)
 }
 
-genSizeComp <- function(VulnN, CAL_binsmid, CAL_ESS, CAL_nsamp, Linfs, Ks, t0s, LenCV, truncSD) {
-    .Call('_DLMtool_genSizeComp', PACKAGE = 'DLMtool', VulnN, CAL_binsmid, CAL_ESS, CAL_nsamp, Linfs, Ks, t0s, LenCV, truncSD)
+tdnorm <- function(x, mi, ma) {
+    .Call('_DLMtool_tdnorm', PACKAGE = 'DLMtool', x, mi, ma)
+}
+
+genSizeComp <- function(VulnN, CAL_binsmid, selCurve, CAL_ESS, CAL_nsamp, Linfs, Ks, t0s, LenCV, truncSD) {
+    .Call('_DLMtool_genSizeComp', PACKAGE = 'DLMtool', VulnN, CAL_binsmid, selCurve, CAL_ESS, CAL_nsamp, Linfs, Ks, t0s, LenCV, truncSD)
+}
+
+genSizeComp2 <- function(VulnN, CAL_binsmid, CAL_ESS, CAL_nsamp, Linfs, Ks, t0s, LenCV, truncSD) {
+    .Call('_DLMtool_genSizeComp2', PACKAGE = 'DLMtool', VulnN, CAL_binsmid, CAL_ESS, CAL_nsamp, Linfs, Ks, t0s, LenCV, truncSD)
+}
+
+#' Internal estimation function for LBSPR MP
+#'
+#' @param SL50 Length at 50 percent selectivity
+#' @param SL95 Length at 95 percent selectivity
+#' @param FM Ratio of apical fishing mortality to natural mortality
+#' @param nage Number of pseudo age-classes
+#' @param nlen Number of length bins
+#' @param CVLinf CV of length-at-age
+#' @param LenBins Vector of length bins
+#' @param LenMids Vector of mid-points of length bins
+#' @param x Vector of psuedo ages
+#' @param MK Ratio of M/K
+#' @param Linf Asymptotic length
+#' @param P Fraction of initial cohort alive at maximum age under unfished conditions
+#' @param L50 Length at 50 percent maturity
+#' @param L95 Length at 95 percent maturity
+#' @param Beta Exponent of the length-weight relationship
+#' @author A. Hordyk
+#' @useDynLib DLMtool
+#' @keywords internal
+#' @export
+LBSPRgen <- function(SL50, SL95, FM, nage, nlen, CVLinf, LenBins, LenMids, x, MK, Linf, P, L50, L95, Beta) {
+    .Call('_DLMtool_LBSPRgen', PACKAGE = 'DLMtool', SL50, SL95, FM, nage, nlen, CVLinf, LenBins, LenMids, x, MK, Linf, P, L50, L95, Beta)
+}
+
+LBSPRopt <- function(pars, CAL, nage, nlen, CVLinf, LenBins, LenMids, x, MK, Linf, P, L50, L95, Beta) {
+    .Call('_DLMtool_LBSPRopt', PACKAGE = 'DLMtool', pars, CAL, nage, nlen, CVLinf, LenBins, LenMids, x, MK, Linf, P, L50, L95, Beta)
 }
 
 #' Internal estimation function for LSRA and LSRA2 functions

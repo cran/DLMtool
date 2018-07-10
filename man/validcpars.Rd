@@ -4,14 +4,24 @@
 \alias{validcpars}
 \title{Valid custom parameters (cpars)}
 \usage{
-validcpars(print = TRUE)
+validcpars(type = c("all", "Stock", "Fleet", "Obs", "Imp", "internal"),
+  valid = TRUE)
 }
 \arguments{
-\item{print}{Print the valid names for cpars?}
+\item{type}{What cpars to show? 'all', 'Stock', 'Fleet', 'Obs', 'Imp', or 'internal'}
+
+\item{valid}{Logical. Show valid cpars?}
 }
 \value{
-invisibly returns vector of valid cpars names
+a dataframe with variable name, description and type of valid/invalid
+cpars
 }
 \description{
 Valid custom parameters (cpars)
+}
+\examples{
+validcpars() # all valid cpars
+
+validcpars("Obs", FALSE) # invalid Obs cpars
+
 }

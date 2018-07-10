@@ -171,7 +171,7 @@ plotM <- function(Stock, nsim=5) {
   if (class(Stock) == "OM") {
     # custom parameters exist - sample and write to list
     if(length(Stock@cpars)>0){
-      ncparsim<-cparscheck(Stock@cpars)   # check each list object has the same length and if not stop and error report
+      # ncparsim<-cparscheck(Stock@cpars)   # check each list object has the same length and if not stop and error report
       SampCpars <- SampleCpars(Stock@cpars, nsim) 
     }
     nyears <- Stock@nyears 
@@ -292,16 +292,18 @@ plotStock <- function(x, nsamp=3, nsim=500, nyears=50, proyears=28,
     if (is.finite(Stock@nsim)) nsim <- Stock@nsim	
     
     if(length(Stock@cpars)>0){ # custom parameters exist - sample and write to list
-      ncparsim<-cparscheck(Stock@cpars)   # check each list object has the same length and if not stop and error report
-      SampCpars <- SampleCpars(Stock@cpars, nsim) 
+      #ncparsim<-cparscheck(Stock@cpars)   # check each list object has the same length and if not stop and error report
+      SampCpars <- SampleCpars(Stock@cpars, nsim, msg=FALSE) 
     }
     Stock <- SubOM(Stock)
   }
   its <- sample(1:nsim, nsamp)
-  
+ 
   
   # --- Sample Stock Parameters ----
+
   StockPars <- SampleStockPars(Stock, nsim, nyears, proyears, SampCpars, Msg=FALSE)
+ 
   # Assign Stock pars to function environment
   for (X in 1:length(StockPars)) assign(names(StockPars)[X], StockPars[[X]])
   
@@ -419,7 +421,8 @@ plotStock <- function(x, nsamp=3, nsim=500, nyears=50, proyears=28,
   abline(v=AC[its], col=1:nsamp, lwd=lwd)
   axis(side=1)
   
-  matplot(t(Perr[its,]), type="l", bty="l", main="Rec Devs by Year", lwd=lwd, lty=1)
+  # matplot(t(Perr[its,]), type="l", bty="l", main="Rec Devs by Year", lwd=lwd, lty=1)
+  matplot(t(Perr_y[its,]), type="l", bty="l", main="Rec Devs by Year", lwd=lwd, lty=1)
   
   biomass <- seq(0, 1.5, by=0.05)
   
@@ -525,8 +528,8 @@ plotFleet <- function(x, Stock=NULL, nsamp=3, nsim=500, proyears=28, col="darkgr
     if (is.finite(Fleet@proyears)) proyears <- Fleet@proyears
     if (is.finite(Fleet@nsim)) nsim <- Fleet@nsim	
     if (length(Fleet@cpars) > 0) {
-      ncparsim <-cparscheck(Fleet@cpars)   # check each list object has the same length and if not stop and error report
-      SampCpars <- SampleCpars(Fleet@cpars, nsim) 
+      # ncparsim <-cparscheck(Fleet@cpars)   # check each list object has the same length and if not stop and error report
+      SampCpars <- SampleCpars(Fleet@cpars, nsim, msg=FALSE) 
     }
     Stock <- SubOM(Fleet, "Stock")
     Fleet <- SubOM(Fleet, "Fleet")
@@ -674,17 +677,22 @@ plotObs <- function(x, nsim=500, nyears=50,
                     col="darkgray", breaks=10, ...) {
   
   Obs <- x
+  SampCpars <- list() # empty list 
   if (class(Obs) == "OM") {
     if (is.finite(Obs@nyears)) nyears <- Obs@nyears
     if (is.finite(Obs@nsim)) nsim <- Obs@nsim	
+    if (length(Obs@cpars) > 0) {
+      # ncparsim <-cparscheck(Obs@cpars)   # check each list object has the same length and if not stop and error report
+      SampCpars <- SampleCpars(Obs@cpars, nsim, msg=FALSE) 
+    }
     Obs <- SubOM(Obs,"Obs")
   }
-  
+
   nsamp <- 3
   its <- sample(1:nsim, nsamp)
   
   # === Sample Observation Model Parameters ====
-  ObsPars <- SampleObsPars(Obs, nsim)
+  ObsPars <- SampleObsPars(Obs, nsim, cpars = SampCpars)
   # Assign Obs pars to function environment
   for (X in 1:length(ObsPars)) assign(names(ObsPars)[X], ObsPars[[X]])
   
@@ -902,10 +910,12 @@ ObsTSplot<-function(Cbias,Csd,nyears,labs, breaks, its, nsamp, col){
 #' @method plot OM 
 #' @author T. Carruthers
 #' @export 
-plot.OM <-function(x, ...){  
+plot.OM <-function(x, ...){
+  op <- par(no.readonly = TRUE)
+  on.exit(par(op))
   if (class(x) == "OM") {
     OM <- updateMSE(x) # update and add missing slots with default values
-    out<-runMSE(OM,Hist=T)
+    out<-runMSE(OM,Hist=T, ...)
     nsim<-OM@nsim
     nyears<-OM@nyears
     plotStock(OM)
@@ -921,7 +931,7 @@ plot.OM <-function(x, ...){
   } else stop("argument must be class 'OM' or 'list' ")
   
   # Time series
-  op <-par(mfrow=c(4,2),mai=c(0.7,0.7,0.05,0.05),omi=c(0.01,0.01,0.3,0.01))
+  par(mfrow=c(4,2),mai=c(0.7,0.7,0.05,0.05),omi=c(0.01,0.01,0.3,0.01))
   
   # SSB
   TSplot(yrlab,out$TSdata$SSB,xlab="Historical year",ylab="Spawning biomass")
@@ -970,7 +980,6 @@ plot.OM <-function(x, ...){
   
   if (class(x) == 'OM') mtext(paste0("Time series plots for operating model ",OM@Name),3,outer=T,line= 0.2,font=2)
   
-  on.exit(par(op))
   return(invisible(out))
 }
 

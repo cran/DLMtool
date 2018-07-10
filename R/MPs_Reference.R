@@ -1,98 +1,70 @@
 ## Reference MPs ####
 
-#' A reference FMSY method (uses perfect information about FMSY)
+#' Reference management procedures
 #' 
-#' FMSY is taken from the operating model stored at DLM@OM$FMSY
+#' Several reference MPs for your operating model to use in the management strategy
+#' evaluation. FMSYref (and related) assume perfect information about FMSY (FMSY 
+#' is taken from the operating model stored at Data@@OM$FMSY). NFref sets annual catch 
+#' to zero (or close to it) and is used for looking at variability in stock with no fishing.
+#'
+#' @templateVar mp FMSYref 
+#' @template MPtemplate
 #' 
-#' Note that you can out-perform this MP even though it has perfect
-#' information of FMSY and current abundance. The requirement for fixed F is
-#' actually quite strict and is by no means the upper limit in terms of yield.
-#' Don't panic if your method beats this one for yield, especially for
+#' @details 
+#' Note that you can out-perform \code{FMSYref} easily. The requirement for fixed
+#' F is actually quite strict and is by no means the upper limit in terms of
+#' yield. Don't panic if your method beats this one for yield, especially for
 #' short-lived species of high temporal variability in productivity!
 #' 
-#' @param x A position in data-limited methods data object
-#' @param Data A data-limited methods data object
-#' @param reps The number of TAC samples
-#' @author T. Carruthers
+#' @author T. Carruthers, A. Hordyk
+#' @describeIn FMSYref A reference FMSY method that fishes at FMSY
+#' @examples 
+#' FMSYref(1, DLMtool::SimulatedData, plot=TRUE)
 #' @export 
-FMSYref <- function(x, Data, reps = 100) {
+FMSYref <- function(x, Data, reps = 100, plot=FALSE) {
   rec <- new("Rec") # create recommendation object
   rec@TAC <- trlnorm(reps, Data@OM$A[x] * (1 - exp(-Data@OM$FMSY[x])), 0.01)
+  if (plot) boxplot(rec@TAC, ylab=paste0("TAC (", Data@Units, ")"))
   rec
   
 }
 class(FMSYref) <- "MP"
 
-#' A reference FMSY method that fishes at half of FMSY (uses perfect
-#' information about FMSY)
-#' 
-#' FMSY is taken from the operating model stored at DLM@OM$FMSY
-#' 
-#' Note that you can out-performm this method easily. The requirement for fixed
-#' F is actually quite strict and is by no means the upper limit in terms of
-#' yield. Don't panic if your method beats this one for yield!
-#' 
-#' Interesting that the reduction in yield is no way near commensurate with the
-#' reduction in F - as predicted by a yield curve and expressed in the pretty
-#' good yield theory.
-#' 
-#' @usage FMSYref50(x, Data, reps = 100)
-#' @param x A position in data-limited methods data object
-#' @param Data A data-limited methods data object
-#' @param reps The number of TAC (OFL) samples
-#' @author T. Carruthers
-#' @export FMSYref50
-FMSYref50 <- function(x, Data, reps = 100) {
+#' @describeIn FMSYref A reference FMSY method that fishes at 50\% of FMSY
+#' @examples 
+#' FMSYref50(1, DLMtool::SimulatedData, plot=TRUE)
+#' @export  
+FMSYref50 <- function(x, Data, reps = 100, plot=FALSE) {
   rec <- new("Rec") # create recommendation object
   rec@TAC <- trlnorm(reps, Data@OM$A[x] * (1 - exp(-Data@OM$FMSY[x]*0.5)) , 0.01)
+  if (plot) boxplot(rec@TAC, ylab=paste0("TAC (", Data@Units, ")"))
   rec
 }
 class(FMSYref50) <- "MP"
 
-
-
-#' A reference FMSY method that fishes at three quarters of FMSY (uses perfect
-#' information about FMSY)
-#' 
-#' FMSY is taken from the operating model stored at DLM@OM$FMSY
-#' 
-#' Note that you can out-performm this method easily. The requirement for fixed
-#' F is actually quite strict and is by no means the upper limit in terms of
-#' yield. Don't panic if your method beats this one for yield!
-#' 
-#' Interesting that the reduction in yield is no way near commensurate with the
-#' reduction in F as predicted by a yield curve and expressed in the pretty
-#' good yield theory.
-#' 
-#' @usage FMSYref75(x, Data, reps = 100)
-#' @param x A position in data-limited methods data object
-#' @param Data A data-limited methods data object
-#' @param reps The number of TAC samples
-#' @author T. Carruthers
-#' @export FMSYref75
-FMSYref75 <- function(x, Data, reps = 100) {
+#' @describeIn FMSYref A reference FMSY method that fishes at 75\% of FMSY
+#' @examples 
+#' FMSYref75(1, DLMtool::SimulatedData, plot=TRUE)
+#' @export 
+FMSYref75 <- function(x, Data, reps = 100, plot=FALSE) {
   rec <- new("Rec") # create recommendation object
   rec@TAC <- trlnorm(reps, Data@OM$A[x] * (1 - exp(-Data@OM$FMSY[x]*0.75)) , 0.01)
+  if (plot) boxplot(rec@TAC, ylab=paste0("TAC (", Data@Units, ")"))
   rec
 }
 class(FMSYref75) <- "MP"
 
-#' No Fishing Reference MP
-#' 
-#' A reference MP that sets annual catch to zero (or very close to it). Used
-#' for looking at variability in stock with no fishing.
-#' 
-#' 
-#' @usage NFref(x, Data, reps = 100)
-#' @param x A position in a data-limited methods data object
-#' @param Data A data-limited methods data object
-#' @param reps The number of stochastic samples of the quota recommendation
-#' @return A TAC of 0.01
-#' @author A. Hordyk
-#' @export NFref
-NFref <- function(x, Data, reps = 100) {
+
+#' @describeIn FMSYref A reference MP that sets annual catch to almost zero (0.01)
+#' @examples 
+#' NFref(1, DLMtool::SimulatedData, plot=TRUE)
+#' @export 
+NFref <- function(x, Data, reps = 100, plot=FALSE) {
   rec <- new("Rec") # create recommendation object
   rec@TAC <- rep(0.01, reps)
+  if (plot) boxplot(rec@TAC, ylab=paste0("TAC (", Data@Units, ")"))
   rec
 }
 class(NFref) <- "MP"
+
+

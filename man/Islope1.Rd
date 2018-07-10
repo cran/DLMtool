@@ -2,17 +2,31 @@
 % Please edit documentation in R/MPs_Output.R
 \name{Islope1}
 \alias{Islope1}
-\title{A management procedure that incrementally adjusts the TAC to maintain a
-constant CPUE or relative abundance index}
+\alias{Islope2}
+\alias{Islope3}
+\alias{Islope4}
+\title{Index Slope Tracking MP}
 \usage{
-Islope1(x, Data, reps = 100, yrsmth = 5, lambda=0.4,xx=0.2)
+Islope1(x, Data, reps = 100, plot = FALSE, yrsmth = 5, lambda = 0.4,
+  xx = 0.2)
+
+Islope2(x, Data, reps = 100, plot = FALSE, yrsmth = 5, lambda = 0.4,
+  xx = 0.3)
+
+Islope3(x, Data, reps = 100, plot = FALSE, yrsmth = 5, lambda = 0.4,
+  xx = 0.4)
+
+Islope4(x, Data, reps = 100, plot = FALSE, yrsmth = 5, lambda = 0.2,
+  xx = 0.4)
 }
 \arguments{
-\item{x}{A position in data-limited methods data object}
+\item{x}{A position in a data-limited methods data object}
 
 \item{Data}{A data-limited methods data object}
 
-\item{reps}{The number of TAC samples}
+\item{reps}{The number of stochastic samples of the MP recommendation(s)}
+
+\item{plot}{Logical. Show the plot?}
 
 \item{yrsmth}{Years over which to smooth recent estimates of surplus production}
 
@@ -22,22 +36,64 @@ Islope1(x, Data, reps = 100, yrsmth = 5, lambda=0.4,xx=0.2)
 first year}
 }
 \value{
-A numeric vector of quota recommendations
+An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
-The least biologically precautionary of two constant index / CPUE methods
-proposed by Geromont and Butterworth 2014. Tested by Carruthers et al. 2015
+A management procedure that incrementally adjusts the TAC to maintain a
+constant CPUE or relative abundance index.
 }
 \details{
-Tested by Carruthers et al. 2015.
+The TAC is calculated as:
+\deqn{\textrm{TAC} = \textrm{TAC}^* \left(1+\lambda I \right)}
+where \eqn{\textrm{TAC}^*} is \eqn{1-xx} multiplied by the mean catch from the past \code{yrsmth} years for the
+first year and catch from the previous year in projection years,
+\eqn{\lambda} is a gain parameter, and \eqn{I} is the slope of log index over the past \code{yrsmth} years.
+}
+\section{Functions}{
+\itemize{
+\item \code{Islope1}: The least biologically precautionary of the Islope methods
+
+\item \code{Islope2}: More biologically precautionary. Reference TAC is 0.7 average catch
+
+\item \code{Islope3}: More biologically precautionary. Reference TAC is 0.6 average catch
+
+\item \code{Islope4}: The most biologically precautionary of the Islope methods.
+Reference TAC is 0.6 average catch and gain parameter is 0.2
+}}
+
+\section{Required Data}{
+
+See \linkS4class{Data} for information on the \code{Data} object \cr
+
+
+\code{Islope1}: Cat, Ind, LHYear, Year
+}
+
+\section{Rendered Equations}{
+ 
+See \href{https://dlmtool.github.io/DLMtool/reference/Islope1.html}{Online Documentation} for correctly rendered equations
+}
+
+\examples{
+Islope1(1, DLMtool::SimulatedData, plot=TRUE)
+Islope2(1, DLMtool::SimulatedData, plot=TRUE)
+Islope3(1, DLMtool::SimulatedData, plot=TRUE)
+Islope4(1, DLMtool::SimulatedData, plot=TRUE)
 }
 \references{
-Carruthers et al. 2015. Performance review of simple management
-procedures. Fish and Fisheries. In press.
+Carruthers et al. 2015. Performance evaluation of simple
+management procedures. ICES J. Mar Sci. 73, 464-482.
 
 Geromont, H.F., Butterworth, D.S. 2014. Generic management procedures for
 data-poor fisheries; forecasting with few data. ICES J. Mar. Sci.
 doi:10.1093/icesjms/fst232
+}
+\seealso{
+Other Index methods: \code{\link{GB_slope}},
+  \code{\link{GB_target}}, \code{\link{Gcontrol}},
+  \code{\link{ICI}}, \code{\link{Iratio}},
+  \code{\link{Itarget1_MPA}}, \code{\link{Itarget1}},
+  \code{\link{ItargetE1}}
 }
 \author{
 T. Carruthers

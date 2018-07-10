@@ -156,6 +156,7 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim,
     allyrs <- (y+nyears):(nyears+proyears)  # update vulnerabilty for all future years
     
     srs <- (Linf - LFS_P[yr,]) / ((-log(Vmaxlen_P[yr,],2))^0.5) # descending limb
+    srs[!is.finite(srs)] <- Inf
     sls <- (LFS_P[yr,] - L5_P[yr,]) / ((-log(0.05,2))^0.5) # ascending limb
     
     CAL_binsmidMat <- matrix(CAL_binsmid, nrow=nsim, ncol=length(CAL_binsmid), byrow=TRUE)
@@ -180,6 +181,7 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim,
     allyrs <- (y+nyears):(nyears+proyears)  # update vulnerabilty for all future years
     
     srs <- (Linf - LFR_P[yr,]) / ((-log(Rmaxlen_P[yr,],2))^0.5) # selectivity parameters are constant for all years
+    srs[!is.finite(srs)] <- Inf
     sls <- (LFR_P[yr,] - LR5_P[yr,]) / ((-log(0.05,2))^0.5)
     
     CAL_binsmidMat <- matrix(CAL_binsmid, nrow=nsim, ncol=length(CAL_binsmid), byrow=TRUE)
@@ -292,12 +294,15 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim,
     retained <- apply(CB_Pret[,,y,], 1, sum)
     actualremovals <- apply(CB_P[,,y,], 1, sum)
     ratio <- actualremovals/retained # ratio of actual removals to retained catch 
-    
+    ratio[!is.finite(ratio)] <- 0 
+    ratio[ratio>1E5] <- 1E5
     temp <- CB_Pret[, , y, ]/apply(CB_Pret[, , y, ], 1, sum) # distribution of retained fish
     CB_Pret[, , y, ] <- TACusedE * temp  # retained catch 
     
     temp <- CB_P[, , y, ]/apply(CB_P[, , y, ], 1, sum) # distribution of removals
+    
     CB_P[,,y,] <- TACusedE *  ratio * temp # scale up total removals 
+    
     
     chk <- apply(CB_P[,,y,], 1, sum) > availB # total removals can't be more than available biomass
     if (sum(chk)>0) {
@@ -308,6 +313,7 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim,
     }
   
     # total removals
+  
     temp <- CB_P[SAYR]/(Biomass_P[SAYR] * exp(-M_ageArray[SAYt]/2))  # Pope's approximation
     temp[temp > (1 - exp(-maxF))] <- 1 - exp(-maxF) # apply maxF constraint
     FM_P[SAYR] <- -log(1 - temp)
@@ -315,8 +321,10 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim,
     # update removals with maxF constraint
     CB_P[SAYR] <- FM_P[SAYR]/Z_P[SAYR] * Biomass_P[SAYR] * (1 - exp(-Z_P[SAYR])) 
 
+   
     # repeated because of approximation error in Pope's approximation - an issue if CB_P ~ AvailB
     chk <- apply(CB_P[,,y,], 1, sum) > availB # total removals can't be more than available biomass
+    
     if (sum(chk)>0) {
       c_temp <- apply(CB_P[chk,,y,, drop=FALSE], 1, sum)
       ratio_temp <- (availB[chk]/c_temp) * 0.99
@@ -528,7 +536,7 @@ optMSY_eq <- function(x, M_ageArray, Wt_age, Mat_age, V, maxage, R0, SRrel, hs, 
 #' @param MPA A matrix of spatial closures by year
 #' @param useCPP logical - use the CPP code? For testing purposes only
 #' @author A. Hordyk
-#'
+#' @keywords internal
 getq3 <- function(x, D, SSB0, nareas, maxage, N, pyears, M_ageArray, Mat_age, Asize, Wt_age,
                   V, retA, Perr, mov, SRrel, Find, Spat_targ, hs, R0a, SSBpR, aR, bR, 
                   bounds = c(1e-05, 15), maxF, MPA, useCPP=TRUE) {
@@ -571,6 +579,7 @@ getq3 <- function(x, D, SSB0, nareas, maxage, N, pyears, M_ageArray, Mat_age, As
 #' @param MPA A matrix of spatial closures by year
 #' @param useCPP Logical. Use the CPP code?
 #' @author A. Hordyk
+#' @keywords internal
 
 optQ <- function(logQ, depc, SSB0c, nareas, maxage, Ncurr, pyears, M_age, Asize_c,
                  MatAge, WtAge, Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc, 
@@ -811,9 +820,8 @@ optQ <- function(logQ, depc, SSB0c, nareas, maxage, Ncurr, pyears, M_age, Asize_
 #' @param useCPP logical - use the CPP code? For testing purposes only 
 #' @param SSB0 SSB0
 #' @author A. Hordyk
-#' 
-#' 
-# #' @export
+#' @keywords internal
+#' @export
 simYears <- function(x, nareas, maxage, N, pyears, M_ageArray, Asize, Mat_age, Wt_age,
                      V, retA, Perr, mov, SRrel, Find, Spat_targ, hs, R0a, SSBpR, aR, bR, qs, 
                      MPA, maxF, useCPP=TRUE, SSB0) {
@@ -975,7 +983,7 @@ simYears <- function(x, nareas, maxage, N, pyears, M_ageArray, Asize, Mat_age, W
 #' @param maxF A numeric value specifying the maximum fishing mortality for any single age class
 #' @param useCPP logical - use the CPP code? For testing purposes only
 #' @param SSB0c SSB0
-#'
+#' @keywords internal
 #'
 #' @author A. Hordyk
 #' 
@@ -1000,8 +1008,13 @@ optMSY <- function(logFa, Asize_c, nareas, maxage, Ncurr, pyears, M_age,
   # Yield
   # Cn <- simpop[[7]]/simpop[[8]] * simpop[[1]] * (1-exp(-simpop[[8]])) # retained catch
   Cn <- simpop[[6]]/simpop[[8]] * simpop[[1]] * (1-exp(-simpop[[8]])) # removals
-  Cb <- Cn[,pyears,] * WtAge[,pyears]
-  -sum(Cb)
+  # Cb <- Cn[,pyears,] * WtAge[,pyears]
+  # -sum(Cb)
+  Cb <- Cn[,(pyears-4):pyears,] * array(WtAge[,(pyears-4):pyears], dim=dim(Cn[,(pyears-4):pyears,]))
+ 
+  -mean( apply(Cb,2,sum))
+  
+
 }
 
 
@@ -1035,10 +1048,8 @@ optMSY <- function(logFa, Asize_c, nareas, maxage, Ncurr, pyears, M_age,
 #' @param useCPP logical - use the CPP code? For testing purposes only
 #' @param SSB0 SSB0
 #' @author A. Hordyk
-# #' @export
-#'
-#' @author A. Hordyk
-#' 
+#' @export
+#' @keywords internal
 getFref3 <- function(x, Asize, nareas, maxage, N, pyears, M_ageArray, Mat_age, Wt_age,
                      V, retA, Perr, mov, SRrel, Find, Spat_targ, hs, R0a, SSBpR, aR, bR, 
                      MPA, maxF, useCPP=TRUE, SSB0) {
@@ -1071,7 +1082,7 @@ getFref3 <- function(x, Asize, nareas, maxage, N, pyears, M_ageArray, Mat_age, W
 #' @param reps Number of stochastic repititions - often not used in input
 #' control MPs.
 #' @author A. Hordyk
-#' @export runInMP
+#' @export 
 runInMP <- function(Data, MPs = NA, reps = 100) {
   
   nsims <- length(Data@Mort)

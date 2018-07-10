@@ -4,15 +4,57 @@
 \alias{AvC_MLL}
 \title{Average Catch with a size limit}
 \usage{
-AvC_MLL(x, Data, reps = 100)
+AvC_MLL(x, Data, reps = 100, plot = FALSE)
 }
 \arguments{
 \item{x}{A position in a data-limited methods data object}
 
 \item{Data}{A data-limited methods data object}
 
-\item{reps}{The number of stochastic samples of the TAC recommendation}
+\item{reps}{The number of stochastic samples of the MP recommendation(s)}
+
+\item{plot}{Logical. Show the plot?}
+}
+\value{
+An object of class \code{\link[=Rec-class]{Rec}} with the TAC, SL slot(s) populated
 }
 \description{
-Included demonstration purposes of a mixed control MP
+A example mixed control MP that uses the average catch output control MP together with a
+minimul size limit set at the size of maturity.
+}
+\details{
+The average catch method is very simple. The mean historical catch is calculated and used to set
+a constant catch limit (TAC). If \code{reps} > 1 then the \code{reps} samples are drawn from a log-normal
+distribution with mean \code{TAC} and standard deviation (in log-space) of 0.2.
+
+For completeness, the TAC is calculated by:
+
+\deqn{\textrm{TAC} =\frac{\sum_{y=1}^{\textrm{n}}{C_y}}{\textrm{n}}}
+
+where \eqn{\textrm{TAC}} is the the mean catch recommendation, \eqn{n} is the number of historical years, and
+\eqn{C_y}  is the catch in historical year \eqn{y}.
+
+The size of retention is set to the length of maturity.
+
+This MP has been included for demonstration purposes of a mixed control MP.
+}
+\section{Required Data}{
+
+See \linkS4class{Data} for information on the \code{Data} object \cr
+
+
+\code{AvC_MLL}: Cat, LHYear, Year
+}
+
+\section{Rendered Equations}{
+ 
+See \href{https://dlmtool.github.io/DLMtool/reference/AvC_MLL.html}{Online Documentation} for correctly rendered equations
+}
+
+\examples{
+Rec <- AvC_MLL(1, DLMtool::Cobia, reps=1000, plot=TRUE) # 1,000 log-normal samples with CV = 0.2
+}
+\seealso{
+Other Average Catch MPs: \code{\link{AvC}},
+  \code{\link{DCACs}}
 }

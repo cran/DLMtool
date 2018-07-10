@@ -2,6 +2,7 @@
 % Please edit documentation in R/runMSE.r
 \name{runMSE}
 \alias{runMSE}
+\alias{runMSErobust}
 \title{Run a Management Strategy Evaluation}
 \usage{
 runMSE(OM = DLMtool::testOM, MPs = c("AvC", "DCAC", "FMSYref", "curE",
@@ -9,14 +10,19 @@ runMSE(OM = DLMtool::testOM, MPs = c("AvC", "DCAC", "FMSYref", "curE",
   ntrials = 50, fracD = 0.05, CalcBlow = TRUE, HZN = 2, Bfrac = 0.5,
   AnnualMSY = TRUE, silent = FALSE, PPD = FALSE, parallel = FALSE,
   save_name = NULL, checks = FALSE, control = NULL)
+
+runMSErobust(OM = DLMtool::testOM, MPs = c("AvC", "DCAC", "FMSYref", "curE",
+  "matlenlim", "MRreal"), timelimit = 1, CheckMPs = FALSE, Hist = FALSE,
+  ntrials = 50, fracD = 0.05, CalcBlow = FALSE, HZN = 2, Bfrac = 0.5,
+  AnnualMSY = TRUE, maxsims = 64, name = NULL, unique = FALSE,
+  maxCrash = 10, saveMSE = TRUE, savePack = FALSE)
 }
 \arguments{
 \item{OM}{An operating model object (class 'OM')}
 
-\item{MPs}{A vector of methods (character string) of class Output or
-Input.}
+\item{MPs}{A vector of methods (character string) of class MP}
 
-\item{CheckMPs}{Logical to indicate if Can function should be used to check
+\item{CheckMPs}{Logical to indicate if \link{Can} function should be used to check
 if MPs can be run.}
 
 \item{timelimit}{Maximum time taken for a method to carry out 10 reps
@@ -29,7 +35,7 @@ containing all historical data}
 resampled to optimize for depletion. After this the model stops if more than
 percent of simulations are not close to the required depletion}
 
-\item{fracD}{maximum allowed proportion of simulations where depletion is not
+\item{fracD}{Maximum allowed proportion of simulations where depletion is not
 close to sampled depletion from OM before model stops with error}
 
 \item{CalcBlow}{Should low biomass be calculated where this is the spawning
@@ -55,13 +61,51 @@ May differ from MSY statistics from last historical year if there are changes in
 \item{checks}{Logical. Run tests?}
 
 \item{control}{control options for testing and debugging}
+
+\item{maxsims}{Maximum number of simulations per packet}
+
+\item{name}{Character string for name of saved MSE packets (if \code{savePack=TRUE})
+and final MSE object. If none provided, it uses the first five letters from the \code{OM} name}
+
+\item{unique}{Logical. Should the name be unique? Current date and time appended to name.}
+
+\item{maxCrash}{Maximum number of consecutive crashes before the MSE stops}
+
+\item{saveMSE}{Logical to indicate if final MSE object should be saved to current
+working directory (this is probably a good idea)}
+
+\item{savePack}{Logical to indicate if packets should be save to current working directory}
+
+\item{...}{Arguments to runMSE function}
 }
 \value{
-An object of class MSE
+An object of class \linkS4class{MSE}
 }
 \description{
 A function that runs a Management Strategy Evaluation (closed-loop
 simulation) for a specified operating model
+}
+\section{Functions}{
+\itemize{
+\item \code{runMSE}: Default function to use.
+
+\item \code{runMSErobust}: Save out the results to a Rdata
+file.  To increase speed and efficiency, particulary for runs with a large
+number simulations (\code{nsim}), the simulations are split into a number of
+packets.  The functions loops over the packets and combines the output into
+a single MSE object. If the MSE model crashes during a run, the MSE is run
+again until it is successfully completed. The MSE is stopped if the number
+of consecutive crashes exceeds \code{maxCrash}.  There is an option to save
+the packets as Rdata files to the current working directory (default is
+FALSE). By default, the functions saves the completed MSE object as a Rdata
+file (to the current working directory).
+}}
+
+\note{
+See relevant section of the \href{https://dlmtool.github.io/DLMtool/userguide/running-the-mse.html}{DLMtool User Guide} for more information.
+}
+\seealso{
+\link{joinMSE} \link{checkMSE} \link{updateMSE}
 }
 \author{
 T. Carruthers and A. Hordyk
