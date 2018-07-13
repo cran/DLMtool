@@ -1,13 +1,13 @@
-170719a9fdc154500b813e62f5c1e264 *DESCRIPTION
+40c620ab25fdf6ecc32ac174df686d5b *DESCRIPTION
 e36a09fcce265c6f8b27651560bb554a *NAMESPACE
-14cf70be5f6bff550d0ec0d4689bcce7 *NEWS.md
+c691ef485dd434e5e593a78a7d9fc5a4 *NEWS.md
 efe12490eb238129df3f9744d44a1d59 *R/Awatea2OM.R
 de459951752a4df31ef5d2ef88e0cd74 *R/Blow_funcs.R
 cf9b392671fa87587519b23461c8aaf6 *R/DFO.R
 ed6748596c3f53999c341e26af882a45 *R/DLMtool-package.R
 67b975fbd97c8ce65cde56d574a0e932 *R/Data_Functions.R
 608da0d43bc2ee378360d7ab8b64d5cd *R/Data_Plotting.R
-67b907c5d2c1b6ae853045d2486e24ec *R/DefineClasses.r
+77a7b09130a797f7c987987cdf8b23a0 *R/DefineClasses.r
 e4f7485192829f3941e02a59a64f3fcb *R/Fease_Functions.R
 8346559730db92f3907319ec099deb1d *R/IOTC.R
 18626a4e198593eb426f67d6da0956c1 *R/MPs_Input.R
@@ -25,7 +25,7 @@ fc0c908eea1abfc72b054d2e84765b13 *R/Misc_Exported.R
 d6fcf6bf852c543c6c88e7d8c0fc9252 *R/OM_functions.R
 8e96f04b71f74d6853ed3d735b68c722 *R/OM_init_doc.R
 1681968e8643a0e2de5a3379a7e2a85c *R/PMobjects.R
-58e66c89638c5b8854c787b9d9e02861 *R/RcppExports.R
+9031d069a4328d49c33422c578c5bbe6 *R/RcppExports.R
 a2b660a3b78a2bff28ac9c84490002e0 *R/Roxy_DataObjects.r
 10ef947ad43a06373b2cad4cacb6f6cd *R/SS2DLM.R
 de1ae34e884f03f42bde7c005bd95c12 *R/SampleOM.R
@@ -57,9 +57,9 @@ ef44c40493059663a626350d4455230c *data/FlatE_Dom.RData
 69bba015088ee7d6d290886d86e13faf *data/FleetDescription.RData
 6f927e6d9527b5b49606abcf3197d978 *data/Generic_DecE.RData
 72908e967f9780b70264b889045aca82 *data/Generic_FlatE.RData
-2959e7598dfc3e37274668fec5263f40 *data/Generic_Fleet.RData
 0615d9d10056a5141778e2a96da4bc51 *data/Generic_IncE.RData
-05cea0eeb111c77bd2e28f8f94dd7089 *data/Generic_Obs.RData
+2959e7598dfc3e37274668fec5263f40 *data/Generic_fleet.RData
+05cea0eeb111c77bd2e28f8f94dd7089 *data/Generic_obs.RData
 8d379ff3206cd0249a576aac6b1f3f04 *data/Gulf_blue_tilefish.RData
 34e51e6caedd27a802bb41d3c5044ab1 *data/Herring.RData
 9e528f59c1ba37ed0454884b9e13415e *data/ImpDescription.RData
@@ -89,7 +89,7 @@ fc3aeba95a8f4c024e7eb5158a21ed14 *data/Simulation_1.RData
 841bd04cb520d11ae1f9f612cf5083fb *data/Target_All_Fish.RData
 68f0c40d64a1c024ec201d6237b15556 *data/Targeting_Small_Fish.RData
 2f407d2f3a634f947d4d6aad6205b0f4 *data/Toothfish.RData
-1c6f25dfaf72c1359d58f1d0c4065d74 *data/datalist
+dbf01129a2fba588b9d307ce7c49d2bc *data/datalist
 7c4c46fc86220a643244d48ed930d5f6 *data/ourReefFish.RData
 2b3fc16f17be1ec6ffd056ad5b78381e *data/testOM.RData
 62eb9e7db90109a808ab6bc397f0d578 *data/tiny.RData
@@ -356,7 +356,7 @@ f42257ddb118dec23c6901b0318ebbe7 *man/userguide.Rd
 790054cbebe5d85378acebce7a5ec7c2 *man/validcpars.Rd
 d10566c31c9933556dd186b69ac944b9 *man/wormplot.Rd
 4447345a9c45b0dc9b34439f331765e6 *man/writeCSV.Rd
-d3fd099b421ac9c35e55cec081539422 *src/LBSPR.cpp
+b90b373f80364542cc77646e47a579a3 *src/LBSPR.cpp
 88297ef3ee281ed15960edbe25bae002 *src/LSRA_opt_cpp.cpp
 d7885888faec78dc7a5f4abd784967ea *src/RcppExports.cpp
 ac3c2c2eb00647c5992d7673d7972694 *src/bhnoneq_Rcpp.cpp
