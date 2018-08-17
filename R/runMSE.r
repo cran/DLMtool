@@ -162,7 +162,8 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
     temp <- snowfall::sfClusterApplyLB(1:nits, run_parallel, itsim=itsim, OM=OM, MPs=MPs,  
                              CheckMPs=CheckMPs, timelimit=timelimit, Hist=Hist, ntrials=ntrials, 
                              fracD=fracD, CalcBlow=CalcBlow, 
-                             HZN=HZN, Bfrac=Bfrac, AnnualMSY=AnnualMSY, silent=TRUE, PPD=PPD)
+                             HZN=HZN, Bfrac=Bfrac, AnnualMSY=AnnualMSY, silent=TRUE, PPD=PPD,
+                             control=control)
     #assign_DLMenv() # grabs objects from DLMenv in cores, then merges and assigns to 'home' environment
   
     if (!is.null(save_name) && is.character(save_name)) saveRDS(temp, paste0(save_name, '.rdata'))
@@ -608,7 +609,13 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   CBdisc <- CB - CBret # discarded biomass 
   
   # --- Simulate observed catch ---- 
-  Cbiasa <- array(Cbias, c(nsim, nyears + proyears))  # Bias array
+  
+  if (length(control$Cbias_yr) ==0) {
+    Cbiasa <- array(Cbias, c(nsim, nyears + proyears))  # Bias array
+  } else {
+    Cbiasa <- matrix(1, nsim, nyears+proyears)
+    Cbiasa[,control$yrs] <- control$Cbias_yr
+  }
   Cerr <- array(rlnorm((nyears + proyears) * nsim, mconv(1, rep(Csd, (nyears + proyears))), 
                        sdconv(1, rep(Csd, nyears + proyears))), c(nsim, nyears + proyears))  # composite of bias and observation error
   # Cobs <- Cbiasa[, 1:nyears] * Cerr[, 1:nyears] * apply(CB, c(1, 3), sum)  # Simulated observed catch (biomass)
@@ -649,9 +656,9 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   # --- Simulate index of abundance from total biomass ----
   Ierr <- array(rlnorm((nyears + proyears) * nsim, mconv(1, rep(Isd, nyears + proyears)), 
                        sdconv(1, rep(Isd, nyears + proyears))), c(nsim, nyears + proyears))
-  II <- (apply(Biomass, c(1, 3), sum) * Ierr[, 1:nyears])^betas  # apply hyperstability / hyperdepletion
+  II <- (apply(Biomass, c(1, 3), sum)^betas) * Ierr[, 1:nyears]  # apply hyperstability / hyperdepletion
   II <- II/apply(II, 1, mean)  # normalize
-  
+
   # --- Calculate vulnerable and spawning biomass abundance ----
   if (nsim > 1) A <- apply(VBiomass[, , nyears, ], 1, sum)  + apply(CB[, , nyears, ], 1, sum) # Abundance before fishing
   if (nsim == 1) A <- sum(VBiomass[, , nyears, ]) +  sum(CB[,,nyears,]) # Abundance before fishing
@@ -668,29 +675,39 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   if (nsim == 1) Iref <- mean(I3[1:5]) * SSBMSY_SSB0
   
   # --- Simulate observed values in steepness ----
-  if (is.null(OM@cpars[['l_hbias']])) {
-    hsim <- rep(NA, nsim)  
-    cond <- hs > 0.6
-    hsim[cond] <- 0.2 + rbeta(sum(hs > 0.6), alphaconv((hs[cond] - 0.2)/0.8, (1 - (hs[cond] - 0.2)/0.8) * OM@hbiascv), 
-                              betaconv((hs[cond] - 0.2)/0.8,  (1 - (hs[cond] - 0.2)/0.8) * OM@hbiascv)) * 0.8
-    hsim[!cond] <- 0.2 + rbeta(sum(hs <= 0.6), alphaconv((hs[!cond] - 0.2)/0.8,  (hs[!cond] - 0.2)/0.8 * OM@hbiascv), 
-                               betaconv((hs[!cond] - 0.2)/0.8, (hs[!cond] - 0.2)/0.8 * OM@hbiascv)) * 0.8
+  if (!is.null(OM@cpars[['hsim']])) {
+    hsim <- OM@cpars[['hsim']]
     hbias <- hsim/hs  # back calculate the simulated bias
     if (OM@hbiascv == 0) hbias <- rep(1, nsim) 
     ObsPars$hbias <- hbias 
-  } else {
-    l_hbias <- sample(OM@cpars$l_hbias, OM@nsim, replace=TRUE)
-  
-    P <- (hs-.2)/0.8
-    hs_logit <- log(P/(1-P))
-    P2 <- exp(hs_logit * l_hbias)/(1+exp(hs_logit * l_hbias))
-    P2[is.nan(P2)] <- 1
-    hsim <- (P2 * 0.8) + 0.2
-    hbias <- hsim/hs  # back calculate the simulated bias
     
-    ObsPars$hbias <- hbias
+  } else {
+    if (is.null(OM@cpars[['l_hbias']])) {
+      hsim <- rep(NA, nsim)  
+      cond <- hs > 0.6
+      hsim[cond] <- 0.2 + rbeta(sum(hs > 0.6), alphaconv((hs[cond] - 0.2)/0.8, (1 - (hs[cond] - 0.2)/0.8) * OM@hbiascv), 
+                                betaconv((hs[cond] - 0.2)/0.8,  (1 - (hs[cond] - 0.2)/0.8) * OM@hbiascv)) * 0.8
+      hsim[!cond] <- 0.2 + rbeta(sum(hs <= 0.6), alphaconv((hs[!cond] - 0.2)/0.8,  (hs[!cond] - 0.2)/0.8 * OM@hbiascv), 
+                                 betaconv((hs[!cond] - 0.2)/0.8, (hs[!cond] - 0.2)/0.8 * OM@hbiascv)) * 0.8
+      hbias <- hsim/hs  # back calculate the simulated bias
+      if (OM@hbiascv == 0) hbias <- rep(1, nsim) 
+      ObsPars$hbias <- hbias 
+    } else {
+      l_hbias <- sample(OM@cpars$l_hbias, OM@nsim, replace=TRUE)
+      
+      P <- (hs-.2)/0.8
+      hs_logit <- log(P/(1-P))
+      P2 <- (exp(hs_logit)* l_hbias)/(1+exp(hs_logit) * l_hbias)
+      P2[is.nan(P2)] <- 1
+      hsim <- (P2 * 0.8) + 0.2
+      hbias <- hsim/hs  # back calculate the simulated bias
+      
+      ObsPars$hbias <- hbias
+      
+    }
+  }
+  
 
-   }
 
   
   # --- Simulate error in observed recruitment index ----
@@ -988,11 +1005,11 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     runMP <- applyMP(MSElist[[mm]], MPs = MPs[mm], reps = reps)  # Apply MP
     
     MPRecs <- runMP[[1]][[1]] # MP recommendations
-    Data <- runMP[[2]] # Data object object with saved info from MP 
-    Data@TAC <- MPRecs$TAC
+    Data_p <- runMP[[2]] # Data object object with saved info from MP 
+    Data_p@TAC <- MPRecs$TAC
     
     # calculate pstar quantile of TAC recommendation dist 
-    TACused <- apply(Data@TAC, 2, quantile, p = pstar, na.rm = T) 
+    TACused <- apply(Data_p@TAC, 2, quantile, p = pstar, na.rm = T) 
     
     LastEffort <- rep(1,nsim)
     LastSpatial <- array(MPA[nyears,], dim=c(nareas, nsim)) # 
@@ -1150,8 +1167,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         LFC[is.na(LFC)] <- 1
         LFC[LFC<1] <- 1
         
-        I2 <- cbind(apply(Biomass, c(1, 3), sum), apply(Biomass_P, c(1, 3), sum)[, 1:(y - 1)]) * 
-          Ierr[, 1:(nyears + (y - 1))]^betas
+        I2 <- (cbind(apply(Biomass, c(1, 3), sum), apply(Biomass_P, c(1, 3), sum)[, 1:(y - 1)])^betas) * Ierr[, 1:(nyears + (y - 1))]
         I2[is.na(I2)] <- tiny
         I2 <- I2/apply(I2, 1, mean)
         
@@ -1224,7 +1240,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         
         MSElist[[mm]]@Ref <- OFLreal
         MSElist[[mm]]@Ref_type <- "Simulated OFL"
-        MSElist[[mm]]@Misc <- Data@Misc
+        MSElist[[mm]]@Misc <- Data_p@Misc
         MSElist[[mm]]@MPrec <- MPCalcs$TACrec # last MP  TAC recommendation
         MSElist[[mm]]@MPeff <- Effort[, mm, y-1] # last recommended effort
         
@@ -1236,11 +1252,11 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         runMP <- applyMP(MSElist[[mm]], MPs = MPs[mm], reps = reps)  # Apply MP
        
         MPRecs <- runMP[[1]][[1]] # MP recommendations
-        Data <- runMP[[2]] # Data object object with saved info from MP 
-        Data@TAC <- MPRecs$TAC
+        Data_p <- runMP[[2]] # Data object object with saved info from MP 
+        Data_p@TAC <- MPRecs$TAC
         
         # calculate pstar quantile of TAC recommendation dist 
-        TACused <- apply(Data@TAC, 2, quantile, p = pstar, na.rm = T) 
+        TACused <- apply(Data_p@TAC, 2, quantile, p = pstar, na.rm = T) 
         
         MPCalcs <- CalcMPDynamics(MPRecs, y, nyears, proyears, nsim,
                                   LastEffort, LastSpatial, LastAllocat, LastCatch,

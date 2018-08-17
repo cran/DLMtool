@@ -1,5 +1,14 @@
 The current version of the DLMtool package is available for download from [CRAN](https://CRAN.R-project.org/package=DLMtool).
 
+## DLMtool 5.2.2
+
+### Fixes
+- fix issue with hyperstability/depletion for future projections
+- `MSE@OM` has been updated to only include historical conditions.
+- Fix issue with `Converge` in 5.2.1
+- improvement to `XL2Data` to read files from other than working directory
+- more flexibility to `summary(Data)` 
+
 ## DLMtool 5.2.1
 
 ### Minor fixes
