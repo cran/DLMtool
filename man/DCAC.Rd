@@ -98,31 +98,31 @@ below BMSY, DCAC tends to chronically overfish.
 See \linkS4class{Data} for information on the \code{Data} object \cr
 
 
-\code{DCACs}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, t, Year
+\code{DCACs}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, Year, t
 
 
-\code{DCAC}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, t, Year
+\code{DCAC}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, Year, t
 
 
-\code{DCAC_40}: AvC, BMSY_B0, FMSY_M, LHYear, Mort, t, Year
+\code{DCAC_40}: AvC, BMSY_B0, FMSY_M, LHYear, Mort, Year, t
 
 
-\code{DCAC4010}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, t, Year
+\code{DCAC4010}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, Year, t
 
 
-\code{DCAC_ML}: AvC, CAL, CAL_bins, Cat, LFS, LHYear, Mort, t, vbK, vbLinf, Year
+\code{DCAC_ML}: AvC, CAL, CAL_bins, Cat, LFS, LHYear, Mort, Year, t, vbK, vbLinf
 
 
-\code{DAAC}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, t, Year
+\code{DAAC}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, Year, t
 
 
-\code{HDAAC}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, t, Year
+\code{HDAAC}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, Year, t
 }
 
 \section{Rendered Equations}{
 
 
- 
+
 See \href{https://dlmtool.github.io/DLMtool/reference/DCAC.html}{Online Documentation} for correctly rendered equations
 
 
@@ -173,3 +173,4 @@ Other Average Catch MPs: \code{\link{AvC_MLL}},
 \author{
 T. Carruthers
 }
+\concept{Average Catch MPs}

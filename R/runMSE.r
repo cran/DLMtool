@@ -14,7 +14,7 @@ Names <- c("maxage", "R0", "Mexp", "Msd", "dep", "D", "Mgrad", "SRrel", "hs", "p
            "Linfarray", "Karray", "t0array", "mov",  "nareas", "AC", "LenCV", "a", "b", "FinF", 
            "Fdisc", "R50", "Rslope", "retA", "retL", "LR5", "LFR", "Rmaxlen",
            "V2", "SLarray2", "DR", "Asize", "Size_area_1", "L50array", "L95array",
-           "Fdisc_array", "Fdisc_array2", "Pinitdist", "incProgress", "DataOut",
+           "Fdisc_array", "Fdisc_array2", "Pinitdist", "DataOut",
            'Perr_y', "Cobs", "Iobs", "Dobs", "Btbiascv", 'Btobs', "h")
 
 
@@ -94,6 +94,7 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
   if (class(tt)!="try-error") {
     gl.funs <- as.vector(tt)
     pkg.funs <- as.vector(ls.str('package:DLMtool'))
+    if ('package:MSEtool' %in% search()) pkg.funs <- c(pkg.funs, as.vector(ls.str('package:MSEtool')))
     if (length(gl.funs)>0) {
       gl.clss <- unlist(lapply(lapply(gl.funs, get), class))
       gl.MP <- gl.funs[gl.clss %in% 'MP']
@@ -109,8 +110,6 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
     }
   }
   
-
-  
   # Check MPs 
   if (!all(is.na(MPs))) {
     for (mm in MPs) {
@@ -119,7 +118,6 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
     }
   }
 
-  
   if (parallel) {
     if(!snowfall::sfIsRunning()) {
       # stop("Parallel processing hasn't been initialized. Use 'setup'", call. = FALSE)
@@ -163,7 +161,7 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
                              CheckMPs=CheckMPs, timelimit=timelimit, Hist=Hist, ntrials=ntrials, 
                              fracD=fracD, CalcBlow=CalcBlow, 
                              HZN=HZN, Bfrac=Bfrac, AnnualMSY=AnnualMSY, silent=TRUE, PPD=PPD,
-                             control=control)
+                             control=control, parallel=parallel)
     #assign_DLMenv() # grabs objects from DLMenv in cores, then merges and assigns to 'home' environment
   
     if (!is.null(save_name) && is.character(save_name)) saveRDS(temp, paste0(save_name, '.rdata'))
@@ -191,9 +189,7 @@ runMSE <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","
 runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","curE","matlenlim", "MRreal"), 
                       CheckMPs = FALSE, timelimit = 1, Hist=FALSE, ntrials=50, fracD=0.05, CalcBlow=TRUE, 
                       HZN=2, Bfrac=0.5, AnnualMSY=TRUE, silent=FALSE, PPD=FALSE, checks=FALSE,
-                      control=NULL) {
-  
- 
+                      control=NULL, parallel=FALSE) {
   
   # For development - assign default argument values to to current workspace if they don't exist ####
   if (interactive()) { 
@@ -255,7 +251,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   }
   
   # --- Sample Stock Parameters ----
-  StockPars <- SampleStockPars(OM, nsim, nyears, proyears, SampCpars, Msg=!silent)
+  StockPars <- SampleStockPars(OM, nsim, nyears, proyears, SampCpars, msg=!silent)
   # Assign Stock pars to function environment
   for (X in 1:length(StockPars)) assign(names(StockPars)[X], StockPars[[X]])
 
@@ -457,7 +453,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
 
       if (length(OM2@cpars)>0) SampCpars2 <- SampleCpars(OM2@cpars, OM2@nsim, msg=FALSE) 
      
-      ResampStockPars <- SampleStockPars(OM2, cpars=SampCpars2, Msg=FALSE)  
+      ResampStockPars <- SampleStockPars(OM2, cpars=SampCpars2, msg=FALSE)  
       ResampStockPars$CAL_bins <- StockPars$CAL_bins
       ResampStockPars$CAL_binsmid <- StockPars$CAL_binsmid 
     
@@ -535,14 +531,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   if(!silent) message("Calculating MSY reference points")  # Print a progress update
   
   MSYrefs <- sapply(1:nsim, optMSY_eq, M_ageArray, Wt_age, Mat_age, V, maxage, 
-                    R0, SRrel, hs, yr=nyears)
-  
-  # M_ageArray2 <- M_ageArray
-  # M_ageArray2 <- M_ageArray[,,rep(1, 100)]
-  # Wt_age2 <- Wt_age
-  # Wt_age2 <- Wt_age[,,rep(1, 100)]
-  # MSYrefs <- sapply(1:nsim, optMSY_eq, M_ageArray2, Wt_age2, Mat_age, V, maxage, 
-  #                   R0, SRrel, hs, yr=nyears)
+                    R0, SRrel, hs, yr=nyears) 
 
   MSY <- MSYrefs[1, ]  # record the MSY results (Vulnerable)
   FMSY <- MSYrefs[2, ]  # instantaneous FMSY (Vulnerable)
@@ -553,7 +542,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   VBMSY <- (MSY/(1 - exp(-FMSY)))  # Biomass at MSY (Vulnerable)
   UMSY <- MSY/VBMSY  # exploitation rate [equivalent to 1-exp(-FMSY)]
   FMSY_M <- FMSY/M  # ratio of true FMSY to natural mortality rate M
- 
+
   if (checks) {
     Btemp <- apply(SSB, c(1,3), sum)
     x <- Btemp[,nyears]/SSBMSY
@@ -625,15 +614,21 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
 
   # generate CAA from retained catch-at-age 
   CAA <- array(NA, dim = c(nsim, nyears, maxage))  # Catch  at age array
-  cond <- apply(Cret, 1:2, sum, na.rm = T) < 1  # this is a fix for low sample sizes. If Cret is zero across the board a single fish is caught in age class of model selectivity (dumb I know)
-  fixind <- as.matrix(cbind(expand.grid(1:nsim, 1:nyears), rep(floor(maxage/3), nyears)))  # more fix
-  Cret[fixind[cond, ]] <- 1  # puts a catch in the most vulnerable age class
+  # cond <- apply(Cret, 1:2, sum, na.rm = T) < 1  # this is a fix for low sample sizes. If Cret is zero across the board a single fish is caught in age class of model selectivity (dumb I know)
+  # fixind <- as.matrix(cbind(expand.grid(1:nsim, 1:nyears), rep(floor(maxage/3), nyears)))  # more fix
+  # Cret[fixind[cond, ]] <- 1  # puts a catch in the most vulnerable age class
   
   # a multinomial observation model for catch-at-age data
-  for (i in 1:nsim) 
-    for (j in 1:nyears) 
-      CAA[i, j, ] <- ceiling(-0.5 + rmultinom(1, CAA_ESS[i], Cret[i, j,]) * CAA_nsamp[i]/CAA_ESS[i]) 
-  
+  for (i in 1:nsim) {
+    for (j in 1:nyears) {
+      if (!sum( Cret[i, j,])) {
+        CAA[i, j, ] <- 0 
+      } else {
+        CAA[i, j, ] <- ceiling(-0.5 + rmultinom(1, CAA_ESS[i], Cret[i, j,]) * CAA_nsamp[i]/CAA_ESS[i])   
+      }
+    }
+  }
+    
   # --- Simulate observed catch-at-length ----
   # a multinomial observation model for catch-at-length data
   # assumed normally-distributed length-at-age truncated at 2 standard deviations from the mean
@@ -676,7 +671,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   
   # --- Simulate observed values in steepness ----
   if (!is.null(OM@cpars[['hsim']])) {
-    hsim <- OM@cpars[['hsim']]
+    hsim <- SampCpars$hsim
     hbias <- hsim/hs  # back calculate the simulated bias
     if (OM@hbiascv == 0) hbias <- rep(1, nsim) 
     ObsPars$hbias <- hbias 
@@ -912,12 +907,11 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     for (y in 1:proyears) {
       if(!silent) cat('.')
       if (!silent) flush.console()
-      
       MSYrefsYr <- sapply(1:nsim, optMSY_eq, M_ageArray, Wt_age, Mat_age, V, maxage, R0, SRrel, hs, yr=nyears+y)
       MSY_P[,,y] <- MSYrefsYr[1, ]
       FMSY_P[,,y] <- MSYrefsYr[2,]
       SSBMSY_P[,,y] <- MSYrefsYr[3,]
-
+      
     }
     if(!silent) cat("\n")
   }
@@ -934,6 +928,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   
   for (mm in 1:nMP) {  # MSE Loop over methods
     if(!silent) message(mm, "/", nMP, " Running MSE for ", MPs[mm])  # print a progress report
+    checkNA <- NA # save number of NAs
     
     # reset selectivity parameters for projections
     L5_P <- L5  
@@ -1002,7 +997,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     
     # -- apply MP in initial projection year ----
     # Combined MP ----
-    runMP <- applyMP(MSElist[[mm]], MPs = MPs[mm], reps = reps)  # Apply MP
+    runMP <- applyMP(MSElist[[mm]], MPs = MPs[mm], reps = reps, silent=TRUE)  # Apply MP
     
     MPRecs <- runMP[[1]][[1]] # MP recommendations
     Data_p <- runMP[[2]] # Data object object with saved info from MP 
@@ -1010,7 +1005,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     
     # calculate pstar quantile of TAC recommendation dist 
     TACused <- apply(Data_p@TAC, 2, quantile, p = pstar, na.rm = T) 
-    
+    checkNA[y] <- sum(is.na(TACused))
     LastEffort <- rep(1,nsim)
     LastSpatial <- array(MPA[nyears,], dim=c(nareas, nsim)) # 
     LastAllocat <- rep(1, nsim) # default assumption of reallocation of effort to open areas
@@ -1068,10 +1063,12 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
       
       # -- Calculate MSY stats for this year ----
       if (AnnualMSY & SelectChanged) { #
-        MSYrefsYr <- sapply(1:nsim, optMSY_eq, M_ageArray, Wt_age, Mat_age, V_P, maxage, R0, SRrel, hs, yr=nyears+y)
+        MSYrefsYr <- sapply(1:nsim, optMSY_eq, M_ageArray, Wt_age, Mat_age, 
+                            V_P, maxage, R0, SRrel, hs, yr=nyears+y)
         MSY_P[,mm,y] <- MSYrefsYr[1, ]
         FMSY_P[,mm,y] <- MSYrefsYr[2,]
         SSBMSY_P[,mm,y] <- MSYrefsYr[3,]
+        
       }
       
       TACa[, mm, y] <- TACa[, mm, y-1] # TAC same as last year unless changed 
@@ -1127,12 +1124,13 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         # # a multinomial observation model for catch-at-age data
         for (i in 1:nsim) {
           for (j in 1:interval[mm]) {
-            if (all(CNtemp[i, , j]<1)) { # this is a fix for low sample sizes. If CAA is zero across the board a single fish is caught in age class of model selectivity (dumb I know)
-              CNtemp[i, floor(maxage/3), j] <- 1
-            }
+            # if (all(CNtemp[i, , j]<1)) { # this is a fix for low sample sizes. If CAA is zero across the board a single fish is caught in age class of model selectivity (dumb I know)
+            #   CNtemp[i, floor(maxage/3), j] <- 1
+            # }
             CAA[i, j, ] <- ceiling(-0.5 + rmultinom(1, CAA_ESS[i], CNtemp[i, , j]) * CAA_nsamp[i]/CAA_ESS[i])   # a multinomial observation model for catch-at-age data
           }
         }	  
+       
         
         ## Calculate CAL ####
         CAL <- array(NA, dim = c(nsim, interval[mm], nCALbins))  # the catch at length array
@@ -1249,7 +1247,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         # apply combined MP ----
         if("DataOut"%in%names(control))if(control$DataOut == y) return(MSElist)
           
-        runMP <- applyMP(MSElist[[mm]], MPs = MPs[mm], reps = reps)  # Apply MP
+        runMP <- applyMP(MSElist[[mm]], MPs = MPs[mm], reps = reps, silent=TRUE)  # Apply MP
        
         MPRecs <- runMP[[1]][[1]] # MP recommendations
         Data_p <- runMP[[2]] # Data object object with saved info from MP 
@@ -1270,7 +1268,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
                                   CAL_binsmid, Linf, Len_age, maxage, nareas, Asize,  nCALbins,
                                   qs, qvar, qinc)
 
-        TACa[, mm, y] <- MPCalcs$TACrec # recommended TAC 
+        TACa[, mm, y] <- TACused # MPCalcs$TACrec # recommended TAC 
         LastSpatial <- MPCalcs$Si
         LastAllocat <- MPCalcs$Ai
         LastEffort <- MPCalcs$Effort
@@ -1310,7 +1308,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
                                   CAL_binsmid, Linf, Len_age, maxage, nareas, Asize,  nCALbins,
                                   qs, qvar, qinc)
         
-        TACa[, mm, y] <- MPCalcs$TACrec # recommended TAC 
+        TACa[, mm, y] <- TACused #  MPCalcs$TACrec # recommended TAC 
         LastSpatial <- MPCalcs$Si
         LastAllocat <- MPCalcs$Ai
         LastEffort <- MPCalcs$Effort
@@ -1330,6 +1328,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         SLarray_P <- MPCalcs$SLarray_P # vulnerable-at-length
   
       }  # not an update year
+      checkNA[y] <- sum(is.na(TACused))
     }  # end of year
     
     B_BMSYa[, mm, ] <- apply(SSB_P, c(1, 3), sum, na.rm=TRUE)/SSBMSY_P[,mm,]  # SSB relative to SSBMSY
@@ -1351,13 +1350,32 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     CAAout[ , mm, ] <- CNtemp[,,proyears] # nsim, maxage # catch-at-age
     CALout[ , mm, ] <- CAL[,max(dim(CAL)[2]),] # catch-at-length in last year
     
-    if (!silent) cat("\n")
-    if("progress"%in%names(control))if(control$progress)incProgress(1/nMP, detail = round(mm*100/nMP))
+    if (!silent) {
+      cat("\n")
+      if (all(checkNA != nsim) & !all(checkNA == 0)) {
+        # print number of NAs
+        # message(checkNA)
+        # message(checkNA[upyrs])
+        ntot <- sum(checkNA[upyrs])
+        totyrs <- sum(checkNA[upyrs] >0)
+        nfrac <- round(ntot/(length(upyrs)*nsim),2)*100
+        
+        message(totyrs, ' years had TAC = NA for some simulations (', nfrac, "% of total simulations)")
+        message('Used TAC_y = TAC_y-1')  
+      }
+      
+    }
+    
+    if (!parallel) 
+      if("progress"%in%names(control))
+        if(control$progress) 
+          shiny::incProgress(1/nMP, detail = round(mm*100/nMP))
+    
   }  # end of mm methods 
   
   # Miscellaneous reporting
   if(PPD)Misc<-MSElist
-  
+
   
   ## Create MSE Object #### 
   MSEout <- new("MSE", Name = OM@Name, nyears, proyears, nMPs=nMP, MPs, nsim, 

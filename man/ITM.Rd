@@ -37,11 +37,11 @@ The maximum fractional change in TAC is determined by \eqn{mc}, defined as
 See \linkS4class{Data} for information on the \code{Data} object \cr
 
 
-\code{ITM}: Ind, Iref, Mort, MPrec
+\code{ITM}: Ind, Iref, MPrec, Mort
 }
 
 \section{Rendered Equations}{
- 
+
 See \href{https://dlmtool.github.io/DLMtool/reference/ITM.html}{Online Documentation} for correctly rendered equations
 }
 

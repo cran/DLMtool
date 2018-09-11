@@ -468,6 +468,9 @@ setup <- function(cpus=parallel::detectCores()*0.5, ...) {
   if(snowfall::sfIsRunning()) snowfall::sfStop()
   snowfall::sfInit(parallel=TRUE,cpus=cpus, ...)
   sfLibrary("DLMtool", character.only = TRUE, verbose=FALSE)
+  pkgs <- search()
+  if ("package:MSEtool" %in% pkgs) sfLibrary("MSEtool", character.only = TRUE, verbose=FALSE)
+  
 }
 
 
@@ -485,6 +488,16 @@ userguide <- function() {
   utils::browseURL("https://dlmtool.github.io/DLMtool/userguide/introduction.html")
 }
 
+#' Opens the DLMtool Cheat-Sheets (requires internet connection)
+#' 
+#' @export
+#' @examples
+#' \dontrun{
+#' cheatsheets()
+#' }
+cheatsheets <- function() {
+  utils::browseURL("https://dlmtool.github.io/DLMtool/cheat_sheets/DLMtool_CheatSheets.pdf")
+}
 
 RepmissingVal <- function(object, name, vals=NA) {
   miss <- FALSE

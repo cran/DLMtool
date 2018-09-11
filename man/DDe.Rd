@@ -63,11 +63,11 @@ and Walters (1992).
 See \linkS4class{Data} for information on the \code{Data} object \cr
 
 
-\code{DDe}: Cat, Ind, L50, MaxAge, Mort, MPeff, vbK, vbLinf, vbt0, wla, wlb
+\code{DDe}: Cat, Ind, L50, MPeff, MaxAge, Mort, vbK, vbLinf, vbt0, wla, wlb
 }
 
 \section{Rendered Equations}{
- 
+
 See \href{https://dlmtool.github.io/DLMtool/reference/DDe.html}{Online Documentation} for correctly rendered equations
 }
 
@@ -79,3 +79,4 @@ DDe75(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
 \seealso{
 Other Delay-Difference MPs: \code{\link{DD}}
 }
+\concept{Delay-Difference MPs}

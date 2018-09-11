@@ -42,11 +42,11 @@ be adjusted using the \code{frac} argument.#'
 See \linkS4class{Data} for information on the \code{Data} object \cr
 
 
-\code{LBSPR}: CAL, CAL_bins, L50, L95, LHYear, Mort, vbK, vbLinf, wlb, Year
+\code{LBSPR}: CAL, CAL_bins, L50, L95, LHYear, Mort, Year, vbK, vbLinf, wlb
 }
 
 \section{Rendered Equations}{
- 
+
 See \href{https://dlmtool.github.io/DLMtool/reference/LBSPR.html}{Online Documentation} for correctly rendered equations
 }
 

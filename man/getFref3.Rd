@@ -4,9 +4,9 @@
 \alias{getFref3}
 \title{Calculate Reference Yield}
 \usage{
-getFref3(x, Asize, nareas, maxage, N, pyears, M_ageArray, Mat_age, Wt_age, V,
-  retA, Perr, mov, SRrel, Find, Spat_targ, hs, R0a, SSBpR, aR, bR, MPA, maxF,
-  useCPP = TRUE, SSB0)
+getFref3(x, Asize, nareas, maxage, N, pyears, M_ageArray, Mat_age, Wt_age,
+  V, retA, Perr, mov, SRrel, Find, Spat_targ, hs, R0a, SSBpR, aR, bR, MPA,
+  maxF, useCPP = TRUE, SSB0)
 }
 \arguments{
 \item{x}{Integer, the simulation number}
@@ -18,7 +18,7 @@ getFref3(x, Asize, nareas, maxage, N, pyears, M_ageArray, Mat_age, Wt_age, V,
 \item{maxage}{The maximum age}
 
 \item{N}{Array of the numbers-at-age in population. Dimensions are nsim, maxage, nyears, nareas.
-Only values from the first year (i.e \code{N[,,1,]}) are used, which is the current N-at-age.}
+Only values from the first year are used, which is the current N-at-age.}
 
 \item{pyears}{The number of years to project forward. Equal to 'nyears' for optimizing for q.}
 
