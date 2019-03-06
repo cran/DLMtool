@@ -5,7 +5,7 @@ library(DLMextra)
 Dat <- avail('Data')
 Dat <- Dat[!Dat %in% c("SimulatedData", "Simulation_1")]
           
-windows()          
+dev.new()          
 for (dat in Dat) {
   testthat::test_that(paste("plot works with ", dat), {
     datobj <- get(dat)
@@ -16,6 +16,15 @@ for (dat in Dat) {
     testthat::expect_error(plot(datobj), NA)
   })
 }
+
+
+for (dat in Dat) {
+  testthat::test_that(paste("`summary` works with ", dat), {
+    datobj <- get(dat)
+    testthat::expect_error(summary(datobj, wait=FALSE), NA)
+  })
+}
  
+if(!is.null(dev.list()))  dev.off()
    
 

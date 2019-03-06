@@ -200,13 +200,6 @@ NULL
 "SimulatedData"
 
 
-#'  SimulatedData Data
-#'
-#'  An object of class Data
-#'
-"SimulatedData"
-
-
 #'  StockDescription 
 #'
 #'  A data.frame with description of slots for class Stock
@@ -247,6 +240,13 @@ NULL
 #'  A data.frame with description of slots for class OM
 #'
 "OMDescription"
+
+
+#'  MSEDescription 
+#'
+#'  A data.frame with description of slots for class MSE
+#'
+"MSEDescription"
 
 
 #'  LHdatabase 
