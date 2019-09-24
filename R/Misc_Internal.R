@@ -81,7 +81,7 @@ ChkObj <- function(OM, error=TRUE) {
   
   # Slots ok to not contain values
   Ignore <- optslots$Ignore
-  Ignore <- c(Ignore, "Mgrad", "Kgrad", "Linfgrad")
+  Ignore <- c(Ignore, "Mgrad", "Kgrad", "Linfgrad", "LatentEff")
   
   # if values present for one they need to be there for all! 
   if (any(SelSlots %in% slots[Ok])) Ignore <- Ignore[!Ignore %in% SelSlots] 
@@ -358,6 +358,51 @@ runMSEnomsg <- function(...) {
 
 run_parallel <- function(i, itsim, OM, MPs, CheckMPs, timelimit, Hist, ntrials, fracD, CalcBlow, 
                          HZN, Bfrac, AnnualMSY, silent, PPD, control, parallel=FALSE) {
+  
+  # rename Perr in cpars to Perr_Y
+  if ("Perr" %in% names(OM@cpars)) {
+    if (!is.null(dim(OM@cpars[['Perr']]))) {
+      OM@cpars[['Perr_y']] <- OM@cpars[['Perr']]
+      OM@cpars[['Perr']] <- NULL
+    }
+  }
+  
+  
+  if (length(OM@cpars)>0) {
+    ncparsim<-cparscheck(OM@cpars)  
+    if (ncparsim == OM@nsim) { # cpars for each simulation 
+      cpars <- OM@cpars
+  
+      if (i > 1) {
+        ind <- (sum(itsim[1:(i-1)]) + 1): sum(itsim[1:i])  
+      } else {
+        ind <- 1:itsim[i]
+      }
+      for (x in 1:length(cpars)) {
+        if (names(cpars)[x] !="Data"){
+          dd <- dim(cpars[[x]])
+          if (length(dd) == 2) {
+            cpars[[x]] <- cpars[[x]][ind,]
+          }
+          if (length(dd) == 3) {
+            cpars[[x]] <- cpars[[x]][ind,,]
+          }
+          if (length(dd) == 4) {
+            cpars[[x]] <- cpars[[x]][ind,,,]
+          }
+          if (length(dd) == 5) {
+            cpars[[x]] <- cpars[[x]][ind,,,,]
+          }
+          
+          if (is.null(dd)) {
+            cpars[[x]] <- cpars[[x]][ind]
+          }
+        }
+      }
+      OM@cpars <- cpars
+    }
+  }
+  
   OM@nsim <- itsim[i]
   
   OM@seed <- OM@seed + i 
@@ -623,11 +668,13 @@ dev.mode <- function() {
 
 getbeta<-function(beta,x,y)sum((y-x^beta)^2)
 
+
+
+
 indfitwrap <- function(x, type, sim.indices, ind.type, Data, nyears, plot=FALSE) {
   sim.index <- sim.indices[[match(type, ind.type)]][x,]
   dat <- Data@RInd[x,match(type, Data@Type),]
-  dat <- dat[!is.na(dat)]
-  nyears <- min(nyears, length(dat))
+
   obs.ind <- Data@RInd[x,match(type, Data@Type), 1:nyears]
   sim.index <- sim.index[1:nyears]
   Year <- Data@Year
@@ -638,17 +685,17 @@ lcs<-function(x){
   if (class(x) == "matrix") {
     nsim <- nrow(x)
     nyr <- ncol(x)
-    x1 <- x/matrix(apply(x, 1, mean), nrow=nsim, ncol=nyr) # rescale to mean 1
+    x1 <- x/matrix(apply(x, 1, mean, na.rm=TRUE), nrow=nsim, ncol=nyr) # rescale to mean 1
     x2<- log(x1) # log it
-    x3 <- x2 -matrix(apply(x2, 1, mean), nrow=nsim, ncol=nyr) # mean 0
+    x3 <- x2 -matrix(apply(x2, 1, mean, na.rm=TRUE), nrow=nsim, ncol=nyr) # mean 0
     x3
   } else {
-    x1<-x/mean(x) # rescale to mean 1
+    x1<-x/mean(x, na.rm=TRUE) # rescale to mean 1
     x2<-log(x1)     # log it
-    x3<-x2-mean(x2) # mean 0
+    x3<-x2-mean(x2, na.rm=TRUE) # mean 0
     x3
   }
-
+  
 }
 
 
@@ -661,8 +708,8 @@ makeVec <- function(obj, row=1, nsim) {
 
 indfit <- function(sim.index,obs.ind, Year, plot=FALSE, lcex=0.8){
   
-  sim.index <- lcs(sim.index) # log space conversion of standardized simulated index
-  obs.ind <- lcs(obs.ind) # log space conversion of standardized observed ind
+  sim.index <- lcs(sim.index[!is.na(obs.ind)]) # log space conversion of standardized simulated index
+  obs.ind <- lcs(obs.ind[!is.na(obs.ind)]) # log space conversion of standardized observed ind
   
   if(plot){
     par(mfrow=c(1,2),mai=c(0.7,0.5,0.05,0.01),omi=c(0.01,0.2,0.01,0.01))
@@ -704,7 +751,7 @@ indfit <- function(sim.index,obs.ind, Year, plot=FALSE, lcex=0.8){
 
 generateRes <- function(df, nsim, proyears, lst.err) {
   sd <- df$sd 
-  ac <- df$ac
+  ac <- df$AC
   if (all(is.na(sd))) return(rep(NA, nsim))
   mu <- 0.5 * (sd)^2
   Res <- matrix(rnorm(proyears*nsim, mu, sd), nrow=proyears, ncol=nsim, byrow=TRUE) 
@@ -725,97 +772,109 @@ applyAC <- function(x, res, ac, max.years, lst.err) {
   res[,x]
 }
 
-addRealInd <- function(Data, SampCpars, ErrList, Biomass, VBiomass, SSB, nsim, nyears,
-                       proyears, silent=FALSE) {
+addRealData <- function(Data, SampCpars, ErrList, Biomass, VBiomass, SSB, CBret,
+                        nsim, nyears,  proyears, silent=FALSE) {
+ 
   if (!is.null(SampCpars$Data)) {
-    # real data has been provided 
-    types <- SampCpars$Data@Type
-    chk <- types %in% c("Biomass", "VBiomass", "SpBiomass")
-    if (any(!chk)) 
-      if (!is.na(types)) 
-        stop("Invalid index type in cpars$Data@Type. \nValid types are: 'Biomass', 'VBiomass', 'SpBiomass'", call.=FALSE)
-    if (all(is.na(types))) {
-      if (!silent) message("Data object provided in cpars but Data@Type is empty. Ignoring Data")
-    } else {
-      indices <- SampCpars$Data@RInd[1,,]
-      if (all(is.na(indices))) {
-        if (!silent) message("Data object provided in cpars but Data@RInd is empty. Ignoring Data")
-      } else {
-        if (!silent) message("Conditioning simulated RInd on cpars$Data@RInd")
-        # add Real indices to Data object 
-        Data@Type <- SampCpars$Data@Type
-        RInd <- SampCpars$Data@RInd[1,,]
-        if (class(RInd) == "numeric") {
-          Data@RInd <- array(RInd, dim=c(nsim, 1, length(RInd)))
-        } else {
-          temp <- array(RInd, dim=c(nrow(RInd), ncol(RInd), nsim))
-          Data@RInd <- aperm(temp, c(3,1,2)) 
-        }
+    RealDat <- SampCpars$Data
+    
+    # ---- Catch ----
+    if (!all(is.na(RealDat@Cat[1,]))) {
+      if (!silent) 
+        message('Updating Simulated Catch from `OM@cpars$Data@Cat` (OM Catch observation parameters are ignored)')
+      Data@Cat <- matrix(RealDat@Cat[1,1:nyears], nrow=nsim, ncol=nyears, byrow=TRUE)
+      Data@CV_Cat <- matrix(RealDat@CV_Cat[1,1:nyears], nrow=nsim, ncol=nyears, byrow=TRUE)
+      if (!all(is.na(RealDat@Units))) Data@Units <- RealDat@Units
+      
+      simcatch <- apply(CBret, c(1,3), sum)
+      
+      Cbias <- matrix(apply(simcatch, 1, mean) / apply(Data@Cat, 1, mean),
+                      nrow=nsim, ncol=nyears+proyears)
+      
+      Cerr <- (Data@Cat /simcatch)/Cbias[,1:nyears]
+      Cerr_proj <- apply(Cerr, 1, sample, size=proyears) %>% t()
+      Cerr <- cbind(Cerr, Cerr_proj)
+      ErrList$Cbiasa <- Cbias
+      ErrList$Cerr <- Cerr
+      # sim <- sample(1:nsim, 1)
+      # simcatch[sim,] * ErrList$Cerr[sim,1:nyears] * ErrList$Cbiasa[sim,1:nyears]/ RealDat@Cat[1,1:nyears]
+    }
+
+
+    # ---- Index (total biomass) ----
+    if (!all(is.na(RealDat@Ind[1,]))) { # Index exists
+      if (!silent) 
+        message('Updating Simulated Index from `OM@cpars$Data@Ind` (OM Index observation parameters are ignored)')
+      Data@Ind <- matrix(RealDat@Ind[1,1:nyears], nrow=nsim, ncol=nyears, byrow=TRUE)
+      Data@CV_Ind <- matrix(RealDat@CV_Ind[1,1:nyears], nrow=nsim, ncol=nyears, byrow=TRUE)
+      
+      # Calculate Error
+      SimBiomass <- apply(Biomass, c(1, 3), sum)
+      I_Err <- lapply(1:nsim, function(i) indfit(SimBiomass[i,],  Data@Ind[i,]))
+      I_Err <- do.call('rbind', I_Err)
+  
+      Ierr <- exp(lcs(Data@Ind))/exp(lcs(SimBiomass))^I_Err$beta
+    
+      ErrList$Ierr[,1:nyears] <- Ierr
+      
+      # # Sample to replace NAs in historical years
+      # for (i in 1:nsim) {
+      #   temp <- ErrList$Ierr[i,1:nyears]
+      #   n <- sum(is.na(temp))
+      #   temp2 <- temp[!is.na(temp)]
+      #   temp[is.na(temp)] <- sample(temp2, n, replace=TRUE)
+      #   ErrList$Ierr[i,1:nyears] <- temp 
+      # }
+      
+      # Sample for projection years 
+      yr.ind <- max(which(!is.na(RealDat@Ind[1,1:nyears])))
+      ErrList$Ierr[, (nyears+1):(nyears+proyears)] <- generateRes(df=I_Err, nsim, proyears, lst.err=log(ErrList$Ierr[,yr.ind]))
+      ErrList$Ind_Stat <- I_Err # return index statistics
+    }
+    
+    # ---- Additional Indices ----
+    if (!all(is.na(RealDat@AddInd))) {
+      if (!silent) 
+        message('Adding Additional Indices to Simulated Data from `OM@cpars$Data@AddInd`')
+      n.ind <- nrow(RealDat@AddInd[1,,])
+      Data@AddInd <- Data@CV_AddInd <- array(NA, dim=c(nsim, n.ind, nyears))
+      
+      ErrList$AddIerr <- array(NA, dim=c(nsim, n.ind, nyears+proyears))
+      ErrList$AddIbeta <- matrix(NA, nsim, n.ind)
+      ErrList$AddInd_Stat <- list()
+      for (i in 1:n.ind) {
+        if(!silent) message("Additional index ", i)
+        ind <- RealDat@AddInd[1,i,1:nyears]
+        cv_ind <- RealDat@CV_AddInd[1,i,1:nyears]
+        Data@AddInd[,i,] <- matrix(ind, nrow=nsim, ncol=nyears, byrow=TRUE)
+        Data@CV_AddInd[,i,] <- matrix(cv_ind, nrow=nsim, ncol=nyears, byrow=TRUE)
         
-        # Calculate implied observation error
-        sim.indices <- list(Biomass=apply(Biomass, c(1, 3), sum),
-                            VBiomass=apply(VBiomass, c(1, 3), sum),
-                            SpBiomass=apply(SSB, c(1, 3), sum))
+        # Calculate observation error for future projections 
+        Ind_V <- RealDat@AddIndV[1,i, ]
+        SimBiomass <- apply(Biomass, c(1, 2, 3), sum)
+        Ind_V <- matrix(Ind_V, nrow=Data@MaxAge, ncol= nyears)
+        Ind_V <- replicate(nsim, Ind_V) %>% aperm(., c(3,1,2))
+        SimBiomass <- apply(SimBiomass*Ind_V, c(1,3), sum) # apply vuln curve
+  
+        I_Err <- lapply(1:nsim, function(i) indfit(SimBiomass[i,],  ind))
+        I_Err <- do.call('rbind', I_Err)
+        ind <- matrix(ind, nrow=nsim, ncol=nyears, byrow=TRUE)
+        Ierr <- exp(lcs(ind))/exp(lcs(SimBiomass))^I_Err$beta
+        ErrList$AddIerr[,i, 1:nyears] <- Ierr
+        ErrList$AddIbeta[,i] <- I_Err$beta
+        # Sample to replace NAs in historical years and for projection years
+        # for (j in 1:nsim) {
+        #   temp <- ErrList$AddIerr[j, i,1:nyears]
+        #   n <- sum(is.na(temp))
+        #   temp2 <- temp[!is.na(temp)]
+        #   temp[is.na(temp)] <- sample(temp2, n, replace=TRUE)
+        #   ErrList$AddIerr[j, i,1:nyears] <- temp 
+        # }
         
-        ind.type <- c('Biomass', 'VBiomass', 'SpBiomass')
-        out.list <- list()
-        for (type in Data@Type) {
-          out.list[[type]] <- sapply(1:nsim, indfitwrap, type=type, 
-                                     sim.indices=sim.indices, 
-                                     ind.type=ind.type, Data=Data, nyears=nyears)
-        } 
-        
-        # Make data.frame 
-        stats.df <- data.frame(Index=rep(c("Biomass", "VBiomass", 'SpBiomass'), each=nsim),
-                               beta=c(makeVec(out.list$Biomass, 1, nsim),
-                                      makeVec(out.list$VBiomass, 1, nsim),
-                                      makeVec(out.list$SpBiomass, 1, nsim)),
-                               ac = c(makeVec(out.list$Biomass, 2, nsim),
-                                      makeVec(out.list$VBiomass, 2, nsim),
-                                      makeVec(out.list$SpBiomass, 2, nsim)),
-                               sd = c(makeVec(out.list$Biomass, 3, nsim),
-                                      makeVec(out.list$VBiomass, 3, nsim),
-                                      makeVec(out.list$SpBiomass, 3, nsim)),
-                               cor =c(makeVec(out.list$Biomass, 4, nsim),
-                                      makeVec(out.list$VBiomass, 4, nsim),
-                                      makeVec(out.list$SpBiomass, 4, nsim)))
-        
-        # Generate index random error
-        BIerr <- array(NA, dim=c(nsim, nyears+proyears))
-        VBIerr <- array(NA, dim=c(nsim, nyears+proyears))
-        SBIerr <- array(NA, dim=c(nsim, nyears+proyears))
-        
-        # Calculate error where data exists
-        
-        bbeta <- stats.df %>% filter(Index=="Biomass") %>% select(beta)
-        yrs1 <- min(nyears, length(Data@RInd[1,match("Biomass", Data@Type),]))
-        BErr <- exp(lcs(Data@RInd[,match("Biomass", Data@Type),1:yrs1]))/exp(lcs(sim.indices$Biomass[, 1:yrs1]))^bbeta$beta
-        
-        bbeta <- stats.df %>% filter(Index=="VBiomass") %>% select(beta)
-        yrs2 <- min(nyears, length(Data@RInd[1,match("VBiomass", Data@Type),]))
-        VBErr <- exp(lcs(Data@RInd[,match("VBiomass", Data@Type),1:yrs2]))/exp(lcs(sim.indices$VBiomass[, 1:yrs2]))^bbeta$beta
-        
-        bbeta <- stats.df %>% filter(Index=="SpBiomass") %>% select(beta)
-        yrs3 <- min(nyears, length(Data@RInd[1,match("SpBiomass", Data@Type),]))
-        SpBErr <- exp(lcs(Data@RInd[,match("SpBiomass", Data@Type),1:yrs3]))/exp(lcs(sim.indices$SpBiomass[, 1:yrs3]))^bbeta$beta
-        
-        BIerr[, 1:ncol(BErr)] <- BErr
-        VBIerr[, 1:ncol(VBErr)] <- VBErr
-        SBIerr[, 1:ncol(SpBErr)] <- SpBErr
-        
-        # Generate error for projection years 
-        BIerr[,(ncol(BErr)+1):ncol(BIerr)] <- generateRes(stats.df %>% filter(Index=="Biomass"), 
-                                                          nsim, length((ncol(BErr)+1):ncol(BIerr)), 
-                                                          lst.err=log(BIerr[,yrs1]))
-        VBIerr[,(ncol(BErr)+1):ncol(VBIerr)] <- generateRes(stats.df %>% filter(Index=="VBiomass"),
-                                                            nsim, length((ncol(BErr)+1):ncol(BIerr)), 
-                                                            lst.err=log(VBIerr[,yrs2]))
-        SBIerr[,(ncol(BErr)+1):ncol(SBIerr)] <- generateRes(stats.df %>% filter(Index=="SpBiomass"),
-                                                            nsim, length((ncol(BErr)+1):ncol(BIerr)), 
-                                                            lst.err=log(SBIerr[,yrs3]))
-        
-        ErrList$stats.df <- stats.df
-        ErrList$RIerr <- list(BIerr=BIerr, VBIerr=VBIerr, SBIerr=SBIerr)
+        # Sample for projection years 
+        yr.ind <- max(which(!is.na(RealDat@AddInd[1,i,1:nyears])))
+        ErrList$AddIerr[,i, (nyears+1):(nyears+proyears)] <- generateRes(df=I_Err, nsim, proyears, lst.err=log(ErrList$AddIerr[,i,yr.ind]))
+        ErrList$AddInd_Stat[[i]] <- I_Err # index fit statistics
       }
     }
   }
@@ -850,6 +909,7 @@ CalcMSYRefs <- function(x, MSY_y, FMSY_y, SSBMSY_y, BMSY_y, VBMSY_y, ageM, OM) {
   minY <- floor(n.yrs/2) 
   maxY <- n.yrs - minY - 1 
   avg.ind <- (OM@nyears - minY):(OM@nyears + maxY)
+  avg.ind <- avg.ind[avg.ind>0]
   if (max(avg.ind) > nyears) avg.ind <- avg.ind[avg.ind < nyears]
   
   MSY <- mean(MSY_y[x, avg.ind])

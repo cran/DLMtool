@@ -17,9 +17,9 @@ FlatE_NDom
 FleetDescription
 Generic_DecE
 Generic_FlatE
-Generic_Fleet
 Generic_IncE
-Generic_Obs
+Generic_fleet: Generic_Fleet
+Generic_obs: Generic_Obs
 Gulf_blue_tilefish
 Herring
 ImpDescription

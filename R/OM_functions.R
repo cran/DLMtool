@@ -10,6 +10,7 @@
 #' @examples
 #' testOM<-ForceCor(testOM)
 ForceCor<-function(OM,nsim=48,plot=T){
+  .Deprecated("LH2OM", msg="Life-history correlations are now calculated using data from FishBase.\nConsider using `LH2OM` instead.")
   
   if("nsim"%in%slotNames(OM))nsim<-OM@nsim
   if("seed"%in%slotNames(OM))set.seed(OM@seed)
@@ -736,7 +737,7 @@ predictLH <- function(inpars=list(), Genus="predictive", Species="predictive", n
 #' @param OM An operating model object (class OM) which will be updated with a sub-model from another OM
 #' @param from An object of class `OM`, `Stock`, `Fleet`, `Obs`, or `Imp` to be replace the values in `OM`
 #' @param Sub A character string specifying what object type to replace (only used if `from` is class `OM`)
-#' "Stock", "Fleet", "Obs" or "Imp" (default is all four which is probably not what you want to do)
+#' "Stock", "Fleet", "Obs", or "Imp" (default is all four which is probably not what you want to do)
 #' @param Name Character. Name for the new OM object (`OM@Name`)
 #' @param silent Should messages be printed?
 #' 
@@ -766,13 +767,13 @@ Replace <- function(OM, from,Sub=c("Stock", "Fleet", "Obs", "Imp"),  Name=NULL, 
   if (class(OM) !="OM") stop("OM must be of class OM ", call.=FALSE)
   if (class(from) =="character") from <- get(from)
   if (!class(from) %in% c("OM", "Stock", "Fleet", "Obs", "Imp")) 
-    stop("from must be class `OM`, `Stock`, `Fleet`, `Obs`, or `Imp`", call.=FALSE)
+    stop("from must be class `OM`, `Stock`, `Fleet`, `Obs`, `Imp`", call.=FALSE)
   
   Stock <- SubOM(OM, "Stock")
   Fleet <- SubOM(OM, "Fleet")
   Obs <- SubOM(OM, "Obs")
   Imp <- SubOM(OM, "Imp")
-  
+ 
   if (class(from) == "OM") {
     Sub <- match.arg(Sub, several.ok=TRUE)
     if (length(Sub)==4) warning("Replacing all OM components. Probably not what you want to do ...")
@@ -834,8 +835,11 @@ SubOM <- function(OM, Sub=c("Stock", "Fleet", "Obs", "Imp")) {
   space <- gregexpr("  ", temp@Name)
   ind <- switch(Sub, Stock=1, Fleet=2, Obs=3, Imp=4)
   
-  if (ind < 4) temp@Name <- substr(temp@Name, colon[[1]][ind]+1, space[[1]][ind]-1)
-  if (ind == 4) temp@Name <- substr(temp@Name, colon[[1]][ind]+1, nchar(temp@Name))
+  if (all(colon[[1]] >0) & all(space[[1]]>0)) {
+    if (ind < 4) temp@Name <- substr(temp@Name, colon[[1]][ind]+1, space[[1]][ind]-1)
+    if (ind == 4) temp@Name <- substr(temp@Name, colon[[1]][ind]+1, nchar(temp@Name))
+    
+  }
   
   temp 
 }

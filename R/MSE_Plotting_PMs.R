@@ -14,6 +14,7 @@
 #' @param lab.size Numeric. Size of MP label. Set to NULL to remove MP labels.
 #' @param axis.title.size Numeric. Size of axis titles
 #' @param axis.text.size Numeric. Size of axis text
+#' @param legend Logical. Include legend?
 #' @param legend.title.size Numeric. Size of legend title text
 #' @param position Character. Position of legend - 'right' or 'bottom'
 #' @param cols Optional character vector of colors for the legend (MP Types) or if `cols` is a character vector of length `MSEobj@nMPs`, 
@@ -39,6 +40,7 @@ TradePlot <- function(MSEobj, ..., Lims=c(0.2, 0.2, 0.8, 0.8),
                       lab.size=4,
                       axis.title.size=12,
                       axis.text.size=10,
+                      legend=TRUE,
                       legend.title.size=12,
                       position = c("right", "bottom"),
                       cols=NULL,
@@ -202,11 +204,15 @@ TradePlot <- function(MSEobj, ..., Lims=c(0.2, 0.2, 0.8, 0.8),
     if (Col == "Class") {
       plots[[pp]] <-  plots[[pp]] +  ggplot2::scale_colour_manual(values=cols)
     } else if (Col == "MP") {
-      plots[[pp]] <-  plots[[pp]] +  ggplot2::guides(color=FALSE)
+      plots[[pp]] <-  plots[[pp]] +  ggplot2::scale_colour_manual(values=cols) +  ggplot2::guides(color=FALSE)
     }
     
     if (!is.null(Title)) 
       plots[[pp]] <-  plots[[pp]] + ggplot2::labs(title=Title[pp])
+    
+    if (legend==FALSE) 
+      plots[[pp]] <-  plots[[pp]] + ggplot2::theme(legend.position="none")
+    
   }
   
   out <- do.call("rbind", listout)
@@ -219,11 +225,11 @@ TradePlot <- function(MSEobj, ..., Lims=c(0.2, 0.2, 0.8, 0.8),
   Results <- Results[,unique(colnames(Results))]
   
   if (Show == "plots") {
-    join_plots(plots, n.col, n.row,  position = position)
+    join_plots(plots, n.col, n.row,  position = position, legend=legend)
   } else if (Show == "table") {
     print(Results)  
   } else {
-    join_plots(plots, n.col, n.row,  position = position)
+    join_plots(plots, n.col, n.row,  position = position, legend=legend)
     print(Results)  
   }
   out <- list(Results=Results, Plots=plots)
@@ -331,7 +337,7 @@ Cplot <- function(MSEobj, MPs = NA, lastYrs = 5,
   lastYr <- temp[, , nyears, drop = FALSE]
   Yield <- abind::abind(lastYr, MSEobj@C[, , , drop = FALSE]/RefYd, along = 3) # 
   
-  ny <- MSEobj@nyears + 1
+  ny <- MSEobj@proyears + 1
   relYield <- Yield[, , , drop = FALSE]/Yield[, , rep(1, ny), drop = FALSE] # catch relative to last historical year
   relYield <- relYield[,,(proyears - lastYrs + 1):proyears]
   

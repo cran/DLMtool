@@ -18,27 +18,35 @@ plot.MSE <- function(x, ...) {
 #' @param ncol Optional number of columns
 #' @param nrow Optional number of rows
 #' @param position position of the legend ("bottom" or "right")
-#'
+#' @param legend Logical. Use a legend?
 #' @export
 #'
 #' @note modified from https://github.com/tidyverse/ggplot2/wiki/share-a-legend-between-two-ggplot2-graphs
-join_plots <- function(plots, ncol = length(plots), nrow = 1, position = c("right", "bottom")) {
+join_plots <- function(plots, ncol = length(plots), nrow = 1, position = c("right", "bottom"),
+                       legend=TRUE) {
   position <- match.arg(position)
-  g <- ggplot2::ggplotGrob(plots[[1]] + ggplot2::theme(legend.position = position))$grobs
-  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
-  lheight <- sum(legend$height)
-  lwidth <- sum(legend$width)
-  gl <- lapply(plots, function(x) x + ggplot2::theme(legend.position="none"))
-  gl <- c(gl, ncol = ncol, nrow = nrow)
-  combined <- switch(position,
-                     "bottom" = gridExtra::arrangeGrob(do.call(gridExtra::arrangeGrob, gl),
-                                                       legend,
-                                                       ncol = 1,
-                                                       heights = grid::unit.c(grid::unit(1, "npc") - lheight, lheight)),
-                     "right" = gridExtra::arrangeGrob(do.call(gridExtra::arrangeGrob, gl),
-                                                      legend,
-                                                      ncol = 2,
-                                                      widths = grid::unit.c(grid::unit(1, "npc") - lwidth, lwidth)))
+  if (legend) {
+    g <- ggplot2::ggplotGrob(plots[[1]] + ggplot2::theme(legend.position = position))$grobs
+    legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+    lheight <- sum(legend$height)
+    lwidth <- sum(legend$width)
+    gl <- lapply(plots, function(x) x + ggplot2::theme(legend.position="none"))
+    gl <- c(gl, ncol = ncol, nrow = nrow)
+    combined <- switch(position,
+                       "bottom" = gridExtra::arrangeGrob(do.call(gridExtra::arrangeGrob, gl),
+                                                         legend,
+                                                         ncol = 1,
+                                                         heights = grid::unit.c(grid::unit(1, "npc") - lheight, lheight)),
+                       "right" = gridExtra::arrangeGrob(do.call(gridExtra::arrangeGrob, gl),
+                                                        legend,
+                                                        ncol = 2,
+                                                        widths = grid::unit.c(grid::unit(1, "npc") - lwidth, lwidth)))
+  } else {
+    gl <- lapply(plots, function(x) x + ggplot2::theme(legend.position="none"))
+    gl <- c(gl, ncol = ncol, nrow = nrow)
+    combined <- gridExtra::arrangeGrob(do.call(gridExtra::arrangeGrob, gl))
+  }
+
   grid::grid.newpage()
   grid::grid.draw(combined)
   
@@ -1204,10 +1212,12 @@ Pplot <- function(MSEobj, nam = NA, maxMP = 10,MPs=NA,maxsims=20) {
 #' @param YLab Optional label for y-axis
 #' @param incMP Logical. Include name of MP?
 #' @param MPcex Size of MP label
+#' @param MPcol Optional character vector of colors for MP labels
 #' @param incLeg Logical. Include a legend?
 #' @param cex.leg Size of legend text
 #' @param legPos Legend position
-#' @param yline Optional horizontal line
+#' @param yline Optional horizontal lines
+#' @param xline Optional vertical lines
 #' @param parOR Logical to over-ride the par parameters
 #' @param xaxis Logical. Should x-axis labels be displayed?
 #' @param yaxis Logical. Should y-axis labels be displayed?
@@ -1221,7 +1231,8 @@ Pplot2 <- function(MSEobj, YVar = c("F_FMSY", "SSB_SSBMSY"), MPs = NA, sims = NU
                    RefYield = c("lto", "curr"), LastYr = TRUE, 
                    ref.lines=c(0.5, 1, 1.5), maxMP = 6, alpha = 60, 
                    cex.axis = 1, cex.lab = 1, YLab = NULL, incMP = TRUE, MPcex = 1, 
-                   incLeg = TRUE, cex.leg = 1.5, legPos = "topleft", yline = NULL, parOR = FALSE, 
+                   MPcol='black',
+                   incLeg = TRUE, cex.leg = 1.5, legPos = "topleft", yline = NULL, xline=NULL, parOR = FALSE, 
                    xaxis = TRUE, yaxis = TRUE, oneIt=TRUE, ...) {
   old_par <- par(no.readonly = TRUE)
   on.exit(par(old_par))
@@ -1378,10 +1389,12 @@ Pplot2 <- function(MSEobj, YVar = c("F_FMSY", "SSB_SSBMSY"), MPs = NA, sims = NU
           axis(side = 2, labels = TRUE, cex.axis = cex.axis, las = 1)
       }
       axis(side = 2, labels = FALSE)
+      
+      MPcol <- rep(MPcol, MSEobj@nMPs)[1:MSEobj@nMPs]
       if (incMP & X == 1 & !parOR) 
-        mtext(side = 3, MSEobj@MPs[mm], cex = MPcex)
+        mtext(side = 3, MSEobj@MPs[mm], cex = MPcex, col=MPcol[mm])
       if (incMP & parOR) 
-        mtext(side = 3, MSEobj@MPs[mm], cex = MPcex)
+        mtext(side = 3, MSEobj@MPs[mm], cex = MPcex, col=MPcol[mm])
       
       # Legend #
       if (mm == 1 & incLeg & (traj == "quant"||traj=="both") & X == 1) {
@@ -1411,7 +1424,11 @@ Pplot2 <- function(MSEobj, YVar = c("F_FMSY", "SSB_SSBMSY"), MPs = NA, sims = NU
       }
       if (!is.null(yline)) 
         abline(h = yline[X], lwd = 2, col = "darkgray", lty = 2)
-      
+      if (!is.null(xline)) {
+        for (xx in 1:length(xline)) {
+          abline(v = xline[xx], lwd = 2, col = "darkgray", lty = xx+1)
+        }
+      }
     }
   }
   mtext(side = 1, "Projection Years", line = 2, cex = cex.lab, outer = TRUE)

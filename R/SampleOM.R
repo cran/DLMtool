@@ -2,6 +2,7 @@
 myrunif <- function(n, val1, val2) {
   min <- min(c(val1, val2))
   max <- max(c(val1, val2))
+  if (all(is.na(c(min, max)))) return(rep(NA,n))
   if (all(min == max)) {
     tt <- runif(n)
     return(rep(min, n))
@@ -174,6 +175,7 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL, 
     StockOut$Perr_y <- Perr_y
   }
   
+  
   # if (nsim > 1) {
   #   cumlRecDev <- apply(Perr[, 1:(nyears+maxage-1)], 1, prod)
   #   dep[order(cumlRecDev)] <- dep[order(dep, decreasing = F)]  # robustifies 
@@ -326,8 +328,8 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL, 
     logW <- log(as.numeric(Wt_age))
     mod  <- lm(logW ~ logL)
     EstVar <- summary(mod)$sigma^2
-    Wa <- exp(coef(mod)[1]) * exp((EstVar)/2)
-    Wb <- coef(mod)[2]
+    Wa <- as.numeric(exp(coef(mod)[1]) * exp((EstVar)/2))
+    Wb <- as.numeric(coef(mod)[2])
   }
   
   # == Sample Maturity Parameters ====
@@ -518,7 +520,7 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL, 
   
 
   # Check if M-at-age is constant that Maxage makes sense
-  if (all(M_ageArray[1,,1] == mean(M_ageArray[1,,1]))) { # constant M at age
+  if (all(M_ageArray[1,,1] == mean(M_ageArray[1,,1])) & all(M !=0)) { # constant M at age
     calcMax <- ceiling(-log(0.01)/(min(M)))        # Age at which 1% of cohort survives
     if (maxage < 0.95*calcMax && msg) {
       message("Note: Maximum age (", maxage, ") is lower than assuming 1% of cohort survives to maximum age (", calcMax, ")")
@@ -633,7 +635,7 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL, 
 #' @export
 #'
 SampleFleetPars <- function(Fleet, Stock=NULL, nsim=NULL, nyears=NULL, proyears=NULL, cpars=NULL, msg=TRUE) {
-  if (class(Fleet) != "Fleet" & class(Fleet) != "OM") 
+   if (class(Fleet) != "Fleet" & class(Fleet) != "OM") 
     stop("First argument must be class 'Fleet' or 'OM'")
   
   if (class(Fleet) != "OM" & class(Stock) != "Stock" & class(Stock) != "list") 
@@ -659,7 +661,7 @@ SampleFleetPars <- function(Fleet, Stock=NULL, nsim=NULL, nyears=NULL, proyears=
   if (class(Stock) == "Stock") {
     Stock <- updateMSE(Stock) # update to add missing slots with default values
     # Sample Stock Pars - need some to calculate selectivity at age and length  
-    StockPars <- SampleStockPars(Stock, nsim, nyears, proyears, cpars)
+    StockPars <- SampleStockPars(Stock, nsim, nyears, proyears, cpars, msg=msg)
     for (X in 1:length(StockPars)) assign(names(StockPars)[X], StockPars[[X]])
   } 
   if (class(Stock) == "list") for (X in 1:length(Stock)) assign(names(Stock)[X], Stock[[X]])
@@ -785,7 +787,7 @@ SampleFleetPars <- function(Fleet, Stock=NULL, nsim=NULL, nyears=NULL, proyears=
       for (s in 1:nsim) {
         ind <- min(which(V[s,,yr] >=0.05))
         L5[yr, s] <- Len_age[s, ind, yr]
-        ind2 <- min(which(V[s,,yr] >=0.50))
+        ind2 <- which.max(V[s,,yr]) # min(which(V[s,,yr] >=0.50))
         if (ind2 == ind) ind2 <- ind + 1
         LFS[yr, s] <- Len_age[s, ind2, yr]
         Vmaxlen[yr, s] <- V[s, maxage, yr]
@@ -1040,7 +1042,6 @@ SampleFleetPars <- function(Fleet, Stock=NULL, nsim=NULL, nyears=NULL, proyears=
   retA <- retA * V2
   retL <- retL * SLarray2
   
-
   Fleetout$Fdisc <- Fdisc
   Fleetout$Fdisc_array1 <- Fdisc_array1
   Fleetout$Fdisc_array2 <- Fdisc_array2
@@ -1244,7 +1245,7 @@ SampleObsPars <- function(Obs, nsim=NULL, cpars=NULL){
 #' Sample Implementation Error Parameters
 #'
 #' @param Imp An object of class 'Imp' or class 'OM'
-#' @param nsim Number of simulations. Ignored if 'Stock' is class 'OM'
+#' @param nsim Number of simulations. Ignored if 'Imp' is class 'OM'
 #' @param cpars Optional named list of custom parameters. Ignored if 'OM' is class 'OM'
 #' @return A named list of sampled Implementation Error parameters
 #' @keywords internal
@@ -1262,7 +1263,6 @@ SampleImpPars <- function(Imp, nsim=NULL, cpars=NULL) {
     Names <- names(cpars)
     for (X in 1:length(Names)) assign(names(cpars)[X], cpars[[X]])
   }
-  
   
   ImpOut <- list() 
   # === Sample implementation error parameters ====
@@ -1296,12 +1296,72 @@ SampleImpPars <- function(Imp, nsim=NULL, cpars=NULL) {
   } else {
     ImpOut$SizeLimFrac <- SizeLimFrac
   }
-  
-  
+
   ImpOut
 }
 
-
+# #' Sample Bio-Economic Parameters
+# #'
+# #' @param BioEco An object of class 'BioEco' or class 'OM'
+# #' @param nsim Number of simulations. Ignored if 'BioEco' is class 'OM'
+# #' @param cpars Optional named list of custom parameters. Ignored if 'OM' is class 'OM'
+# #' @return A named list of sampled Bio-Economic parameters
+# #' @keywords internal
+# #' @export
+# #'
+# SampleBioEcoPars <- function(BioEco, nsim=NULL, cpars=NULL) {
+#   if (class(BioEco) != "BioEco" & class(BioEco) != "OM") 
+#     stop("First argument must be class 'BioEco' or 'OM'")
+#   if (class(BioEco) == "OM") nsim <- BioEco@nsim
+#   
+#   # Get custom pars if they exist
+#   if (class(BioEco) == "OM" && length(BioEco@cpars) > 0 && is.null(cpars)) 
+#     cpars <- SampleCpars(BioEco@cpars, BioEco@nsim)  # custom parameters exist in OM object
+#   if (length(cpars) > 0) { # custom pars exist - assign to function environment 
+#     Names <- names(cpars)
+#     for (X in 1:length(Names)) assign(names(cpars)[X], cpars[[X]])
+#   }
+#   
+#   BioEcoOut <- list() 
+#   
+#   if (!exists("CostCurr", inherits = FALSE)) {
+#     BioEcoOut$CostCurr <- myrunif(nsim, BioEco@CostCurr[1], BioEco@CostCurr[2]) 
+#   } else {
+#     BioEcoOut$CostCurr <- CostCurr
+#   }
+#   if (!exists("RevCurr", inherits = FALSE)) {
+#     BioEcoOut$RevCurr <- myrunif(nsim, BioEco@RevCurr[1], BioEco@RevCurr[2]) 
+#   } else {
+#     BioEcoOut$RevCurr <- RevCurr
+#   }
+#   if (!exists("CostInc", inherits = FALSE)) {
+#     BioEcoOut$CostInc <- myrunif(nsim, BioEco@CostInc[1], BioEco@CostInc[2]) 
+#   } else {
+#     BioEcoOut$CostInc <- CostInc
+#   }
+#   if (!exists("RevInc", inherits = FALSE)) {
+#     BioEcoOut$RevInc <- myrunif(nsim, BioEco@RevInc[1], BioEco@RevInc[2]) 
+#   } else {
+#     BioEcoOut$RevInc <- RevInc
+#   }
+#   if (!exists("Response", inherits = FALSE)) {
+#     BioEcoOut$Response <- myrunif(nsim, BioEco@Response[1], BioEco@Response[2]) 
+#   } else {
+#     BioEcoOut$Response <- Response
+#   }
+#   if (!exists("LatentEff", inherits = FALSE)) {
+#     if (length(BioEco@LatentEff) ==  0) {
+#       BioEcoOut$LatentEff <- rep(NA, nsim)
+#     } else {
+#       if (any(BioEco@LatentEff<=0)) stop("LatentEff must be fraction > 0 and <= 1")
+#       if (any(BioEco@LatentEff>1)) stop("LatentEff must be fraction > 0 and <= 1")
+#       BioEcoOut$LatentEff <- myrunif(nsim, BioEco@LatentEff[1], BioEco@LatentEff[2])   
+#     }
+#   } else {
+#     BioEcoOut$LatentEff <- LatentEff
+#   }
+#   BioEcoOut
+# }
 
 
 #' Valid custom parameters (cpars)
@@ -1443,7 +1503,7 @@ SampleCpars <- function(cpars, nsim=48, msg=TRUE) {
   outNames <- paste(Names, "")
   for (i in seq(5, by=5, length.out=floor(length(outNames)/5)))
     outNames <- gsub(outNames[i], paste0(outNames[i], "\n"), outNames)
-  if(msg) message("valid custom parameters (OM@cpars) found: \n", outNames)
+  if(msg) message("valid custom parameters (OM@cpars) found: \n", paste0(outNames, collapse="\n"))
   
   # # report invalid names 
   # invalid <- which(!Names %in% ParsNames)

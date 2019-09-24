@@ -15,10 +15,10 @@
 #' @param nsim The number of simulations
 #' @param Biomass_P An array with dimensions `nsim`, `maxage`, `proyears`, and `nareas` with total biomass in the projection years
 #' @param VBiomass_P An array with dimensions `nsim`, `maxage`, `proyears`, and `nareas` with vulnerable biomass in the projection years
-#' @param LastEi A vector of length `nsim` with the most recent effort modifier (fraction of historical effort)
+#' @param LastTAE A vector of length `nsim` with the most recent TAE
 #' @param LastSpatial A matrix of `nrow=nareas` and `ncol=nsim` with the most recent spatial management arrangements
 #' @param LastAllocat A vector of length `nsim` with the most recent allocation
-#' @param LastCatch A vector of length `nsim` with the most recent catch
+#' @param LastTAC A vector of length `nsim` with the most recent TAC
 #' @param TACused A vector of length `nsim` with the most recent TAC
 #' @param maxF A numeric value with maximum allowed F. From `OM@maxF`
 #' @param LR5_P A matrix with `nyears+proyears` rows and `nsim` columns with the first length at 5 percent retention.
@@ -54,6 +54,7 @@
 #' @param qs A numeric vector of length `nsim` with catchability coefficient
 #' @param qvar A matrix with `nsim` rows and `proyears` columns with catchability variability 
 #' @param qinc A numeric vector of length `nsim` with average annual change in catchability
+#' @param Effort_pot A numeric vector of potential effort
 #' @param checks Logical. Run internal checks? Currently not used. 
 #'
 #' @return A named list with updated population dynamics
@@ -63,7 +64,7 @@
 #' @keywords internal
 CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
                            VBiomass_P,
-                           LastEi, LastSpatial, LastAllocat, LastCatch,
+                           LastTAE, histTAE, LastSpatial, LastAllocat, LastTAC,
                            TACused, maxF,
                            LR5_P, LFR_P, Rmaxlen_P, retL_P, retA_P,
                            L5_P, LFS_P, Vmaxlen_P, SLarray_P, V_P,
@@ -72,16 +73,22 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
                            TAC_f, E_f, SizeLim_f,
                            FinF, Spat_targ,
                            CAL_binsmid, Linf, Len_age, maxage, nareas, Asize, nCALbins,
-                           qs, qvar, qinc, checks=FALSE) {
+                           qs, qvar, qinc, 
+                           Effort_pot,
+                           checks=FALSE) {
   # Effort 
-  if (length(MPRecs$Effort) == 0) { # no effort recommendation
-    if (y==1) Ei <- LastEi * E_f[,y] # effort is unchanged but has implementation error
-    if (y>1) Ei <- LastEi / E_f[,y-1]  * E_f[,y] # effort is unchanged but has implementation error
+  if (length(MPRecs$Effort) == 0) { # no max effort recommendation
+    if (y==1) TAE <- LastTAE * E_f[,y] # max effort is unchanged but has implementation error
+    if (y>1) TAE <- LastTAE / E_f[,y-1]  * E_f[,y] # max effort is unchanged but has implementation error
   } else if (length(MPRecs$Effort) != nsim) {
     stop("Effort recommmendation is not 'nsim' long.\n Does MP return Effort recommendation under all conditions?")
   } else {
-    # an effort recommendation 
-    Ei <- MPRecs$Effort * E_f[,y] # effort adjustment with implementation error
+    # a maximum effort recommendation
+    if (!all(is.na(histTAE))) {
+      TAE <- histTAE * MPRecs$Effort * E_f[,y] # adjust existing TAE adjustment with implementation error  
+    } else {
+      TAE <- MPRecs$Effort * E_f[,y] # adjust existing TAE adjustment with implementation error
+    }
   }
   
   # Spatial 
@@ -92,7 +99,6 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
   } else {
     Si <- MPRecs$Spatial # change spatial fishing
   }
-
   if (all(dim(Si) != c(nareas, nsim))) stop("Spatial recommmendation not nareas long")
 
   # Allocation 
@@ -148,7 +154,6 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
                                                          ncol=nsim, byrow=TRUE) # recommendation
     RetentFlag <- TRUE
   }
-  
   
   # HS - harvest slot 
   if (length(MPRecs$HS) == 0) { # no  recommendation
@@ -320,21 +325,23 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
   fracE2 <- d1 * (fracE + (1-fracE) * Ai)/fracE # re-distribution of fishing effort accounting for re-allocation of effort
   fishdist <- fracE2 # fishing effort by area
   
-  # Apply TAC recommendation
-  if (all(is.na(TACused))) { # no TAC has been set
-    # fishing mortality with effort control recommendation
-    FM_P[SAYR] <- (FinF[S1] * Ei[S1] * V_P[SAYt] * t(Si)[SR] * fishdist[SR] *
+  # ---- no TAC - calculate F with bio-economic effort ----
+  if (all(is.na(TACused))) {
+    if (all(is.na(Effort_pot)) & all(is.na(TAE))) Effort_pot <- rep(1, nsim) # historical effort
+    if (all(is.na(Effort_pot))) Effort_pot <- TAE[1,]
+    # fishing mortality with bio-economic effort
+    FM_P[SAYR] <- (FinF[S1] * Effort_pot[S1] * V_P[SAYt] * t(Si)[SR] * fishdist[SR] *
                      qvar[SY1] * (qs[S1]*(1 + qinc[S1]/100)^y))/Asize[SR]
-
-    # retained fishing mortality with effort control recommendation
-    FM_Pret[SAYR] <- (FinF[S1] * Ei[S1] * retA_P[SAYt] * t(Si)[SR] * fishdist[SR] *
+    
+    # retained fishing mortality with bio-economic effort
+    FM_Pret[SAYR] <- (FinF[S1] * Effort_pot[S1] * retA_P[SAYt] * t(Si)[SR] * fishdist[SR] *
                         qvar[SY1] * qs[S1]*(1 + qinc[S1]/100)^y)/Asize[SR]
-
-    # Effort <- Ei * apply(fracE2, 1, sum) # change in catchability not included in effort calc: * qvar[,y] * ((1 + qinc/100)^y))
   }
+  
+  # ---- calculate required F and effort for TAC recommendation ----
   if (!all(is.na(TACused))) { # a TAC has been set
-    # if MP returns NA - TAC is set to catch from last year
-    TACused[is.na(TACused)] <- LastCatch[is.na(TACused)] 
+    # if MP returns NA - TAC is set to TAC from last year
+    TACused[is.na(TACused)] <- LastTAC[is.na(TACused)] 
     TACusedE <- TAC_f[,y]*TACused   # TAC taken after implementation error
     
     # Calculate total vulnerable biomass available mid-year accounting for any changes in selectivity &/or spatial closures
@@ -395,35 +402,53 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
   
   # Calculate total fishing mortality & effort
   M_array <- array(0.5*M_ageArray[,,nyears+y], dim=c(nsim, maxage, nareas))
+  Ftot <- suppressWarnings(-log(1-apply(CB_P[,,y,], 1, sum)/apply(CurrentVB * exp(-M_array), 1, sum)))
+  Ftot[!is.finite(Ftot)] <- maxF
+  
+  # Effort_req - effort required to catch TAC
+  # Effort_pot - potential effort this year (active fishers) from bio-economic model
+  # Effort_act - actual effort this year
+  # TAE - maximum actual effort limit
+  # Effort_act < Effort_pot if Effort_req < Effort_pot
+  
+  # Effort relative to last historical with this potential catch
+  Effort_req <- Ftot/(FinF * qs*qvar[,y]* (1 + qinc/100)^y) * apply(fracE2, 1, sum) # effort required for this catch
+  
+  # Limit effort to potential effort from bio-economic model
+  Effort_act <- Effort_req
+  if (!all(is.na(Effort_pot))) {
+    excessEff <- Effort_req>Effort_pot # simulations where required effort > potential effort
+    Effort_act[excessEff] <- Effort_pot[excessEff] # actual effort can't be more than bio-economic effort
+  }
+  
+  # Limit actual effort <= TAE 
+  if (!all(is.na(TAE))) { # a TAE exists
+    Effort_act[Effort_act>TAE] <- TAE[Effort_act>TAE]
+  }
+  Effort_act[Effort_act<=0] <- tiny
+  
+  # --- Re-calculate catch given actual effort ----
+  # fishing mortality with actual effort 
+  FM_P[SAYR] <- (FinF[S1] * Effort_act[S1] * V_P[SAYt] * t(Si)[SR] * fishdist[SR] *
+                   qvar[SY1] * (qs[S1]*(1 + qinc[S1]/100)^y))/Asize[SR]
+  
+  # retained fishing mortality with actual effort 
+  FM_Pret[SAYR] <- (FinF[S1] * Effort_act[S1] * retA_P[SAYt] * t(Si)[SR] * fishdist[SR] *
+                      qvar[SY1] * qs[S1]*(1 + qinc[S1]/100)^y)/Asize[SR]
+  
+  # Apply maxF constraint 
+  FM_P[SAYR][FM_P[SAYR] > maxF] <- maxF 
+  FM_Pret[SAYR][FM_Pret[SAYR] > maxF] <- maxF
+  Z_P[SAYR] <- FM_P[SAYR] + M_ageArray[SAYt] # calculate total mortality
+  
+  # Update catches after maxF constraint
+  CB_P[SAYR] <- (1-exp(-FM_P[SAYR])) * (Biomass_P[SAYR] * exp(-0.5*M_ageArray[SAYt]))
+  CB_Pret[SAYR] <- (1-exp(-FM_Pret[SAYR])) * (Biomass_P[SAYR] * exp(-0.5*M_ageArray[SAYt]))
+  
+  # Calculate total fishing mortality & effort
+  M_array <- array(0.5*M_ageArray[,,nyears+y], dim=c(nsim, maxage, nareas))
   Ftot <- suppressWarnings(-log(1-apply(CB_P[,,y,], 1, sum)/apply(VBiomass_P[,,y,] * exp(-M_array), 1, sum)))
   Ftot[!is.finite(Ftot)] <- maxF
- 
-  Effort <- Ftot/(FinF * qs*qvar[,y]* (1 + qinc/100)^y) * apply(fracE2, 1, sum) # effort relative to last historical
-  
-  if (length(MPRecs$Effort) >0 | all(Ei != 1)) { # an effort regulation also exists
-    #Make sure Effort doesn't exceed regulated effort
-    aboveE <- which(Effort > Ei)
-    if (length(aboveE)>0) {
-      Effort[aboveE] <- Ei[aboveE] * apply(fracE2, 1, sum)[aboveE]
-      SAYR <- as.matrix(expand.grid(aboveE, 1:maxage, y, 1:nareas))
-      SAYRt <- as.matrix(expand.grid(aboveE, 1:maxage, y + nyears, 1:nareas))  # Trajectory year
-      SYt <- SAYRt[, c(1, 3)]
-      SAYt <- SAYRt[, 1:3]
-      SR <- SAYR[, c(1, 4)]
-      S1 <- SAYR[, 1]
-      SY1 <- SAYR[, c(1, 3)]
-      FM_P[SAYR] <- (FinF[S1] * Ei[S1] * V_P[SAYt] * t(Si)[SR] * fishdist[SR] * qvar[SY1] *
-                       (qs[S1]*(1 + qinc[S1]/100)^y))/Asize[SR]
-      
-      # retained fishing mortality with input control recommendation
-      FM_Pret[SAYR] <- (FinF[S1] * Ei[S1] * retA_P[SAYt] * t(Si)[SR] * fishdist[SR] *
-                          qvar[SY1] * qs[S1]*(1 + qinc[S1]/100)^y)/Asize[SR]
-      
-      Z_P[SAYR] <- FM_P[SAYR] + M_ageArray[SAYt] # calculate total mortality
-      CB_P[SAYR] <- (1-exp(-FM_P[SAYR])) * (Biomass_P[SAYR] * exp(-0.5*M_ageArray[SAYt]))
-      CB_Pret[SAYR] <- (1-exp(-FM_Pret[SAYR])) * (Biomass_P[SAYR] * exp(-0.5*M_ageArray[SAYt]))
-    }
-  }
 
   # Returns
   out <- list()
@@ -441,11 +466,36 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
   out$CB_Pret <- CB_Pret
   out$Si <- Si
   out$Ai <- Ai
-  out$Ei <- Ei
-  out$Effort <- Effort
+  out$TAE <- TAE
+  out$Effort <- Effort_act # actual effort this year
   out$Ftot <- Ftot
   out
 }
+
+# if (length(MPRecs$Effort) >0 | all(Ei != 1)) { # an effort regulation also exists
+#   #Make sure Effort doesn't exceed regulated effort
+#   aboveE <- which(Effort > Ei)
+#   if (length(aboveE)>0) {
+#     Effort[aboveE] <- Ei[aboveE] * apply(fracE2, 1, sum)[aboveE]
+#     SAYR <- as.matrix(expand.grid(aboveE, 1:maxage, y, 1:nareas))
+#     SAYRt <- as.matrix(expand.grid(aboveE, 1:maxage, y + nyears, 1:nareas))  # Trajectory year
+#     SYt <- SAYRt[, c(1, 3)]
+#     SAYt <- SAYRt[, 1:3]
+#     SR <- SAYR[, c(1, 4)]
+#     S1 <- SAYR[, 1]
+#     SY1 <- SAYR[, c(1, 3)]
+#     FM_P[SAYR] <- (FinF[S1] * Ei[S1] * V_P[SAYt] * t(Si)[SR] * fishdist[SR] * qvar[SY1] *
+#                      (qs[S1]*(1 + qinc[S1]/100)^y))/Asize[SR]
+#     
+#     # retained fishing mortality with input control recommendation
+#     FM_Pret[SAYR] <- (FinF[S1] * Ei[S1] * retA_P[SAYt] * t(Si)[SR] * fishdist[SR] *
+#                         qvar[SY1] * qs[S1]*(1 + qinc[S1]/100)^y)/Asize[SR]
+#     
+#     Z_P[SAYR] <- FM_P[SAYR] + M_ageArray[SAYt] # calculate total mortality
+#     CB_P[SAYR] <- (1-exp(-FM_P[SAYR])) * (Biomass_P[SAYR] * exp(-0.5*M_ageArray[SAYt]))
+#     CB_Pret[SAYR] <- (1-exp(-FM_Pret[SAYR])) * (Biomass_P[SAYR] * exp(-0.5*M_ageArray[SAYt]))
+#   }
+# }
 
 # CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim,
 #                            LastEi, LastSpatial, LastAllocat, LastCatch,
@@ -959,12 +1009,13 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
 #' @param SRrel SRR type
 #' @param hs Vector of steepness
 #' @param yr.ind Year index used in calculations 
-#'
+#' @param plusgroup Integer. Default = 0 = no plus-group. Use 1 to include a plus-group 
 #' @return Results from `MSYCalcs`
 #' @export
 #'
 #' @keywords internal
-optMSY_eq <- function(x, M_ageArray, Wt_age, Mat_age, V, maxage, R0, SRrel, hs, yr.ind=1) {
+optMSY_eq <- function(x, M_ageArray, Wt_age, Mat_age, V, maxage, R0, SRrel, hs, 
+                      yr.ind=1, plusgroup=0) {
   if (length(yr.ind)==1) {
     M_at_Age <- M_ageArray[x,,yr.ind]
     Wt_at_Age <- Wt_age[x,, yr.ind]
@@ -980,12 +1031,14 @@ optMSY_eq <- function(x, M_ageArray, Wt_age, Mat_age, V, maxage, R0, SRrel, hs, 
   boundsU <- c(1E-3, 1)
   
   doopt <- optimise(MSYCalcs, log(boundsU), M_at_Age, Wt_at_Age, Mat_at_Age, 
-                    V_at_Age, maxage, R0x=R0[x], SRrelx=SRrel[x], hx=hs[x], opt=1)
+                    V_at_Age, maxage, R0x=R0[x], SRrelx=SRrel[x], hx=hs[x], opt=1,
+                    plusgroup=plusgroup)
   
   UMSY <- exp(doopt$minimum)
   
   MSYs <- MSYCalcs(doopt$minimum, M_at_Age, Wt_at_Age, Mat_at_Age, 
-                   V_at_Age, maxage, R0x=R0[x], SRrelx=SRrel[x], hx=hs[x], opt=2)
+                   V_at_Age, maxage, R0x=R0[x], SRrelx=SRrel[x], hx=hs[x], opt=2,
+                   plusgroup=plusgroup)
   
   return(MSYs)
 }
@@ -1003,19 +1056,25 @@ optMSY_eq <- function(x, M_ageArray, Wt_age, Mat_age, V, maxage, R0, SRrel, hs, 
 #' @param SRrelx SRR type for this simulation
 #' @param hx numeric. Steepness value for this simulation
 #' @param opt Option. 1 = return -Yield, 2= return all MSY calcs
-#'
+#' @param plusgroup Integer. Default = 0 = no plus-group. Use 1 to include a plus-group 
 #' @return See `opt`
 #' @export 
 #'
 #' @keywords internal 
 MSYCalcs <- function(logU, M_at_Age, Wt_at_Age, Mat_at_Age, V_at_Age, 
-                     maxage, R0x, SRrelx, hx, opt=1) {
+                     maxage, R0x, SRrelx, hx, opt=1, plusgroup=0) {
   # Box 3.1 Walters & Martell 2004
   U <- exp(logU)
   lx <- rep(1, maxage)
   l0 <- c(1, exp(cumsum(-M_at_Age[1:(maxage-1)]))) # unfished survival
   for (a in 2:maxage) {
     lx[a] <- lx[a-1] * exp(-M_at_Age[a-1]) * (1-U*V_at_Age[a-1]) # fished survival
+  }
+  
+  if (plusgroup == 1) {
+    l0[length(l0)] <- l0[length(l0)]/(1-exp(-M_at_Age[length(l0)]))
+    Z_at_Age <- M_at_Age + U*V_at_Age
+    lx[length(lx)] <- lx[length(lx)]/(1-exp(-Z_at_Age[length(lx)]))
   }
   
   Egg0 <- sum(l0 * Wt_at_Age * Mat_at_Age) # unfished egg-per-recruit (assuming fecundity proportional to weight)
@@ -1064,6 +1123,7 @@ MSYCalcs <- function(logU, M_at_Age, Wt_at_Age, Mat_at_Age, V_at_Age,
              RelRec=RelRec,
              SB0 = SB0 * R0x,
              B0=B0 * R0x)
+    return(out)
   }
 }
 
@@ -1140,19 +1200,21 @@ split.along.dim <- function(a, n) {
 #' @param bounds A numeric vector of length 2 with bounds for the optimizer
 #' @param maxF A numeric value specifying the maximum fishing mortality for any single age class
 #' @param MPA A matrix of spatial closures by year
-#' @param useCPP logical - use the CPP code? For testing purposes only
+#' @param plusgroup Integer. Default = 0 = no plus-group. Use 1 to include a plus-group 
 #' @author A. Hordyk
 #' @keywords internal
 getq3 <- function(x, D, SSB0, nareas, maxage, N, pyears, M_ageArray, Mat_age, Asize, Wt_age,
                   V, retA, Perr, mov, SRrel, Find, Spat_targ, hs, R0a, SSBpR, aR, bR, 
-                  bounds = c(1e-05, 15), maxF, MPA, useCPP=TRUE) {
+                  bounds = c(1e-05, 15), maxF, MPA, plusgroup) {
   
   opt <- optimize(optQ, log(bounds), depc=D[x], SSB0c=SSB0[x], nareas, maxage, Ncurr=N[x,,1,], 
                   pyears, M_age=M_ageArray[x,,], MatAge=Mat_age[x,,], Asize_c=Asize[x,], WtAge=Wt_age[x,,],
                   Vuln=V[x,,], Retc=retA[x,,], Prec=Perr[x,], movc=split.along.dim(mov[x,,,,],4), 
                   SRrelc=SRrel[x], 
                   Effind=Find[x,],  Spat_targc=Spat_targ[x], hc=hs[x], R0c=R0a[x,], 
-                  SSBpRc=SSBpR[x,], aRc=aR[x,], bRc=bR[x,], maxF=maxF, MPA=MPA, useCPP=useCPP)
+                  SSBpRc=SSBpR[x,], aRc=aR[x,], bRc=bR[x,], maxF=maxF, MPA=MPA, 
+                  plusgroup=plusgroup)
+  
   return(exp(opt$minimum))
 }
 
@@ -1183,30 +1245,22 @@ getq3 <- function(x, D, SSB0, nareas, maxage, N, pyears, M_ageArray, Mat_age, As
 #' @param bRc Ricker bR
 #' @param maxF maximum F
 #' @param MPA A matrix of spatial closures by year
-#' @param useCPP Logical. Use the CPP code?
+#' @param plusgroup Integer. Default = 0 = no plus-group. Use 1 to include a plus-group 
 #' @author A. Hordyk
 #' @keywords internal
 
 optQ <- function(logQ, depc, SSB0c, nareas, maxage, Ncurr, pyears, M_age, Asize_c,
                  MatAge, WtAge, Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc, 
-                 R0c, SSBpRc, aRc, bRc, maxF, MPA, useCPP) {
-  if (!useCPP) {
-    # simpop <- popdyn(nareas, maxage, Ncurr, pyears, M_age, Asize_c,
-    #                  MatAge, WtAge, Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc, 
-    #                  R0c=R0c, SSBpRc=SSBpRc, aRc=aRc, bRc=bRc, Qc=exp(logQ), maxF=maxF, MPA=MPA, control=1) 
-    # ssb <- sum(simpop$SBarray[,pyears,]) # doesn't currently work with age-based movement
-    
-  } else {
-    simpop <- popdynCPP(nareas, maxage, Ncurr, pyears, M_age, Asize_c,
-                        MatAge, WtAge, Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc, 
-                        R0c=R0c, SSBpRc=SSBpRc, aRc=aRc, bRc=bRc, Qc=exp(logQ), Fapic=0, 
-                        maxF=maxF, MPA=MPA, control=1,  SSB0c=SSB0c) 
+                 R0c, SSBpRc, aRc, bRc, maxF, MPA, plusgroup) {
+
+  simpop <- popdynCPP(nareas, maxage, Ncurr, pyears, M_age, Asize_c,
+                      MatAge, WtAge, Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc, 
+                      R0c=R0c, SSBpRc=SSBpRc, aRc=aRc, bRc=bRc, Qc=exp(logQ), Fapic=0, 
+                      maxF=maxF, MPA=MPA, control=1,  SSB0c=SSB0c, 
+                      plusgroup=plusgroup) 
   
-    ssb <- sum(simpop[[4]][,pyears,])
-  }
-  
+  ssb <- sum(simpop[[4]][,pyears,])
   (log(depc) - log(ssb/SSB0c))^2
-  
 }
 
 
@@ -1590,30 +1644,24 @@ optQ <- function(logQ, depc, SSB0c, nareas, maxage, Ncurr, pyears, M_age, Asize_
 #' @param Qc Catchability 
 #' @param MPA A matrix of spatial closures by year
 #' @param maxF A numeric value specifying the maximum fishing mortality for any single age class
-#' @param useCPP logical - use the CPP code? For testing purposes only
 #' @param SSB0c SSB0
+#' @param plusgroup Integer. Default = 0 = no plus-group. Use 1 to include a plus-group  
 #' @keywords internal
 #'
 #' @author A. Hordyk
 #' 
 optMSY <- function(logFa, Asize_c, nareas, maxage, Ncurr, pyears, M_age,
                  MatAge, WtAge, Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc,
-                 R0c, SSBpRc, aRc, bRc, Qc, MPA, maxF, useCPP=TRUE, SSB0c) {
+                 R0c, SSBpRc, aRc, bRc, Qc, MPA, maxF, SSB0c,
+                 plusgroup=0) {
 
   FMSYc <- exp(logFa)
-  if(!useCPP) {
-    # simpop <- popdyn(nareas, maxage, Ncurr, pyears, M_age, Asize_c,
-    #                  MatAge, WtAge, Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc,
-    #                  R0c, SSBpRc, aRc, bRc, Qc, Fapic=FMSYc, MPA=MPA, maxF=maxF, control=2)
-    # doesn't work with age-based movement
-    
-  } else {
-    simpop <- popdynCPP(nareas, maxage, Ncurr, pyears, M_age, Asize_c,
-                     MatAge, WtAge, Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc,
-                     R0c, SSBpRc, aRc, bRc, Qc=0, Fapic=FMSYc, MPA=MPA, maxF=maxF, control=2,
-                     SSB0c=SSB0c)
-  }
 
+  simpop <- popdynCPP(nareas, maxage, Ncurr, pyears, M_age, Asize_c,
+                      MatAge, WtAge, Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc,
+                      R0c, SSBpRc, aRc, bRc, Qc=0, Fapic=FMSYc, MPA=MPA, maxF=maxF, control=2,
+                      SSB0c=SSB0c, plusgroup = plusgroup)
+  
   # Yield
   # Cn <- simpop[[7]]/simpop[[8]] * simpop[[1]] * (1-exp(-simpop[[8]])) # retained catch
   Cn <- simpop[[6]]/simpop[[8]] * simpop[[1]] * (1-exp(-simpop[[8]])) # removals
@@ -1656,20 +1704,21 @@ optMSY <- function(logFa, Asize_c, nareas, maxage, Ncurr, pyears, M_age,
 #' @param maxF A numeric value specifying the maximum fishing mortality for any single age class
 #' @param useCPP logical - use the CPP code? For testing purposes only
 #' @param SSB0 SSB0
+#' @param plusgroup Integer. Default = 0 = no plus-group. Use 1 to include a plus-group  
 #' @author A. Hordyk
 #' @export
 #' @keywords internal
 getFref3 <- function(x, Asize, nareas, maxage, N, pyears, M_ageArray, Mat_age, Wt_age,
                      V, retA, Perr, mov, SRrel, Find, Spat_targ, hs, R0a, SSBpR, aR, bR, 
-                     MPA, maxF, useCPP=TRUE, SSB0) {
+                     MPA, maxF, SSB0, plusgroup=0) {
   
   opt <- optimize(optMSY, log(c(0.001, 10)), Asize_c=Asize[x,], nareas, maxage, Ncurr=N[x,,1,], 
                   pyears, M_age=M_ageArray[x,,], MatAge=Mat_age[x,,], 
                   WtAge=Wt_age[x,,], Vuln=V[x,,], Retc=retA[x,,], Prec=Perr[x,], 
                   movc=split.along.dim(mov[x,,,,],4), SRrelc=SRrel[x], 
                   Effind=Find[x,],  Spat_targc=Spat_targ[x], hc=hs[x], R0c=R0a[x,], 
-                  SSBpRc=SSBpR[x,], aRc=aR[x,], bRc=bR[x,], MPA=MPA, maxF=maxF, useCPP=useCPP,
-                  SSB0c=SSB0[x])
+                  SSBpRc=SSBpR[x,], aRc=aR[x,], bRc=bR[x,], MPA=MPA, maxF=maxF,
+                  SSB0c=SSB0[x], plusgroup=plusgroup)
   
   -opt$objective
   

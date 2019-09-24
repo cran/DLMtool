@@ -63,7 +63,8 @@ if (length(Plimits)==1)
 
 cat("### Management Procedures must have at least an", Prob, "probability of meeting all Performance Limits \n")
 for (xx in 1:length(Plimits)) {
-  cat("#### ", xx, ": ", Plimits[xx], " \n\n", sep="")
+  # cat("#### ", xx, ": ", Plimits[xx], " \n\n", sep="")
+  cat(xx, ": ", Plimits[xx], " \n\n", sep="")
 }
 
 ```
@@ -101,7 +102,7 @@ ind <- which(TabDF$min >= Prob)
 if (all(is.na(TabDF$Feasible))) TabDF$Feasible <- NULL
 
 MPwithurl <- !is.na(TabDF$url) 
-fail.ind <- TabDF$min <=Prob 
+fail.ind <- TabDF$min <Prob 
 TabDF$MP[!fail.ind&MPwithurl] <- 
   paste0("<a href='", TabDF$url[!fail.ind&MPwithurl],"' style='color: #008000'>", TabDF$MP[!fail.ind&MPwithurl],"</a>")
 TabDF$MP[fail.ind&MPwithurl] <- 
