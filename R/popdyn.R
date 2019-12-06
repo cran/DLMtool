@@ -349,22 +349,38 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
     Atemp <- apply(CurrentVB * exp(-M_array), c(1,3), sum) # mid-year before fishing
     availB <- apply(Atemp * t(Si), 1, sum) # adjust for spatial closures
     
-    # Calculate spatial distribution of catch - temporary values
-    # get distribution across age and fishdist across space - ignore magnitude of effort or q increase 
-    Catch_tot[SAR] <- (CurrentB[SAR]* V_P[SAYt] * fishdist[SR])/Asize[SR]
-    Catch_retain[SAR] <- (CurrentB[SAR] * retA_P[SAYt] * fishdist[SR])/Asize[SR] 
+    # Calculate total F (using Steve Martell's approach http://api.admb-project.org/baranov_8cpp_source.html)
+    expC <- TACusedE
+    expC[TACusedE> availB] <- availB[TACusedE> availB] * 0.99
+    Ftot <- sapply(1:nsim, calcF, expC, V_P, Biomass_P, fishdist, Asize, maxage, nareas,
+           M_ageArray,nyears, y)
     
-    # Calculate total removals when Catch_retain == TAC - total removal > retained when discarding
-    retained <- apply(Catch_retain, 1, sum) # retained - available biomass
-    actualremovals <- apply(Catch_tot, 1, sum) # removals - available biomass
+    # apply max F constraint
+    Ftot[Ftot<0] <- maxF
+    Ftot[!is.finite(Ftot)] <- maxF
+    Ftot[Ftot>maxF] <- maxF
+    
+    # Calculate F & Z by age class
+    FM_P[SAYR] <- Ftot[S] * V_P[SAYt] * fishdist[SR]/Asize[SR]
+    FM_Pret[SAYR] <- Ftot[S] * retA_P[SAYt] * fishdist[SR]/Asize[SR]
+    Z_P[SAYR] <- FM_P[SAYR] + M_ageArray[SAYt] # calculate total mortality
+    
+    # Calculate total and retained catch 
+    CB_P[SAYR] <- FM_P[SAYR]/Z_P[SAYR] * (1-exp(-Z_P[SAYR])) * Biomass_P[SAYR]
+    CB_Pret[SAYR] <- FM_P[SAYR]/Z_P[SAYR] * (1-exp(-Z_P[SAYR])) * Biomass_P[SAYR]
+    
+    # Calculate total removals when CB_Pret == TAC - total removal > retained when discarding
+    actualremovals <- apply(CB_P[,,y,], 1, sum)
+    retained <- apply(CB_Pret[,,y,], 1, sum)
     ratio <- actualremovals/retained # ratio of actual removals to retained catch
     ratio[!is.finite(ratio)] <- 0 
     ratio[ratio>1E5] <- 1E5
     
-    temp <- Catch_retain/apply(Catch_retain, 1, sum) # distribution by age & area of retained fish
+    temp <- CB_Pret[,,y,]/apply(CB_Pret[,,y,], 1, sum) # distribution by age & area of retained fish
     Catch_retain <- TACusedE * temp  # retained catch 
+    Catch_tot <- CB_P[,,y,]/apply(CB_P[,,y,], 1, sum) # distribution by age & area of caught fish
     temp <- Catch_tot/apply(Catch_tot, 1, sum) # distribution of removals
-    Catch_tot <- TACusedE * ratio * temp # scale up total removals
+    Catch_tot <- TACusedE * ratio * temp # scale up total removals (if applicable)
     
     # total removals can't be more than available biomass
     chk <- apply(Catch_tot, 1, sum) > availB 
@@ -376,40 +392,39 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
       if (sum(chk)==1) Catch_tot[chk,, ] <- Catch_tot[chk,,] * array(ratio_temp, dim=c(maxage, nareas))
     }
     
-    # Populate catch arrays
-    CB_P[SAYR] <- Catch_tot[SAR] 
-    CB_Pret[SAYR] <- Catch_retain[SAR]
+    # check where actual catches are higher than TAC due to discarding (with imp error) 
+    ind <- which(apply(Catch_tot, 1, sum) > TACusedE) 
+    if (length(ind)>0) {
+      # update Ftot calcs
+      Ftot[ind] <- sapply(ind, calcF, TACusedE, V_P, Biomass_P, fishdist, Asize, 
+                          maxage, nareas, M_ageArray,nyears, y)
+    }
     
-    # Calculate F by age class
-    FM_P[SAYR] <- CB_P[SAYR]/(Biomass_P[SAYR] * exp(-M_ageArray[SAYt]/2)) # Pope's approximation)
-    FM_Pret[SAYR] <- CB_Pret[SAYR]/(Biomass_P[SAYR] * exp(-M_ageArray[SAYt]/2))  # Pope's approximation
-    # check where C > VB (for high M species this can happen)
-    FM_P[SAYR][FM_P[SAYR] >= 1] <- 0.99
-    FM_Pret[SAYR][FM_Pret[SAYR] >= 1] <- 0.99
-    
-    FM_P[SAYR] <- -log(1-FM_P[SAYR]) # convert to instantanous
-    FM_Pret[SAYR] <- -log(1-FM_Pret[SAYR]) # convert to instantanous
+    # Calculate F & Z by age class
+    FM_P[SAYR] <- Ftot[S] * V_P[SAYt] * fishdist[SR]/Asize[SR]
+    FM_Pret[SAYR] <- Ftot[S] * retA_P[SAYt] * fishdist[SR]/Asize[SR]
+    Z_P[SAYR] <- FM_P[SAYR] + M_ageArray[SAYt] # calculate total mortality
   }
   
   # Apply maxF constraint 
   FM_P[SAYR][FM_P[SAYR] > maxF] <- maxF 
   FM_Pret[SAYR][FM_Pret[SAYR] > maxF] <- maxF
   Z_P[SAYR] <- FM_P[SAYR] + M_ageArray[SAYt] # calculate total mortality
-  
+    
   # Update catches after maxF constraint
-  CB_P[SAYR] <- (1-exp(-FM_P[SAYR])) * (Biomass_P[SAYR] * exp(-0.5*M_ageArray[SAYt]))
-  CB_Pret[SAYR] <- (1-exp(-FM_Pret[SAYR])) * (Biomass_P[SAYR] * exp(-0.5*M_ageArray[SAYt]))
-  
-  # Calculate total fishing mortality & effort
-  M_array <- array(0.5*M_ageArray[,,nyears+y], dim=c(nsim, maxage, nareas))
-  Ftot <- suppressWarnings(-log(1-apply(CB_P[,,y,], 1, sum)/apply(CurrentVB * exp(-M_array), 1, sum)))
-  Ftot[!is.finite(Ftot)] <- maxF
+  CB_P[SAYR] <- FM_P[SAYR]/Z_P[SAYR] * (1-exp(-Z_P[SAYR])) * Biomass_P[SAYR]
+  CB_Pret[SAYR] <- FM_Pret[SAYR]/Z_P[SAYR] * (1-exp(-Z_P[SAYR])) * Biomass_P[SAYR]
   
   # Effort_req - effort required to catch TAC
   # Effort_pot - potential effort this year (active fishers) from bio-economic model
   # Effort_act - actual effort this year
   # TAE - maximum actual effort limit
   # Effort_act < Effort_pot if Effort_req < Effort_pot
+  
+  # Calculate total F (using Steve Martell's approach http://api.admb-project.org/baranov_8cpp_source.html)
+  totalCatch <- apply(CB_P[,,y,], 1, sum)
+  Ftot <- sapply(1:nsim, calcF, totalCatch, V_P, Biomass_P, fishdist, Asize, maxage, nareas,
+                 M_ageArray,nyears, y)
   
   # Effort relative to last historical with this potential catch
   Effort_req <- Ftot/(FinF * qs*qvar[,y]* (1 + qinc/100)^y) * apply(fracE2, 1, sum) # effort required for this catch
@@ -442,13 +457,14 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
   Z_P[SAYR] <- FM_P[SAYR] + M_ageArray[SAYt] # calculate total mortality
   
   # Update catches after maxF constraint
-  CB_P[SAYR] <- (1-exp(-FM_P[SAYR])) * (Biomass_P[SAYR] * exp(-0.5*M_ageArray[SAYt]))
-  CB_Pret[SAYR] <- (1-exp(-FM_Pret[SAYR])) * (Biomass_P[SAYR] * exp(-0.5*M_ageArray[SAYt]))
-  
-  # Calculate total fishing mortality & effort
-  M_array <- array(0.5*M_ageArray[,,nyears+y], dim=c(nsim, maxage, nareas))
-  Ftot <- suppressWarnings(-log(1-apply(CB_P[,,y,], 1, sum)/apply(VBiomass_P[,,y,] * exp(-M_array), 1, sum)))
-  Ftot[!is.finite(Ftot)] <- maxF
+  CB_P[SAYR] <- FM_P[SAYR]/Z_P[SAYR] * (1-exp(-Z_P[SAYR])) * Biomass_P[SAYR]
+  CB_Pret[SAYR] <- FM_Pret[SAYR]/Z_P[SAYR] * (1-exp(-Z_P[SAYR])) * Biomass_P[SAYR]
+
+  # Calculate total F (using Steve Martell's approach http://api.admb-project.org/baranov_8cpp_source.html)
+  totalCatch <- apply(CB_P[,,y,], 1, sum)
+  Ftot <- sapply(1:nsim, calcF, totalCatch, V_P, Biomass_P, fishdist, Asize, maxage, nareas,
+                 M_ageArray,nyears, y) # update if effort has changed
+
 
   # Returns
   out <- list()
@@ -997,6 +1013,28 @@ CalcMPDynamics <- function(MPRecs, y, nyears, proyears, nsim, Biomass_P,
 #   }
 # }
 
+calcF <- function(x, TACusedE, V_P, Biomass_P, fishdist, Asize, maxage, nareas,
+                  M_ageArray,nyears, y) {
+  ct <- TACusedE[x]
+  ft <- ct/sum(Biomass_P[x,,y,] * V_P[x,,y+nyears]) # initial guess 
+  for (i in 1:50) {
+    Fmat <- ft * matrix(V_P[x,,y+nyears], nrow=maxage, ncol=nareas) *
+      matrix(fishdist[x,], maxage, nareas, byrow=TRUE)/ 
+      matrix(Asize[x,], maxage, nareas, byrow=TRUE) # distribute F over age and areas
+    Zmat <- Fmat + matrix(M_ageArray[x,,y+nyears], nrow=maxage, ncol=nareas, byrow=FALSE)
+    predC <- Fmat/Zmat * (1-exp(-Zmat)) * Biomass_P[x,,y,] # predicted catch
+    pct <- sum(predC)
+    
+    Omat <- (1-exp(-Zmat)) * Biomass_P[x,,y,]
+    # derivative of catch wrt ft
+    dct <- sum(Omat/Zmat - ((Fmat * Omat)/Zmat^2) + Fmat/Zmat * exp(-Zmat) * Biomass_P[x,,y,])
+    ft <-  ft - (pct - ct)/dct
+    if (abs(pct - ct)<1E-6) break;
+  }
+  ft
+}
+
+
 #' Internal wrapper function to calculate MSY reference points
 #'
 #' @param x Simulation number
@@ -1028,13 +1066,13 @@ optMSY_eq <- function(x, M_ageArray, Wt_age, Mat_age, V, maxage, R0, SRrel, hs,
     V_at_Age <- apply(V[x,, yr.ind], 1, mean)
   }
 
-  boundsU <- c(1E-3, 1)
+  boundsF <- c(1E-3, 3)
   
-  doopt <- optimise(MSYCalcs, log(boundsU), M_at_Age, Wt_at_Age, Mat_at_Age, 
+  doopt <- optimise(MSYCalcs, log(boundsF), M_at_Age, Wt_at_Age, Mat_at_Age, 
                     V_at_Age, maxage, R0x=R0[x], SRrelx=SRrel[x], hx=hs[x], opt=1,
                     plusgroup=plusgroup)
   
-  UMSY <- exp(doopt$minimum)
+  #UMSY <- exp(doopt$minimum)
   
   MSYs <- MSYCalcs(doopt$minimum, M_at_Age, Wt_at_Age, Mat_at_Age, 
                    V_at_Age, maxage, R0x=R0[x], SRrelx=SRrel[x], hx=hs[x], opt=2,
@@ -1046,7 +1084,7 @@ optMSY_eq <- function(x, M_ageArray, Wt_age, Mat_age, V, maxage, R0, SRrel, hs,
 
 #' Internal function to calculate MSY Reference Points
 #'
-#' @param logU log exploitation rate
+#' @param logF log fishing mortality
 #' @param M_at_Age Vector of M-at-age
 #' @param Wt_at_Age Vector of weight-at-age
 #' @param Mat_at_Age Vector of maturity-at-age
@@ -1061,20 +1099,21 @@ optMSY_eq <- function(x, M_ageArray, Wt_age, Mat_age, V, maxage, R0, SRrel, hs,
 #' @export 
 #'
 #' @keywords internal 
-MSYCalcs <- function(logU, M_at_Age, Wt_at_Age, Mat_at_Age, V_at_Age, 
+MSYCalcs <- function(logF, M_at_Age, Wt_at_Age, Mat_at_Age, V_at_Age, 
                      maxage, R0x, SRrelx, hx, opt=1, plusgroup=0) {
   # Box 3.1 Walters & Martell 2004
-  U <- exp(logU)
+  FF <- exp(logF)
   lx <- rep(1, maxage)
   l0 <- c(1, exp(cumsum(-M_at_Age[1:(maxage-1)]))) # unfished survival
+  
+  surv <- exp(-M_at_Age - FF * V_at_Age)
   for (a in 2:maxage) {
-    lx[a] <- lx[a-1] * exp(-M_at_Age[a-1]) * (1-U*V_at_Age[a-1]) # fished survival
+    lx[a] <- lx[a-1] * surv[a-1] # fished survival
   }
   
   if (plusgroup == 1) {
     l0[length(l0)] <- l0[length(l0)]/(1-exp(-M_at_Age[length(l0)]))
-    Z_at_Age <- M_at_Age + U*V_at_Age
-    lx[length(lx)] <- lx[length(lx)]/(1-exp(-Z_at_Age[length(lx)]))
+    lx[length(lx)] <- lx[length(lx)]/(1-surv[length(lx)])
   }
   
   Egg0 <- sum(l0 * Wt_at_Age * Mat_at_Age) # unfished egg-per-recruit (assuming fecundity proportional to weight)
@@ -1107,13 +1146,14 @@ MSYCalcs <- function(logU, M_at_Age, Wt_at_Age, Mat_at_Age, V_at_Age,
   
   RelRec[RelRec<0] <- 0
   
-  YPR <- U * sum(lx * Wt_at_Age * V_at_Age * exp(-0.5*M_at_Age)) # caught-mid year
+  Z_at_Age <- FF * V_at_Age + M_at_Age
+  YPR <- sum(lx * Wt_at_Age * FF * V_at_Age * (1 - exp(-Z_at_Age))/Z_at_Age)
   Yield <- YPR * RelRec
-
+  
   if (opt == 1)  return(-Yield)
   if (opt == 2) {
     out <- c(Yield=Yield,
-             F= -log(1-U),
+             F= FF,
              SB = SBF * RelRec,
              SB_SB0 = (SBF * RelRec)/(SB0 * R0x),
              B_B0 = (BF * RelRec)/(B0 * R0x),

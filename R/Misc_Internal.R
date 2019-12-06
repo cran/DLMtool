@@ -382,16 +382,16 @@ run_parallel <- function(i, itsim, OM, MPs, CheckMPs, timelimit, Hist, ntrials, 
         if (names(cpars)[x] !="Data"){
           dd <- dim(cpars[[x]])
           if (length(dd) == 2) {
-            cpars[[x]] <- cpars[[x]][ind,]
+            cpars[[x]] <- cpars[[x]][ind,,drop=FALSE]
           }
           if (length(dd) == 3) {
-            cpars[[x]] <- cpars[[x]][ind,,]
+            cpars[[x]] <- cpars[[x]][ind,,,drop=FALSE]
           }
           if (length(dd) == 4) {
-            cpars[[x]] <- cpars[[x]][ind,,,]
+            cpars[[x]] <- cpars[[x]][ind,,,,drop=FALSE]
           }
           if (length(dd) == 5) {
-            cpars[[x]] <- cpars[[x]][ind,,,,]
+            cpars[[x]] <- cpars[[x]][ind,,,,,drop=FALSE]
           }
           
           if (is.null(dd)) {
@@ -791,13 +791,17 @@ addRealData <- function(Data, SampCpars, ErrList, Biomass, VBiomass, SSB, CBret,
       Cbias <- matrix(apply(simcatch, 1, mean) / apply(Data@Cat, 1, mean),
                       nrow=nsim, ncol=nyears+proyears)
       
-      Cerr <- (Data@Cat /simcatch)/Cbias[,1:nyears]
-      Cerr_proj <- apply(Cerr, 1, sample, size=proyears) %>% t()
+      Cerr <- Data@Cat/(simcatch/Cbias[,1:nyears])
+      t1<-  Cerr[,max(nyears-10, 1):nyears]/apply(Cerr[,max(nyears-10, 1):nyears],1,mean)
+      SDs <- apply(log(t1), 1, sd)
+      Cerr_proj <- matrix(NA, nsim, proyears)
+      for (i in 1:nsim) {
+        Cerr_proj[i,] <- exp(rnorm(proyears, -((SDs[i]^2)/2), SDs[i]))     
+      }
       Cerr <- cbind(Cerr, Cerr_proj)
+
       ErrList$Cbiasa <- Cbias
       ErrList$Cerr <- Cerr
-      # sim <- sample(1:nsim, 1)
-      # simcatch[sim,] * ErrList$Cerr[sim,1:nyears] * ErrList$Cbiasa[sim,1:nyears]/ RealDat@Cat[1,1:nyears]
     }
 
 
@@ -836,7 +840,7 @@ addRealData <- function(Data, SampCpars, ErrList, Biomass, VBiomass, SSB, CBret,
     if (!all(is.na(RealDat@AddInd))) {
       if (!silent) 
         message('Adding Additional Indices to Simulated Data from `OM@cpars$Data@AddInd`')
-      n.ind <- nrow(RealDat@AddInd[1,,])
+      n.ind <- nrow(RealDat@AddInd[1,,,drop=FALSE])
       Data@AddInd <- Data@CV_AddInd <- array(NA, dim=c(nsim, n.ind, nyears))
       
       ErrList$AddIerr <- array(NA, dim=c(nsim, n.ind, nyears+proyears))

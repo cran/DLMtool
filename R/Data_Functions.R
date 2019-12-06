@@ -936,7 +936,7 @@ DLMdiag <- function(Data, command = c("available", "not available", "needed"), r
   timey <- numeric(length(funcs1))
   
   rr <- try(slot(Data, "Misc"), silent = TRUE)
-  if (class(rr) == "try-error") Data@Misc <- list()
+  if (inherits(rr,"try-error")) Data@Misc <- list()
   if (!dev) {
     ReqData <- DLMtool::ReqData
     builtin <- funcs1[funcs1 %in% ReqData$MP]
@@ -1064,7 +1064,7 @@ Input <- function(Data, MPs = NA, reps = 100, timelimit = 10, CheckMPs = TRUE,
 
 needed <- function(Data, funcs) {
   rr <- try(slot(Data, "Misc"), silent = TRUE)
-  if (class(rr) == "try-error") Data@Misc <- list()
+  if (inherits(rr, "try-error")) Data@Misc <- list()
   Data@Misc <- list()
   
   temp <- lapply(funcs, function(x) paste(format(match.fun(x)), collapse = " "))
@@ -1074,6 +1074,7 @@ needed <- function(Data, funcs) {
 }
 
 
+
 # Internal function for:
 ## Required(): 
 ## needed(): matches slotnames of Data class to those that are required in an MP func
@@ -1081,8 +1082,8 @@ needed <- function(Data, funcs) {
 match_slots <- function(func, slotnams = paste0("Data@", slotNames("Data")), 
                         slots = slotNames("Data"), Data = NULL, internal=FALSE) {
   # check if each slotname in Data class is required in an MP (T/F)
-  
-  if(internal) ind_MP <- vapply(slots, grepl, logical(1), x = func)
+  slot2 <- paste0('\\b', slots, '\\b')
+  if(internal) ind_MP <- vapply(slot2, grepl, logical(1), x = func)
   if(!internal) ind_MP <- vapply(slotnams, grepl, logical(1), x = func)
   if(!is.null(Data) && inherits(Data, "Data")) { # check if Data slots return NA or zero
     ind_NAor0 <- vapply(slots, function(x) all(is.na(slot(Data, x))), logical(1))
@@ -1211,12 +1212,12 @@ replic8 <- function(Data, nrep) {
   
   for (sl in 1:length(slotnam)) {
     slt <- attr(Data, slotnam[sl])
-    if (class(slt) == "matrix") {
+    if (inherits(slt, "matrix")) {
       attr(Data, slotnam[sl]) <- matrix(rep(slt, each = nrep), 
                                         nrow = nrep, ncol = ncol(slt))
-    } else if (class(slt) == "numeric") {
+    } else if (inherits(slt, "numeric")) {
       attr(Data, slotnam[sl]) <- rep(slt, nrep)
-    } else if (class(slt) == "array") {
+    } else if (inherits(slt, "array")) {
       attr(Data, slotnam[sl]) <- array(rep(slt, each = nrep), 
                                        dim = c(nrep, dim(slt)[2:3]))
     }
@@ -1422,14 +1423,14 @@ joinData<-function(DataList){
   for (sn in 1:nslots){
     templist<-lapply(DataList,getslot,name=slots[sn])
      
-    if (sclass[sn] == "numeric"|sclass[sn]=="integer") {
+    if (inherits(sclass[sn],"numeric")| inherits(sclass[sn],"integer")) {
       if (slots[sn] == "CAL_bins") {
         nbin <- vapply(templist, length, numeric(1))
         attr(Data, slots[sn]) <- templist[[which.max(nbin)]]
       } else {
         attr(Data, slots[sn]) <- unlist(templist)
       }
-    } else if (sclass[sn]== "matrix"|sclass[sn]=="array") {
+    } else if (inherits(sclass[sn],"matrix")| inherits(sclass[sn],"array")) {
       
       if(slots[sn] == "CAL") {
         nbin <- vapply(templist, function(x) dim(x)[3], numeric(1))
@@ -1449,9 +1450,9 @@ joinData<-function(DataList){
         }
       }
       
-    } else if (sclass[sn] == "list") {
+    } else if (inherits(sclass[sn],"list")) {
       attr(Data, slots[sn]) <- do.call(c, templist)
-    } else if (sclass[sn] == "data.frame") {
+    } else if (inherits(sclass[sn],"data.frame")) {
       attr(Data, slots[sn]) <- do.call(rbind, templist)
     }
   }

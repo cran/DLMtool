@@ -60,7 +60,7 @@ makeData <- function(Biomass, CBret, Cret, N, SSB, VBiomass, StockPars,
   Data@L95[Data@L95 > 0.9 * Data@vbLinf] <- 0.9 * Data@vbLinf[Data@L95 > 0.9 * Data@vbLinf]  # Set a hard limit on ratio of L95 to Linf
   Data@L50[Data@L50 > 0.9 * Data@L95] <- 0.9 * Data@L95[Data@L50 > 0.9 * Data@L95]  # Set a hard limit on ratio of L95 to Linf
   Data@LenCV <- StockPars$LenCV # variablity in length-at-age - no error at this time
-  Data@sigmaR <-  StockPars$procsd # observed sigmaR - assumed no obs error
+  Data@sigmaR <- StockPars$procsd # observed sigmaR - assumed no obs error
   Data@MaxAge <- StockPars$maxage # maximum age - no error - used for setting up matrices only
   
   # if (!is.null(control$maxage)) {
@@ -236,8 +236,7 @@ updateData <- function(Data, OM, MPCalcs, Effort, Biomass, Biomass_P, CB_Pret,
   
   # --- Observed catch ----
   # Simulated observed retained catch (biomass)
-  Cobs <- ErrList$Cbiasa[, nyears + yind] * ErrList$Cerr[, nyears + yind] * 
-    apply(CBtemp, c(1, 3), sum, na.rm = TRUE)
+  Cobs <- ErrList$Cerr[, nyears + yind] * apply(CBtemp, c(1, 3), sum, na.rm = TRUE) * ErrList$Cbiasa[, nyears + yind]
   Data@Cat <- cbind(Data@Cat, Cobs) 
   
   if (!is.null(SampCpars$Data) && ncol(SampCpars$Data@Cat)>nyears &&
@@ -295,21 +294,21 @@ updateData <- function(Data, OM, MPCalcs, Effort, Biomass, Biomass_P, CB_Pret,
      
      yr.ind <- max(which(!is.na(ErrList$AddIerr[1,i, 1:nyears])))
      
-     b1 <- apply(Biomass[,,yr.ind:nyears,], c(1, 2, 3), sum)
-     b1 <- apply(b1 * Ind_V[,,yr.ind:nyears], c(1,3), sum)
+     b1 <- apply(Biomass[,,yr.ind:nyears,, drop=FALSE], c(1, 2, 3), sum)
+     b1 <- apply(b1 * Ind_V[,,yr.ind:nyears, drop=FALSE], c(1,3), sum)
      b2 <- apply(Biomass_P, c(1, 2, 3), sum)
-     b2 <- apply(b2 * Ind_V[(nyears+1):(nyears+proyears)], c(1,3), sum)
+     b2 <- apply(b2 * Ind_V[,,(nyears+1):(nyears+proyears), drop=FALSE], c(1,3), sum)
      tempI <- cbind(b1, b2[, 1:(y - 1)])
      
      # standardize, apply  beta & obs error  
      tempI <- exp(lcs(tempI))^ErrList$AddIbeta[,i] * ErrList$AddIerr[,i,yr.ind:(nyears + (y - 1))]
      year.ind <- max(which(!is.na(SampCpars$Data@AddInd[1,i,1:nyears])))
     
-     scaler <- SampCpars$Data@AddInd[,i,year.ind]/tempI[,1]
+     scaler <- SampCpars$Data@AddInd[1:nsim,i,year.ind]/tempI[,1]
      scaler <- matrix(scaler, nrow=nsim, ncol=ncol(tempI))
      tempI <- tempI * scaler # convert back to historical index scale
      
-     AddInd[,i,] <- cbind(Data@AddInd[,i,1:year.ind], tempI[,2:ncol(tempI)])
+     AddInd[,i,] <- cbind(Data@AddInd[1:nsim,i,1:year.ind], tempI[,2:ncol(tempI)])
      
      yr.index <- max(which(!is.na(Data@CV_AddInd[1,i,1:nyears])))
      newCV_Ind <- matrix(Data@CV_AddInd[,i,yr.index], nrow=nsim, ncol=length(yind))

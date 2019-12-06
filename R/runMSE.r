@@ -249,7 +249,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   # development mode - assign default argument values to current workspace if they don't exist
   # def.args <- DLMtool:::dev.mode(); for (nm in names(def.args)) assign(nm, def.args[[nm]])
   
-  if (class(OM) != "OM") stop("You must specify an operating model")
+  if  (class(OM) != "OM") stop("You must specify an operating model")
   Misc<-new('list') #Blank miscellaneous slot created
   if("seed"%in%slotNames(OM)) set.seed(OM@seed) # set seed for reproducibility 
   
@@ -720,7 +720,8 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   # --- Calculate Reference Yield ----
   if(!silent) message("Calculating reference yield - best fixed F strategy")  
   RefY <- sapply(1:nsim, getFref3, Asize, nareas, maxage, N=N[,,nyears,, drop=FALSE], pyears=proyears, 
-                 M_ageArray=M_ageArray[,,(nyears):(nyears+proyears)], Mat_age[,,(nyears):(nyears+proyears)], 
+                 M_ageArray=M_ageArray[,,(nyears):(nyears+proyears)], 
+                 Mat_age=Mat_age[,,(nyears):(nyears+proyears)], 
                  Wt_age=Wt_age[,,nyears:(nyears+proyears)], 
                  V=V[, , (nyears + 1):(nyears + proyears), drop=FALSE], 
                  retA=retA[, , (nyears + 1):(nyears + proyears), drop=FALSE],  
@@ -883,7 +884,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
       checkNA <- rep(0, OM@proyears) # save number of NAs
 
       # years management is updated
-      upyrs <- seq(from=1, to=proyears, by=interval[mm]) # 1 + (0:(floor(proyears/interval[mm]) - 1)) * interval[mm] 
+      upyrs <- seq(from=1, to=proyears, by=interval[mm]) 
       
       # reset selectivity & retention parameters for projections
       L5_P <- L5  
@@ -953,7 +954,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
       M_array <- array(0.5*M_ageArray[,,nyears+y], dim=c(nsim, maxage, nareas))
       Atemp <- apply(VBiomass_P[, , y, ] * exp(-M_array), 1, sum) # Abundance (mid-year before fishing)
       MSElist[[mm]]@OM$A <- Atemp 
-      
+
       # -- Apply MP in initial projection year ----
       runMP <- applyMP(Data=MSElist[[mm]], MPs = MPs[mm], reps = reps, silent=TRUE)  # Apply MP
       MPRecs <- runMP[[1]][[1]] # MP recommendations
@@ -970,6 +971,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         # a TAC has been recommended
         checkNA[y] <- sum(is.na(TACused))
         TACused[is.na(TACused)] <- LastTAC[is.na(TACused)] # set to last yr TAC if NA
+        TACused[TACused<tiny] <- tiny 
         TACa[, mm, y] <- TACused # recommended TAC 
       }
       
@@ -1048,11 +1050,12 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         if (AnnualMSY & SelectChanged) { #
           y1 <- nyears + y
           MSYrefsYr <- sapply(1:nsim, optMSY_eq, M_ageArray, Wt_age, Mat_age, 
-                              V_P, maxage, R0, SRrel, hs, yr.ind=y1)
-          MSY_y[,mm,y] <- MSYrefsYr[1, ]
-          FMSY_y[,mm,y] <- MSYrefsYr[2,]
-          SSBMSY_y[,mm,y] <- MSYrefsYr[3,]
+                              V_P, maxage, R0, SRrel, hs, yr.ind=y1, plusgroup=plusgroup)
+          MSY_y[,mm,y1] <- MSYrefsYr[1, ]
+          FMSY_y[,mm,y1] <- MSYrefsYr[2,]
+          SSBMSY_y[,mm,y1] <- MSYrefsYr[3,]
         }
+    
         
         TACa[, mm, y] <- TACa[, mm, y-1] # TAC same as last year unless changed 
         SAYRt <- as.matrix(expand.grid(1:nsim, 1:maxage, y + nyears, 1:nareas))  # Trajectory year
@@ -1112,6 +1115,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
             # a TAC has been recommended
             checkNA[y] <- sum(is.na(TACused))
             TACused[is.na(TACused)] <- LastTAC[is.na(TACused)] # set to last yr TAC if NA
+            TACused[TACused<tiny] <- tiny
             TACa[, mm, y] <- TACused # recommended TAC 
           }
           
@@ -1255,9 +1259,6 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     } else {
       Misc$TryMP[[mm]] <- "Okay"
     }
-
-    
-    
   }  # end of mm methods 
   
   # Miscellaneous reporting
@@ -1268,6 +1269,11 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   Misc$Revenue <- Rev_out
   Misc$Cost <- Cost_out
   Misc$TAE <- TAE_out
+  
+  Misc$MSYRefs <- list(Refs=RefPoints, ByYear=list(MSY=MSY_y, FMSY=FMSY_y,
+                                                   SSBMSY=SSBMSY_y,
+                                                   BMSY=BMSY_y,
+                                                   VBMSY=VBMSY_y))
   
   ## Create MSE Object #### 
   MSEout <- new("MSE", Name = OM@Name, nyears, proyears, nMPs=nMP, MPs, nsim, 
@@ -1282,9 +1288,6 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   
   MSEout 
 }
-
-
-
 
 #' Internal function of runMSE for checking that the OM slot cpars slot is formatted correctly
 #'
@@ -1333,6 +1336,7 @@ cparscheck<-function(cpars){
   dims <- dims[!grepl("CAL_bins", names(dims))]  # ignore CAL_bins
   dims <- dims[!grepl("maxage", names(dims))]  # ignore maxage
   dims <- dims[!grepl("binWidth", names(dims))]  # ignore maxage
+  dims <- dims[!grepl("plusgroup", names(dims))]  # ignore plusgroup
   
   if (length(dims) > 0) {
     if(length(unique(dims))!=1){
