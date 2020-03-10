@@ -33,6 +33,22 @@ makeData <- function(Biomass, CBret, Cret, N, SSB, VBiomass, StockPars,
   II <- II/apply(II, 1, mean)  # normalize
   Data@Ind <- II # index of total abundance
   Data@CV_Ind <- matrix(Data@CV_Ind[,1], nrow=nsim, ncol=nyears)
+ 
+  # --- Index of spawning abundance ----
+  # Index of abundance from total biomass - beginning of year before fishing
+  # apply hyperstability / hyperdepletion
+  II <- (apply(SSB, c(1, 3), sum)^ObsPars$betas) * ErrList$SpIerr[, 1:nyears]  
+  II <- II/apply(II, 1, mean)  # normalize
+  Data@SpInd <- II # index of spawning abundance
+  Data@CV_SpInd <- matrix(Data@CV_SpInd[,1], nrow=nsim, ncol=nyears)
+  
+  # --- Index of vulnerable abundance ----
+  # Index of abundance from vulnerable biomass - beginning of year before fishing
+  # apply hyperstability / hyperdepletion
+  II <- (apply(VBiomass, c(1, 3), sum)^ObsPars$betas) * ErrList$VIerr[, 1:nyears]  
+  II <- II/apply(II, 1, mean)  # normalize
+  Data@VInd <- II # index of vulnerable abundance
+  Data@CV_VInd <- matrix(Data@CV_VInd[,1], nrow=nsim, ncol=nyears)
   
   # --- Index of recruitment ----
   Data@Rec <- apply(N[, 1, , ], c(1, 2), sum) * ErrList$Recerr[, 1:nyears] 
@@ -178,7 +194,7 @@ makeData <- function(Biomass, CBret, Cret, N, SSB, VBiomass, StockPars,
                      LR5=FleetPars$LR5[nyears,], LFR=FleetPars$LFR[nyears,], 
                      Rmaxlen=FleetPars$Rmaxlen[nyears,], 
                      DR=FleetPars$DR[nyears,], OFLreal, maxF=OM@maxF,
-                     A=A, Asp=Asp)
+                     A=A, Asp=Asp, CurrentYr=OM@CurrentYr)
                      
                  
   OMtable <- OMtable[,order(names(OMtable))]
@@ -203,7 +219,7 @@ makeData <- function(Biomass, CBret, Cret, N, SSB, VBiomass, StockPars,
 }
 
 
-updateData <- function(Data, OM, MPCalcs, Effort, Biomass, Biomass_P, CB_Pret, 
+updateData <- function(Data, OM, MPCalcs, Effort, Biomass, N, Biomass_P, CB_Pret, 
                        N_P, SSB, SSB_P, VBiomass, VBiomass_P, RefPoints, ErrList, 
                        FMSY_P, retA_P, 
                        retL_P, StockPars, FleetPars, ObsPars, 
@@ -281,6 +297,65 @@ updateData <- function(Data, OM, MPCalcs, Effort, Biomass, Biomass_P, CB_Pret,
                                                       nrow=nsim, ncol=addYr, byrow=TRUE)
   }
 
+  # --- Index of spawning abundance ----
+  yr.ind <- max(which(!is.na(ErrList$SpIerr[1,1:nyears])))
+  I2 <- cbind(apply(SSB, c(1, 3), sum)[,yr.ind:nyears], 
+              apply(SSB_P, c(1, 3), sum)[, 1:(y - 1)])
+  
+  # standardize, apply  beta & obs error  
+  I2 <- exp(lcs(I2))^ObsPars$betas * ErrList$SpIerr[,yr.ind:(nyears + (y - 1))]
+  year.ind <- max(which(!is.na(Data@SpInd[1,1:nyears])))
+  scaler <- Data@SpInd[,year.ind]/I2[,1]
+  scaler <- matrix(scaler, nrow=nsim, ncol=ncol(I2))
+  I2 <- I2 * scaler # convert back to historical index scale
+  
+  I2 <- cbind(Data@SpInd[,1:(yr.ind)], I2[,2:ncol(I2)])
+  Data@SpInd <- I2
+  
+  yr.index <- max(which(!is.na(Data@CV_SpInd[1,1:nyears])))
+  newCV_Ind <- matrix(Data@CV_SpInd[,yr.index], nrow=nsim, ncol=length(yind))
+  Data@CV_SpInd <- cbind(Data@CV_SpInd, newCV_Ind)
+  
+  if (!is.null(SampCpars$Data) && ncol(SampCpars$Data@SpInd)>nyears &&
+      !all(is.na(SampCpars$Data@SpInd[1,(nyears+1):length(SampCpars$Data@SpInd[1,])]))) {
+    # update projection index with observed index if it exists
+    addYr <- min(y,ncol(SampCpars$Data@SpInd) - nyears)
+    Data@SpInd[,(nyears+1):(nyears+addYr)] <- matrix(SampCpars$Data@SpInd[1,(nyears+1):(nyears+addYr)], 
+                                                   nrow=nsim, ncol=addYr, byrow=TRUE)
+    
+    Data@CV_SpInd[,(nyears+1):(nyears+addYr)] <- matrix(SampCpars$Data@CV_SpInd[1,(nyears+1):(nyears+addYr)], 
+                                                      nrow=nsim, ncol=addYr, byrow=TRUE)
+  }
+  
+  # --- Index of vulnerable abundance ----
+  yr.ind <- max(which(!is.na(ErrList$VIerr[1,1:nyears])))
+  I2 <- cbind(apply(VBiomass, c(1, 3), sum)[,yr.ind:nyears], 
+              apply(VBiomass_P, c(1, 3), sum)[, 1:(y - 1)])
+  
+  # standardize, apply  beta & obs error  
+  I2 <- exp(lcs(I2))^ObsPars$betas * ErrList$VIerr[,yr.ind:(nyears + (y - 1))]
+  year.ind <- max(which(!is.na(Data@VInd[1,1:nyears])))
+  scaler <- Data@VInd[,year.ind]/I2[,1]
+  scaler <- matrix(scaler, nrow=nsim, ncol=ncol(I2))
+  I2 <- I2 * scaler # convert back to historical index scale
+  
+  I2 <- cbind(Data@VInd[,1:(yr.ind)], I2[,2:ncol(I2)])
+  Data@VInd <- I2
+  
+  yr.index <- max(which(!is.na(Data@CV_VInd[1,1:nyears])))
+  newCV_Ind <- matrix(Data@CV_VInd[,yr.index], nrow=nsim, ncol=length(yind))
+  Data@CV_VInd <- cbind(Data@CV_VInd, newCV_Ind)
+  
+  if (!is.null(SampCpars$Data) && ncol(SampCpars$Data@VInd)>nyears &&
+      !all(is.na(SampCpars$Data@VInd[1,(nyears+1):length(SampCpars$Data@VInd[1,])]))) {
+    # update projection index with observed index if it exists
+    addYr <- min(y,ncol(SampCpars$Data@VInd) - nyears)
+    Data@VInd[,(nyears+1):(nyears+addYr)] <- matrix(SampCpars$Data@VInd[1,(nyears+1):(nyears+addYr)], 
+                                                   nrow=nsim, ncol=addYr, byrow=TRUE)
+    
+    Data@CV_VInd[,(nyears+1):(nyears+addYr)] <- matrix(SampCpars$Data@CV_VInd[1,(nyears+1):(nyears+addYr)], 
+                                                      nrow=nsim, ncol=addYr, byrow=TRUE)
+  }
   
   # --- Update additional indices (if they exist) ----
   if (length(ErrList$AddIerr)>0) {
@@ -294,21 +369,27 @@ updateData <- function(Data, OM, MPCalcs, Effort, Biomass, Biomass_P, CB_Pret,
      
      yr.ind <- max(which(!is.na(ErrList$AddIerr[1,i, 1:nyears])))
      
-     b1 <- apply(Biomass[,,yr.ind:nyears,, drop=FALSE], c(1, 2, 3), sum)
+     if (is.null(SampCpars$AddIunits) || SampCpars$AddIunits[i]) { # Biomass-based index
+       b1 <- apply(Biomass[,,yr.ind:nyears,, drop=FALSE], c(1, 2, 3), sum)
+       b2 <- apply(Biomass_P, c(1, 2, 3), sum)
+     } else {
+       b1 <- apply(N[,,yr.ind:nyears,, drop=FALSE], c(1, 2, 3), sum) # Abundance-based index
+       b2 <- apply(N_P, c(1, 2, 3), sum)
+     }
+     
      b1 <- apply(b1 * Ind_V[,,yr.ind:nyears, drop=FALSE], c(1,3), sum)
-     b2 <- apply(Biomass_P, c(1, 2, 3), sum)
      b2 <- apply(b2 * Ind_V[,,(nyears+1):(nyears+proyears), drop=FALSE], c(1,3), sum)
      tempI <- cbind(b1, b2[, 1:(y - 1)])
      
      # standardize, apply  beta & obs error  
      tempI <- exp(lcs(tempI))^ErrList$AddIbeta[,i] * ErrList$AddIerr[,i,yr.ind:(nyears + (y - 1))]
      year.ind <- max(which(!is.na(SampCpars$Data@AddInd[1,i,1:nyears])))
-    
-     scaler <- SampCpars$Data@AddInd[1:nsim,i,year.ind]/tempI[,1]
+     
+     scaler <- SampCpars$Data@AddInd[1,i,year.ind]/tempI[,1]
      scaler <- matrix(scaler, nrow=nsim, ncol=ncol(tempI))
      tempI <- tempI * scaler # convert back to historical index scale
-     
-     AddInd[,i,] <- cbind(Data@AddInd[1:nsim,i,1:year.ind], tempI[,2:ncol(tempI)])
+
+     AddInd[,i,] <- cbind(Data@AddInd[1:nsim,i,1:yr.ind], tempI[,2:ncol(tempI)])
      
      yr.index <- max(which(!is.na(Data@CV_AddInd[1,i,1:nyears])))
      newCV_Ind <- matrix(Data@CV_AddInd[,i,yr.index], nrow=nsim, ncol=length(yind))
@@ -326,6 +407,7 @@ updateData <- function(Data, OM, MPCalcs, Effort, Biomass, Biomass_P, CB_Pret,
                                                          nrow=nsim, ncol=addYr, byrow=TRUE)
      }
    }
+   
    Data@AddInd <- AddInd
    Data@CV_AddInd <- CV_AddInd
   }

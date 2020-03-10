@@ -71,6 +71,12 @@ setClassUnion(name="prob.class", members=c("matrix", "numeric", "data.frame"))
 #' @slot Ind Relative total abundance index. Matrix of nsim rows and nyears columns. Non-negative real numbers
 #' @slot CV_Ind Coefficient of variation in the relative total abundance index. Matrix nsim rows and either 1 or nyear columns.
 #'  Positive real numbers. Note: built-in MPs use only the first value of `CV_Ind` for all years
+#' @slot SpInd Relative spawning abundance index. Matrix of nsim rows and nyears columns. Non-negative real numbers
+#' @slot CV_SpInd Coefficient of variation in the relative spawning abundance index. Matrix nsim rows and either 1 or nyear columns.
+#'  Positive real numbers. 
+#' @slot VInd Relative vulnerable abundance index. Matrix of nsim rows and nyears columns. Non-negative real numbers
+#' @slot CV_VInd Coefficient of variation in the relative vulnerable abundance index. Matrix nsim rows and either 1 or nyear columns.
+#'  Positive real numbers. 
 #' @slot AddInd Optional additional indices. Array of dimensions `nsim`, n additional arrays, and `nyears` (length `Year`).  
 #' @slot CV_AddInd Coefficient of variation for additional indices. Array of same dimensions as `AddInd`
 #' @slot AddIndV Vulnerability-at-age schedules for the additional indices. Array with dimensions: `nsim`, n additional arrays,
@@ -160,6 +166,8 @@ setClass("Data",
                         Cat = "matrix", CV_Cat = "matrix",
                         Effort = 'matrix', CV_Effort = 'matrix',
                         Ind = "matrix", CV_Ind = "matrix", 
+                        SpInd = "matrix", CV_SpInd = "matrix", 
+                        VInd = "matrix", CV_VInd = "matrix", 
                         
                         AddInd = "array", CV_AddInd = "array", AddIndV = "array",
                         Rec = "matrix", CV_Rec = "matrix", 
@@ -223,7 +231,8 @@ setMethod("initialize", "Data", function(.Object, stock="nada", ...) {
   # Default values
   if (all(is.na(.Object@CV_Cat))) .Object@CV_Cat <- matrix(0.2, nrow=1, ncol=1)
   if (all(is.na(.Object@CV_Ind))) .Object@CV_Ind <- matrix(0.2, nrow=1, ncol=1)
-  # if (all(is.na(.Object@CV_SpInd))) .Object@CV_SpInd <- matrix(0.2, nrow=1, ncol=1)
+  if (all(is.na(.Object@CV_SpInd))) .Object@CV_SpInd <- matrix(0.2, nrow=1, ncol=1)
+  if (all(is.na(.Object@CV_VInd))) .Object@CV_VInd <- matrix(0.2, nrow=1, ncol=1)
   if (all(is.na(.Object@CV_Effort))) .Object@CV_Effort <- matrix(0.2, nrow=1, ncol=1)
   if (all(is.na(.Object@CV_Rec))) .Object@CV_Rec <- matrix(0.2, nrow=1, ncol=1)
   
@@ -1548,17 +1557,29 @@ setMethod("summary",
             
             # Time-Series
             Year <- object@Year
-            Val <- c(object@Cat[x,], object@Ind[x,], object@Rec[x,], object@ML[x,], object@Lc[x,])
-            Var <- rep(c("Catch", "Index", "Recruitment", "Mean Length", "Mean Length above Lc"), each=length(Year))
+            l <- length(Year)
+            
+            slts <- c("Cat", 'Ind', 'SpInd', 'VInd', 'Rec', 'ML', 'Lc')
+            Cat <- Ind <- SpInd <- VInd <- Rec <- ML <- Lc <- NULL # cran checks
+            for (sl in slts) {
+              tt <- slot(object, sl)[x,]
+              if (length(tt)!=l) tt <- c(tt, rep(NA,l-length(tt)))
+              assign(sl, tt)
+            }
+            Val <- c(Cat, Ind, SpInd, VInd, Rec, ML, Lc)
+            Var <- rep(c("Catch", "Total Index", "Spawning Index",
+                         "Vuln. Index", "Recruitment", "Mean Length", "Mean Length above Lc"), each=length(Year))
             ts.df <- data.frame(Year=Year, Val=Val, Var=Var, stringsAsFactors = TRUE)
             # ts.df$Year <- as.factor(ts.df$Year)
             ts.df$Var <- factor(ts.df$Var, levels=
-                                  c("Catch", "Index", "Recruitment", "Mean Length", "Mean Length above Lc"))
+                                  c("Catch", "Total Index", "Spawning Index",
+                                    "Vuln. Index", "Recruitment", "Mean Length", "Mean Length above Lc"))
             ts.df <- subset(ts.df, !is.na(Val))
             if (nrow(ts.df)>0 && 'TS' %in% plots) {
               P1 <- ggplot2::ggplot(ts.df, ggplot2::aes(x=Year, y=Val, group = Var)) +
                 ggplot2::facet_wrap(~Var, scales='free_y') + ggplot2::geom_line(size=1.25) +
-                ggplot2::theme_classic() +  
+                ggplot2::theme_classic() + 
+                ggplot2::expand_limits(y=0) +
                 ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1)) +
                 ggplot2::scale_x_continuous(breaks=pretty(rev(Year), length(Year)/5)) +
                 ggplot2::labs(y="")
@@ -1582,12 +1603,18 @@ setMethod("summary",
               invisible(readline(prompt="Press [enter] to continue..."))
             
             # CAA 
-            CAA <- object@CAA[x,,]
-            nyrs <- nrow(CAA); maxage <- ncol(CAA)
-            if (NAor0(CAA)) {
-              P2 <- NULL
+            if (all(is.na(object@CAA))) {
+              P2 <- FALSE
+            } else if (NAor0(object@CAA[x,,])) {
+              P2 <- FALSE
             } else {
               P2 <- TRUE
+            }
+          
+            if (P2 == TRUE) {
+              CAA <- object@CAA[x,,]
+              nyrs <- nrow(CAA); maxage <- ncol(CAA)
+    
               dimnames(CAA) <- list(1:nyrs, 1:maxage)
               
               df1 <- as.data.frame.table(CAA, stringsAsFactors = FALSE)
@@ -1678,12 +1705,18 @@ setMethod("summary",
             if (interactive() & wait & !is.null(P2)) 
               invisible(readline(prompt="Press [enter] to continue..."))
             
+            
             # CAL 
-            CAL <- object@CAL[x,,]
-            if (all(is.na(CAL))) {
-              P3 <- NULL
+            if (all(is.na(object@CAL))) {
+              P3 <- FALSE
+            } else if (NAor0(object@CAL[x,,])) {
+              P3 <- FALSE
             } else {
               P3 <- TRUE
+            }
+            
+            if (P3 == TRUE) {
+              CAL <- object@CAL[x,,]
               nyrs <- nrow(CAL); nbins <- length(object@CAL_bins) - 1
               By <- object@CAL_bins[2] - object@CAL_bins[1]
               BinsMid <- seq(object@CAL_bins[1] + 0.5*By, by=By,length.out = nbins)

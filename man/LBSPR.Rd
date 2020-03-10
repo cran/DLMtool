@@ -5,12 +5,30 @@
 \alias{LBSPR_MLL}
 \title{Length-Based SPR MPs}
 \usage{
-LBSPR(x, Data, reps = 1, plot = FALSE, SPRtarg = 0.4, theta1 = 0.3,
-  theta2 = 0.05, maxchange = 0.3, n = 5, smoother = TRUE,
-  R = 0.2)
+LBSPR(
+  x,
+  Data,
+  reps = 1,
+  plot = FALSE,
+  SPRtarg = 0.4,
+  theta1 = 0.3,
+  theta2 = 0.05,
+  maxchange = 0.3,
+  n = 5,
+  smoother = TRUE,
+  R = 0.2
+)
 
-LBSPR_MLL(x, Data, reps = 1, plot = FALSE, SPRtarg = 0.4, n = 5,
-  smoother = TRUE, R = 0.2)
+LBSPR_MLL(
+  x,
+  Data,
+  reps = 1,
+  plot = FALSE,
+  SPRtarg = 0.4,
+  n = 5,
+  smoother = TRUE,
+  R = 0.2
+)
 }
 \arguments{
 \item{x}{A position in the data object}
@@ -78,5 +96,5 @@ ICES Journal of Marine Science, 72 (1), 217-231
 Hordyk, A. R., Loneragan, N. R., & Prince, J. D. (2015b). An evaluation of an
 iterative harvest strategy for data-poor fisheries using the length-based
 spawning potential ratio assessment methodology. Fisheries Research,
-171, 20–32. https://doi.org/10.1016/j.fishres.2014.12.018
+171, 20-32. https://doi.org/10.1016/j.fishres.2014.12.018
 }

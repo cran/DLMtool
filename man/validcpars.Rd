@@ -4,8 +4,10 @@
 \alias{validcpars}
 \title{Valid custom parameters (cpars)}
 \usage{
-validcpars(type = c("all", "Stock", "Fleet", "Obs", "Imp", "internal"),
-  valid = TRUE)
+validcpars(
+  type = c("all", "Stock", "Fleet", "Obs", "Imp", "internal"),
+  valid = TRUE
+)
 }
 \arguments{
 \item{type}{What cpars to show? 'all', 'Stock', 'Fleet', 'Obs', 'Imp', or 'internal'}
@@ -13,15 +15,16 @@ validcpars(type = c("all", "Stock", "Fleet", "Obs", "Imp", "internal"),
 \item{valid}{Logical. Show valid cpars?}
 }
 \value{
-a dataframe with variable name, description and type of valid/invalid
-cpars
+a HTML datatable with variable name, description and type of valid cpars
 }
 \description{
 Valid custom parameters (cpars)
 }
 \examples{
+\dontrun{
 validcpars() # all valid cpars
 
 validcpars("Obs", FALSE) # invalid Obs cpars
+}
 
 }

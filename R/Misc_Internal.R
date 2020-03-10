@@ -158,8 +158,14 @@ OptionalSlots <- function() {
 getEffhist <- function(Esd, nyears, EffYears, EffLower, EffUpper) {
   if (length(EffLower) == length(EffUpper) & length(EffUpper) == length(EffYears)) {
     nsim <- length(Esd)  # get nsim 
-    refYear <- floor(range01(EffYears + 0.5) * nyears) + 1  # standardize years 
-    refYear[length(refYear)] <- nyears  # first year is year 1 
+    if (EffYears[1] == 1 & EffYears[length(EffYears)] == nyears & length(EffYears) == nyears) {
+      refYear <- EffYears
+    } else{
+      refYear <- ceiling(range01(EffYears + 0.5) * nyears) # standardize years 
+      refYear[1] <- 1 # first year is year 1 
+      refYear[length(refYear)] <- nyears  # first year is year 1 
+    }
+    
     if (any(EffLower > EffUpper)) {
       ind <- which(EffLower > EffUpper)
       message("Some values in 'EffLower' are higher than 'EffUpper': Years ", paste(ind, ""),
@@ -367,19 +373,19 @@ run_parallel <- function(i, itsim, OM, MPs, CheckMPs, timelimit, Hist, ntrials, 
     }
   }
   
-  
   if (length(OM@cpars)>0) {
-    ncparsim<-cparscheck(OM@cpars)  
-    if (ncparsim == OM@nsim) { # cpars for each simulation 
+    ncparsim<-cparscheck(OM@cpars)
+    if (!is.null(ncparsim) && ncparsim == OM@nsim) { # cpars for each simulation 
       cpars <- OM@cpars
-  
+      
       if (i > 1) {
         ind <- (sum(itsim[1:(i-1)]) + 1): sum(itsim[1:i])  
       } else {
         ind <- 1:itsim[i]
       }
+      fixed_size_cpars <- c("CAL_bins", "CAL_binsmid", "binWidth", "M_at_length", "plusgroup", "Data", "AddIunits")
       for (x in 1:length(cpars)) {
-        if (names(cpars)[x] !="Data"){
+        if (!names(cpars)[x] %in% fixed_size_cpars) {
           dd <- dim(cpars[[x]])
           if (length(dd) == 2) {
             cpars[[x]] <- cpars[[x]][ind,,drop=FALSE]
@@ -393,7 +399,6 @@ run_parallel <- function(i, itsim, OM, MPs, CheckMPs, timelimit, Hist, ntrials, 
           if (length(dd) == 5) {
             cpars[[x]] <- cpars[[x]][ind,,,,,drop=FALSE]
           }
-          
           if (is.null(dd)) {
             cpars[[x]] <- cpars[[x]][ind]
           }
@@ -772,8 +777,8 @@ applyAC <- function(x, res, ac, max.years, lst.err) {
   res[,x]
 }
 
-addRealData <- function(Data, SampCpars, ErrList, Biomass, VBiomass, SSB, CBret,
-                        nsim, nyears,  proyears, silent=FALSE) {
+addRealData <- function(Data, SampCpars, ErrList, Biomass, VBiomass, N, SSB, CBret,
+                        nsim, nyears, proyears, silent=FALSE) {
  
   if (!is.null(SampCpars$Data)) {
     RealDat <- SampCpars$Data
@@ -808,7 +813,7 @@ addRealData <- function(Data, SampCpars, ErrList, Biomass, VBiomass, SSB, CBret,
     # ---- Index (total biomass) ----
     if (!all(is.na(RealDat@Ind[1,]))) { # Index exists
       if (!silent) 
-        message('Updating Simulated Index from `OM@cpars$Data@Ind` (OM Index observation parameters are ignored)')
+        message('Updating Simulated Index from `OM@cpars$Data@Ind` (OM Index observation parameters are ignored). \nSee Misc@ErrList for updated observation error and hyper-stability parameters')
       Data@Ind <- matrix(RealDat@Ind[1,1:nyears], nrow=nsim, ncol=nyears, byrow=TRUE)
       Data@CV_Ind <- matrix(RealDat@CV_Ind[1,1:nyears], nrow=nsim, ncol=nyears, byrow=TRUE)
       
@@ -836,16 +841,97 @@ addRealData <- function(Data, SampCpars, ErrList, Biomass, VBiomass, SSB, CBret,
       ErrList$Ind_Stat <- I_Err # return index statistics
     }
     
+    # ---- Index (spawning biomass) ----
+    if (!all(is.na(RealDat@SpInd[1,]))) { # Index exists
+      if (!silent) 
+        message('Updating Simulated Index from `OM@cpars$Data@SpInd` (OM Index observation parameters are ignored). \nSee Misc@ErrList for updated observation error and hyper-stability parameters')
+      Data@SpInd <- matrix(RealDat@SpInd[1,1:nyears], nrow=nsim, ncol=nyears, byrow=TRUE)
+      Data@CV_SpInd <- matrix(RealDat@CV_SpInd[1,1:nyears], nrow=nsim, ncol=nyears, byrow=TRUE)
+      
+      # Calculate Error
+      SimBiomass <- apply(SSB, c(1, 3), sum)
+      I_Err <- lapply(1:nsim, function(i) indfit(SimBiomass[i,],  Data@SpInd[i,]))
+      I_Err <- do.call('rbind', I_Err)
+      
+      Ierr <- exp(lcs(Data@SpInd))/exp(lcs(SimBiomass))^I_Err$beta
+      
+      ErrList$SpIerr[,1:nyears] <- Ierr
+      
+      # # Sample to replace NAs in historical years
+      # for (i in 1:nsim) {
+      #   temp <- ErrList$Ierr[i,1:nyears]
+      #   n <- sum(is.na(temp))
+      #   temp2 <- temp[!is.na(temp)]
+      #   temp[is.na(temp)] <- sample(temp2, n, replace=TRUE)
+      #   ErrList$Ierr[i,1:nyears] <- temp 
+      # }
+      
+      # Sample for projection years 
+      yr.ind <- max(which(!is.na(RealDat@SpInd[1,1:nyears])))
+      ErrList$SpIerr[, (nyears+1):(nyears+proyears)] <- generateRes(df=I_Err, nsim, proyears, lst.err=log(ErrList$SpIerr[,yr.ind]))
+      ErrList$SpInd_Stat <- I_Err # return index statistics
+    }
+    
+    # ---- Index (vulnerable biomass) ----
+    if (!all(is.na(RealDat@VInd[1,]))) { # Index exists
+      if (!silent) 
+        message('Updating Simulated Index from `OM@cpars$Data@VInd` (OM Index observation parameters are ignored). \nSee Misc@ErrList for updated observation error and hyper-stability parameters')
+      Data@VInd <- matrix(RealDat@VInd[1,1:nyears], nrow=nsim, ncol=nyears, byrow=TRUE)
+      Data@CV_VInd <- matrix(RealDat@CV_VInd[1,1:nyears], nrow=nsim, ncol=nyears, byrow=TRUE)
+      
+      # Calculate Error
+      SimBiomass <- apply(VBiomass, c(1, 3), sum)
+      I_Err <- lapply(1:nsim, function(i) indfit(SimBiomass[i,],  Data@VInd[i,]))
+      I_Err <- do.call('rbind', I_Err)
+      
+      Ierr <- exp(lcs(Data@VInd))/exp(lcs(SimBiomass))^I_Err$beta
+      
+      ErrList$VIerr[,1:nyears] <- Ierr
+      
+      # # Sample to replace NAs in historical years
+      # for (i in 1:nsim) {
+      #   temp <- ErrList$Ierr[i,1:nyears]
+      #   n <- sum(is.na(temp))
+      #   temp2 <- temp[!is.na(temp)]
+      #   temp[is.na(temp)] <- sample(temp2, n, replace=TRUE)
+      #   ErrList$Ierr[i,1:nyears] <- temp 
+      # }
+      
+      # Sample for projection years 
+      yr.ind <- max(which(!is.na(RealDat@VInd[1,1:nyears])))
+      ErrList$VIerr[, (nyears+1):(nyears+proyears)] <- generateRes(df=I_Err, nsim, proyears, lst.err=log(ErrList$VIerr[,yr.ind]))
+      ErrList$VInd_Stat <- I_Err # return index statistics
+    }
+    
+    
     # ---- Additional Indices ----
     if (!all(is.na(RealDat@AddInd))) {
       if (!silent) 
         message('Adding Additional Indices to Simulated Data from `OM@cpars$Data@AddInd`')
-      n.ind <- nrow(RealDat@AddInd[1,,,drop=FALSE])
+      n.ind <- dim(RealDat@AddInd)[2]
       Data@AddInd <- Data@CV_AddInd <- array(NA, dim=c(nsim, n.ind, nyears))
       
-      ErrList$AddIerr <- array(NA, dim=c(nsim, n.ind, nyears+proyears))
-      ErrList$AddIbeta <- matrix(NA, nsim, n.ind)
+      fitbeta <- fitIerr <- TRUE
+      if (!is.null(SampCpars$AddIbeta)) {
+        if (any(dim(SampCpars$AddIbeta) != c(nsim, n.ind))) stop("cpars$AddIbeta must be dimensions c(nsim, n.ind)")
+        ErrList$AddIbeta <- SampCpars$AddIbeta
+        fitbeta <- FALSE
+      } else {
+        ErrList$AddIbeta <- matrix(NA, nsim, n.ind)
+      }
+      
+      if (!is.null(SampCpars$AddIerr)) {
+        if (any(dim(SampCpars$AddIerr) != c(nsim, n.ind, nyears+proyears))) stop("cpars$AddIerr must be dimensions c(nsim, n.ind, nyears+proyears)")
+        ErrList$AddIerr <- SampCpars$AddIerr
+        fitIerr <- FALSE
+      } else {
+        ErrList$AddIerr <- array(NA, dim=c(nsim, n.ind, nyears+proyears))
+      }
+      
+      if (!is.null(SampCpars$AddIunits) && length(SampCpars$AddIunits) != n.ind) stop("cpars$AddIunits must be length n.ind")
+      
       ErrList$AddInd_Stat <- list()
+
       for (i in 1:n.ind) {
         if(!silent) message("Additional index ", i)
         ind <- RealDat@AddInd[1,i,1:nyears]
@@ -855,17 +941,21 @@ addRealData <- function(Data, SampCpars, ErrList, Biomass, VBiomass, SSB, CBret,
         
         # Calculate observation error for future projections 
         Ind_V <- RealDat@AddIndV[1,i, ]
-        SimBiomass <- apply(Biomass, c(1, 2, 3), sum)
+        if (is.null(SampCpars$AddIunits) || SampCpars$AddIunits[i]) { 
+          SimIndex <- apply(Biomass, c(1, 2, 3), sum) # Biomass-based index
+        } else {
+          SimIndex <- apply(N, c(1, 2, 3), sum) # Abundance-based index
+        }
         Ind_V <- matrix(Ind_V, nrow=Data@MaxAge, ncol= nyears)
         Ind_V <- replicate(nsim, Ind_V) %>% aperm(., c(3,1,2))
-        SimBiomass <- apply(SimBiomass*Ind_V, c(1,3), sum) # apply vuln curve
-  
-        I_Err <- lapply(1:nsim, function(i) indfit(SimBiomass[i,],  ind))
+        SimIndex <- apply(SimIndex*Ind_V, c(1,3), sum) # apply vuln curve
+        
+        I_Err <- lapply(1:nsim, function(i) indfit(SimIndex[i,],  ind))
         I_Err <- do.call('rbind', I_Err)
         ind <- matrix(ind, nrow=nsim, ncol=nyears, byrow=TRUE)
-        Ierr <- exp(lcs(ind))/exp(lcs(SimBiomass))^I_Err$beta
-        ErrList$AddIerr[,i, 1:nyears] <- Ierr
-        ErrList$AddIbeta[,i] <- I_Err$beta
+        Ierr <- exp(lcs(ind))/exp(lcs(SimIndex))^I_Err$beta
+        if (fitIerr) ErrList$AddIerr[,i, 1:nyears] <- Ierr
+        if (fitbeta) ErrList$AddIbeta[,i] <- I_Err$beta
         # Sample to replace NAs in historical years and for projection years
         # for (j in 1:nsim) {
         #   temp <- ErrList$AddIerr[j, i,1:nyears]
@@ -876,10 +966,15 @@ addRealData <- function(Data, SampCpars, ErrList, Biomass, VBiomass, SSB, CBret,
         # }
         
         # Sample for projection years 
-        yr.ind <- max(which(!is.na(RealDat@AddInd[1,i,1:nyears])))
-        ErrList$AddIerr[,i, (nyears+1):(nyears+proyears)] <- generateRes(df=I_Err, nsim, proyears, lst.err=log(ErrList$AddIerr[,i,yr.ind]))
+        if (fitIerr) {
+          yr.ind <- max(which(!is.na(RealDat@AddInd[1,i,1:nyears])))
+          ErrList$AddIerr[,i, (nyears+1):(nyears+proyears)] <- generateRes(df=I_Err, nsim, proyears, lst.err=log(ErrList$AddIerr[,i,yr.ind]))    
+        }
+        
         ErrList$AddInd_Stat[[i]] <- I_Err # index fit statistics
       }
+      
+      
     }
   }
   return(list(Data=Data, ErrList=ErrList))

@@ -2,6 +2,11 @@
 myrunif <- function(n, val1, val2) {
   min <- min(c(val1, val2))
   max <- max(c(val1, val2))
+  
+  if (is.na(n)) stop("First argument is NA")
+  if (is.na(val1)) stop('Second argument is NA')
+  if (is.na(val2)) stop('Third argument is NA')
+  
   if (all(is.na(c(min, max)))) return(rep(NA,n))
   if (all(min == max)) {
     tt <- runif(n)
@@ -10,8 +15,6 @@ myrunif <- function(n, val1, val2) {
     return(runif(n, min, max))
   }
 }
-
-
 
 
 #' Sample Stock parameters
@@ -75,12 +78,17 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL, 
   if (length(Stock@M) == maxage) { # Stock@M is vector of M-at-age 
     if (length(Stock@M2) == maxage && !exists("Mage", inherits=FALSE)) {
       mmat <- rbind(Stock@M, Stock@M2)
-      if (all(mmat[1,] < mmat[2,]) | all(mmat[1,] > mmat[2,])) {
-        Mage <- matrix(NA, nsim, maxage)
-        Mage[,1] <- myrunif(nsim, min(mmat[,1]), max(mmat[,1]))
-        val <- (Mage[,1] - min(mmat[,1]))/ diff(mmat[,1])
-        for (X in 2:maxage) Mage[,X] <- min(mmat[,X]) + diff(mmat[,X])*val  
-      } else stop("All values in slot 'M' must be greater or less than corresponding values in slot 'M2'", call.=FALSE)
+      if (all(mmat[1,] == mmat[2,])) {
+        Mage <- matrix(mmat[1,], nsim, maxage, byrow=TRUE)
+      } else {
+        if (all(mmat[1,] < mmat[2,]) | all(mmat[1,] > mmat[2,])) {
+          Mage <- matrix(NA, nsim, maxage)
+          Mage[,1] <- myrunif(nsim, min(mmat[,1]), max(mmat[,1]))
+          val <- (Mage[,1] - min(mmat[,1]))/ diff(mmat[,1])
+          for (X in 2:maxage) Mage[,X] <- min(mmat[,X]) + diff(mmat[,X])*val  
+        } else stop("All values in slot 'M' must be greater or less than corresponding values in slot 'M2'", call.=FALSE)
+      }
+     
     } else stop("slot 'M2' must be length 'maxage'", call.=FALSE)
   } 
   if (length(Stock@M) != maxage & length(Stock@M) != 2) stop("slot 'M' must be either length 2 or length maxage", call.=FALSE)
@@ -163,7 +171,7 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL, 
     recMulti <- 1 
   }
   
-  StockOut$procmu <- procmu <- -0.5 * (procsd)^2  # adjusted log normal mean
+  StockOut$procmu <- procmu <- -0.5 * procsd^2  * (1 - AC)/sqrt(1 - AC^2) #  # adjusted log normal mean http://dx.doi.org/10.1139/cjfas-2016-0167
   if (!exists("Perr_y", inherits=FALSE)) {
     Perr_y <- array(rnorm((nyears + proyears+maxage-1) * nsim, rep(procmu, nyears + proyears+maxage-1), 
                         rep(procsd, nyears + proyears+maxage-1)), c(nsim, nyears + proyears+maxage-1))
@@ -174,8 +182,7 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL, 
   } else {
     StockOut$Perr_y <- Perr_y
   }
-  
-  
+
   # if (nsim > 1) {
   #   cumlRecDev <- apply(Perr[, 1:(nyears+maxage-1)], 1, prod)
   #   dep[order(cumlRecDev)] <- dep[order(dep, decreasing = F)]  # robustifies 
@@ -299,12 +306,17 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL, 
   if (!exists("LatASD", inherits=FALSE)) LatASD <- Len_age * array(LenCV, dim=dim(Len_age)) # SD of length-at-age 
   if (any(dim(LatASD) != dim(Len_age))) stop("Dimensions of 'LatASD' must match dimensions of 'Len_age'", .call=FALSE)
   
-  if (!exists("binWidth", inherits=FALSE)) 
-    binWidth <- ceiling(0.03 * MaxBin)
+  if (exists("CAL_bins", inherits=FALSE)) binWidth <- CAL_bins[2] - CAL_bins[1]
+  if (exists("CAL_binsmid", inherits=FALSE)) binWidth <- CAL_binsmid[2] - CAL_binsmid[1]
+    
+  if (!exists("binWidth", inherits=FALSE)) binWidth <- ceiling(0.03 * MaxBin)
   
   if (!exists("CAL_bins", inherits=FALSE)) CAL_bins <- seq(from = 0, to = MaxBin + binWidth, by = binWidth)
   if (!exists("CAL_binsmid", inherits=FALSE)) CAL_binsmid <- seq(from = 0.5 * binWidth, by = binWidth, length = length(CAL_bins) - 1)
   if (length(CAL_bins) != length(CAL_binsmid)+1) stop("Length of 'CAL_bins' must be length(CAL_binsmid)+1", .call=FALSE)
+  
+  if (is.null(cpars$binWidth))
+    binWidth <- CAL_binsmid[2] - CAL_binsmid[1]
   
   # Check bin width - in case both CAL_bins or CAL_binsmid AND binWidth have been passed in with cpars
   if (!all(diff(CAL_bins) == binWidth)) stop("width of CAL_bins != binWidth", call.=FALSE)
@@ -339,9 +351,24 @@ SampleStockPars <- function(Stock, nsim=48, nyears=80, proyears=50, cpars=NULL, 
     # Calculate L50, L95, ageM and age95 
     ageM <- age95 <- L50array <- L95array <- matrix(NA, nsim, nyears+proyears)
     for (XX in 1:(nyears+proyears)) {
-      ageM[,XX] <- unlist(sapply(1:nsim, function(x) LinInterp(Mat_age[x,, XX], y=1:maxage, 0.5)))
+      # check that Mat_age < 0.5 values exist
+     if (nsim == 1) {
+       oksims <- which(min(Mat_age[1,,XX]) < 0.5)
+     } else {
+       oksims <- which(apply(Mat_age[,,XX], 1, min) < 0.5) 
+     }
+      if (length(oksims)<1) {
+        ageM[,XX] <- 1 # set to 1 if < 1
+        L50array[,XX] <- 1 # set to 1 if < 1
+      } else {
+        noksims <- (1:nsim)[-oksims]
+        ageM[oksims,XX] <- unlist(sapply(oksims, function(x) LinInterp(Mat_age[x,, XX], y=1:maxage, 0.5)))
+        ageM[noksims,XX] <- 1 # set to 1 
+        L50array[oksims,XX] <- unlist(sapply(oksims, function(x) LinInterp(Mat_age[x,,XX], y=Len_age[x, , nyears], 0.5)))
+        L50array[noksims,XX] <- 1 # set to 1 
+      }
+    
       age95[,XX] <- unlist(sapply(1:nsim, function(x) LinInterp(Mat_age[x,, XX], y=1:maxage, 0.95)))
-      L50array[,XX] <- unlist(sapply(1:nsim, function(x) LinInterp(Mat_age[x,,XX], y=Len_age[x, , nyears], 0.5)))
       L95array[,XX]<- unlist(sapply(1:nsim, function(x) LinInterp(Mat_age[x,,XX], y=Len_age[x, , nyears], 0.95)))
     }
     
@@ -1369,14 +1396,15 @@ SampleImpPars <- function(Imp, nsim=NULL, cpars=NULL) {
 #' @param type What cpars to show? 'all', 'Stock', 'Fleet', 'Obs', 'Imp', or 'internal'
 #' @param valid Logical. Show valid cpars?
 #'
-#' @return a dataframe with variable name, description and type of valid/invalid
-#' cpars
+#' @return a HTML datatable with variable name, description and type of valid cpars
 #' @export
 #' 
 #' @examples
+#' \dontrun{
 #' validcpars() # all valid cpars
 #' 
 #' validcpars("Obs", FALSE) # invalid Obs cpars
+#' }
 #'
 validcpars <- function(type=c("all", "Stock", "Fleet", "Obs", "Imp", "internal"),
                        valid=TRUE) {
@@ -1387,6 +1415,7 @@ validcpars <- function(type=c("all", "Stock", "Fleet", "Obs", "Imp", "internal")
   
   Valid <- Slot <- Dim <- Description <- NULL
   
+  # cpars_info <- DLMtool:::cpars_info
   cpars_info <- cpars_info[!duplicated(cpars_info$Slot),] # remove duplicated 'Name'
   
   cpars_info$type <- NA
@@ -1423,8 +1452,17 @@ validcpars <- function(type=c("all", "Stock", "Fleet", "Obs", "Imp", "internal")
     if (valid) message("No valid  parameters")
     if (!valid) message("No invalid parameters")
   } 
-  return(dfout)
- 
+  
+  dfout$Type <- as.factor(dfout$Type)
+  dfout$Var. <- as.factor(dfout$Var.)
+  if (requireNamespace("DT", quietly = TRUE)) {
+    return(DT::datatable(dfout, filter = 'top', options = list(
+      columnDefs = list(list(searchable = FALSE, targets = c(2,3))),
+      pageLength = 25, autoWidth = TRUE)))
+  } else {
+    message("Install package `DT` to display dataframe as HTML table")
+    return(dfout)
+  }
 }
 
 
@@ -1537,7 +1575,7 @@ SampleCpars <- function(cpars, nsim=48, msg=TRUE) {
     for (i in 1:length(cpars)) {
       samps <- cpars[[i]]
       name <- names(cpars)[i]
-      if (any(c("maxage", "M_at_Length", "CAL_binsmid", "CAL_bins", "binWidth") %in% name)) {
+      if (any(c("maxage", "M_at_Length", "CAL_binsmid", "CAL_bins", "binWidth", "AddIunits") %in% name)) {
         sampCpars[[name]] <- samps
       } else {
         if (class(samps) == "numeric" | class(samps) == "integer") sampCpars[[name]] <- samps[ind]

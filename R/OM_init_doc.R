@@ -55,6 +55,12 @@ OMexample <- function(dir=getwd()) {
 #' 
 OMinit <- function(name=NULL, ..., files=c('xlsx', 'rmd'), dir=NULL, overwrite=FALSE) {
   files <- match.arg(files, several.ok = TRUE)
+  
+  if (!requireNamespace("openxlsx", quietly = TRUE)) {
+    stop("Package \"openxlsx\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  
   if(is.null(dir)) dir <- getwd()
   if (is.null(name)) stop("Require OM name", call.=FALSE)
   
@@ -97,8 +103,13 @@ OMinit <- function(name=NULL, ..., files=c('xlsx', 'rmd'), dir=NULL, overwrite=F
         stop("Can't use templates without zip application. You may need to install Rtools to use templates", call.=FALSE)
       }
     }
-   
+    
+     
     for (x in seq_along(inclasses)) {
+      if (inclasses[x] == 'character') {
+        InTemplates[[x]] <- get(InTemplates[[x]])
+        inclasses[x] <- class(InTemplates[[x]])
+      }
       if (!inclasses[x] %in% c("Stock", "Fleet", "Obs", "Imp", "OM")) stop(InTemplates[[x]], " is not a valid DLMtool object")
     }
     isOM <- which(inclasses == "OM")
@@ -242,6 +253,10 @@ OMinit <- function(name=NULL, ..., files=c('xlsx', 'rmd'), dir=NULL, overwrite=F
 #' 
 #' }
 XL2OM <- function(name=NULL, cpars=NULL, msg=TRUE) {
+  if (!requireNamespace("readxl", quietly = TRUE)) {
+    stop("Package \"readxl\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
   # Load the Excel File ####
   if (is.null(name)) {
     fls <- list.files(pattern=".xlsx", ignore.case = TRUE)
@@ -274,6 +289,7 @@ XL2OM <- function(name=NULL, cpars=NULL, msg=TRUE) {
     sht <- suppressMessages(as.data.frame(readxl::read_excel(name, sheet = obj, col_names = FALSE)))
     rows <- sht[,1] 
     rows <- rows[!rows == "Slot"]
+    rows <- rows[!is.na(rows)]
     ind <- which(!rows %in% slotNames(obj))
     if (length(ind)>0) {
       warning(paste(rows[ind], ""), "are not valid slots in object class ", obj)
@@ -372,8 +388,8 @@ XL2OM <- function(name=NULL, cpars=NULL, msg=TRUE) {
 #' @author A. Hordyk
 #' @examples 
 #' \dontrun{
-#' OMinit('myOM', templates=list(Stock='Herring', Fleet='Generic_Fleet', Obs='Generic_Obs',
-#' Imp='Perfect_Imp'), overwrite=TRUE)
+#' OMinit('myOM', Stock='Herring', Fleet='Generic_Fleet', Obs='Generic_Obs',
+#' Imp='Perfect_Imp', overwrite=TRUE)
 #' myOM <- XL2OM('myOM.xlsx')
 #' OMdoc(myOM)
 #' }
@@ -381,6 +397,12 @@ OMdoc <- function(OM=NULL, rmd.source=NULL, overwrite=FALSE, out.file=NULL,
                   inc.plot=TRUE, render=TRUE, output="html_document", 
                   openFile=TRUE, quiet=FALSE,
                   dir=NULL, ...) {
+  
+  if (!requireNamespace("rmarkdown", quietly = TRUE)) {
+    stop("Package \"rmarkdown\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  
   # markdown compile options
   toc=TRUE; color="blue";  theme="flatly"
   if (is.null(dir)) dir <- getwd()
@@ -1772,6 +1794,10 @@ plotM2 <- function(OM, Pars=NULL, nsim=48, nyears=50, proyears=50, nsamp=3, col=
 #' 
 #' @export 
 Data_xl <- function(fname, stkname, fpath = "", saveCSV = FALSE) {
+  if (!requireNamespace("readxl", quietly = TRUE)) {
+    stop("Package \"readxl\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
   infile <- paste0(fpath, fname)  # full path and name 
   shtname <- readxl::excel_sheets(infile)  # names of the sheets 
   # Data

@@ -5,11 +5,25 @@
 \alias{LstepCE2}
 \title{Step-wise Constant Effort}
 \usage{
-LstepCE1(x, Data, reps = 100, plot = FALSE, yrsmth = 5,
-  stepsz = 0.05, llim = c(0.96, 0.98, 1.05))
+LstepCE1(
+  x,
+  Data,
+  reps = 100,
+  plot = FALSE,
+  yrsmth = 5,
+  stepsz = 0.05,
+  llim = c(0.96, 0.98, 1.05)
+)
 
-LstepCE2(x, Data, reps = 100, plot = FALSE, yrsmth = 5,
-  stepsz = 0.1, llim = c(0.96, 0.98, 1.05))
+LstepCE2(
+  x,
+  Data,
+  reps = 100,
+  plot = FALSE,
+  yrsmth = 5,
+  stepsz = 0.1,
+  llim = c(0.96, 0.98, 1.05)
+)
 }
 \arguments{
 \item{x}{A position in the data object}
@@ -36,10 +50,10 @@ effort (TAE) according to the mean length of recent catches.
 }
 \details{
 The TAE is calculated as:
-\deqn{\textrm{TAE} = 
-             \left\{\begin{array}{ll} 
-             \textrm{TAE}^* - 2 S\textrm{TAE}^* & \textrm{if } r < 0.96  \\ 
-             \textrm{TAE}^* - S \textrm{TAE}^* & \textrm{if } r < 0.98 \\ 
+\deqn{\textrm{TAE} =
+             \left\{\begin{array}{ll}
+             \textrm{TAE}^* - 2 S\textrm{TAE}^* & \textrm{if } r < 0.96  \\
+             \textrm{TAE}^* - S \textrm{TAE}^* & \textrm{if } r < 0.98 \\
              \textrm{TAE}^* & \textrm{if } > 1.058 \\
              \end{array}\right.
            }{}

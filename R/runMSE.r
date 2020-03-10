@@ -21,7 +21,11 @@ Names <- c("maxage", "R0", "Mexp", "Msd", "dep", "D", "Mgrad", "SRrel", "hs", "p
 
 # change messages to blue text instead of default red
 message <- function(...) {
-  base::message(crayon::blue(..., sep=""))
+  if (requireNamespace("crayon", quietly = TRUE)) {
+    return(base::message(crayon::blue(..., sep="")))
+  } else {
+    return(base::message(...))
+  }
 }
 
 if(getRversion() >= "2.15.1") utils::globalVariables(Names)
@@ -254,6 +258,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   if("seed"%in%slotNames(OM)) set.seed(OM@seed) # set seed for reproducibility 
   
   OM <- updateMSE(OM)
+  if (OM@nsim <=1) stop("OM@nsim must be > 1", call.=FALSE)
   tiny <- 1e-15  # define tiny variable
   
   # Backwards compatible with DLMtool v < 4
@@ -286,6 +291,13 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     plusgroup <- 1
     OM@cpars$plusgroup <- NULL 
   }
+  
+  # 
+  
+  control <- c(control, OM@cpars$control)
+  optVB <- FALSE
+  if (!is.null(control$D) && control$D == "VB") optVB <- TRUE  # optimize depletion for vulernable biomass
+  OM@cpars$control <- NULL
   
   # --- Sample OM parameters ----
   # Custom Parameters
@@ -539,12 +551,11 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   # --- Optimize catchability (q) to fit depletion ---- 
   if(!silent) message("Optimizing for user-specified depletion in last historical year")
   bounds <- c(0.0001, 15) # q bounds for optimizer
+  # find the q that gives current stock depletion - optVB = depletion for vulnerable biomass else SB
   qs <- sapply(1:nsim, getq3, D, SSB0, nareas, maxage, N, pyears=nyears, 
                M_ageArray, Mat_age, Asize, Wt_age, V, retA, Perr_y, mov, SRrel, Find, 
                Spat_targ, hs, R0a, SSBpR, aR, bR, bounds=bounds, MPA=MPA, maxF=maxF,
-               plusgroup=plusgroup)
-  
- # find the q that gives current stock depletion
+               plusgroup=plusgroup, VB0=VB0, optVB=optVB)
   
   # --- Check that q optimizer has converged ---- 
   LimBound <- c(1.1, 0.9)*range(bounds)  # bounds for q (catchability). Flag if bounded optimizer hits the bounds 
@@ -588,7 +599,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
       qs[probQ] <- sapply(probQ, getq3, D, SSB0, nareas, maxage, N, pyears=nyears, 
                           M_ageArray, Mat_age, Asize, Wt_age, V, retA, Perr_y, mov, SRrel, Find, 
                           Spat_targ, hs, R0a, SSBpR, aR, bR, bounds=bounds, MPA=MPA, maxF=maxF,
-                          plusgroup=plusgroup)
+                          plusgroup=plusgroup, VB0=VB0, optVB=optVB)
       
       probQ <- which(qs > max(LimBound) | qs < min(LimBound))
       count <- count + 1 
@@ -768,6 +779,16 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
                        mconv(1, rep(Isd, nyears + proyears)), 
                        sdconv(1, rep(Isd, nyears + proyears))), 
                 c(nsim, nyears + proyears))
+  ErrList$SpIerr <- array(rlnorm((nyears + proyears) * nsim, 
+                               mconv(1, rep(Isd, nyears + proyears)), 
+                               sdconv(1, rep(Isd, nyears + proyears))), 
+                        c(nsim, nyears + proyears))
+  
+  ErrList$VIerr <- array(rlnorm((nyears + proyears) * nsim, 
+                               mconv(1, rep(Isd, nyears + proyears)), 
+                               sdconv(1, rep(Isd, nyears + proyears))), 
+                        c(nsim, nyears + proyears))
+  
   
   # Simulate error in observed recruitment index 
   ErrList$Recerr <- array(rlnorm((nyears + proyears) * nsim, mconv(1, rep(Recsd, (nyears + proyears))), 
@@ -788,7 +809,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
                    silent=silent)
   
   # --- Condition Simulated Data on input Data object (if it exists) & calculate error stats ----
-  templist <- addRealData(Data, SampCpars, ErrList, Biomass, VBiomass, SSB, CBret,
+  templist <- addRealData(Data, SampCpars, ErrList, Biomass, VBiomass, N, SSB, CBret, 
                           nsim, nyears, proyears, silent=silent)
   Data <- templist$Data # update 
   ErrList <- templist$ErrList # update
@@ -801,6 +822,10 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   if (Hist) { # Stop the model after historical simulations are complete
     if(!silent) message("Returning historical simulations")
     HistObj <- new("Hist")
+    Misc$mov <- mov
+    Misc$initdist <- initdist
+    Misc$N <- N
+    Misc$B <- Biomass
     Data@Misc <- list()
     HistObj@Data <- Data 
     HistObj@Obs <- ObsPars
@@ -829,6 +854,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
     HistObj@SampPars <- c(StockPars, FleetPars, ObsPars, ImpPars)
     HistObj@Misc <- Misc
     HistObj@Misc$CurrentYr <- OM@CurrentYr
+    HistObj@Misc$ErrList <- ErrList
     return(HistObj)	
   }
 
@@ -1090,7 +1116,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
         # --- An update year ----
         if (y %in% upyrs) {
           # --- Update Data object ---- 
-          MSElist[[mm]] <- updateData(Data=MSElist[[mm]], OM, MPCalcs, Effort, Biomass, 
+          MSElist[[mm]] <- updateData(Data=MSElist[[mm]], OM, MPCalcs, Effort, Biomass, N,
                                       Biomass_P, CB_Pret, N_P, SSB, SSB_P, VBiomass, VBiomass_P, 
                                       RefPoints, ErrList, FMSY_y, retA_P, retL_P, StockPars, 
                                       FleetPars, ObsPars, upyrs, interval, y, mm, 
@@ -1213,6 +1239,15 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
        
       }  # end of year loop
       
+      if (max(upyrs) < proyears) { # One more call to complete Data object
+        MSElist[[mm]] <- updateData(Data=MSElist[[mm]], OM, MPCalcs, Effort, Biomass, N,
+                                    Biomass_P, CB_Pret, N_P, SSB, SSB_P, VBiomass, VBiomass_P, 
+                                    RefPoints, ErrList, FMSY_y, retA_P, retL_P, StockPars, 
+                                    FleetPars, ObsPars, c(upyrs, proyears), 
+                                    interval = rep(proyears - max(upyrs), length(interval)), 
+                                    proyears, mm, Misc=Data_p@Misc, SampCpars)
+      }
+      
       B_BMSYa[, mm, ] <- apply(SSB_P, c(1, 3), sum, na.rm=TRUE)/SSBMSY_y[,mm,(OM@nyears+1):(OM@nyears+OM@proyears)]  # SSB relative to SSBMSY
       F_FMSYa[, mm, ] <- FMa[, mm, ]/FMSY_y[,mm,(OM@nyears+1):(OM@nyears+OM@proyears)]
       
@@ -1241,13 +1276,16 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
           message('Used TAC_y = TAC_y-1')  
         }
       }
-      
       if (!parallel) 
         if("progress"%in%names(control))
-          if(control$progress) 
-            shiny::incProgress(1/nMP, detail = round(mm*100/nMP))
-
-    }, silent=TRUE)
+          if(control$progress) {
+            if (requireNamespace("shiny", quietly = TRUE)) {
+              shiny::incProgress(1/nMP, detail = round(mm*100/nMP))
+            } else {
+              warning('package `shiny` needs to be installed for progress bar')
+            }
+          } 
+      }, silent=TRUE)
     # end try
     # , error=function(e) {
       # message("Note: ", MPs[mm], " failed. Skipping this MP.")
@@ -1269,6 +1307,8 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   Misc$Revenue <- Rev_out
   Misc$Cost <- Cost_out
   Misc$TAE <- TAE_out
+  Misc$ErrList <- ErrList
+  Misc$Removals <- Ca # total removals
   
   Misc$MSYRefs <- list(Refs=RefPoints, ByYear=list(MSY=MSY_y, FMSY=FMSY_y,
                                                    SSBMSY=SSBMSY_y,
@@ -1279,7 +1319,7 @@ runMSE_int <- function(OM = DLMtool::testOM, MPs = c("AvC","DCAC","FMSYref","cur
   MSEout <- new("MSE", Name = OM@Name, nyears, proyears, nMPs=nMP, MPs, nsim, 
                 Data@OM, Obs=Data@Obs, B_BMSY=B_BMSYa, F_FMSY=F_FMSYa, B=Ba, 
                 SSB=SSBa, VB=VBa, FM=FMa, CaRet, TAC=TACa, SSB_hist = SSB, 
-                CB_hist = CB, FM_hist = FM, Effort = Effort, PAA=PAAout, 
+                CB_hist = CBret, FM_hist = FM, Effort = Effort, PAA=PAAout, 
                 CAA=CAAout, CAL=CALout, CALbins=CAL_binsmid, Misc = Misc)
   # Store MSE info
   attr(MSEout, "version") <- packageVersion("DLMtool")
@@ -1334,9 +1374,12 @@ cparscheck<-function(cpars){
   # ignore 
   if (any(effNames %in% names(dims))) dims <- dims[-match(effNames,names(dims))]  # ignore effNames
   dims <- dims[!grepl("CAL_bins", names(dims))]  # ignore CAL_bins
+  dims <- dims[!grepl("CAL_binsmid", names(dims))]  # ignore CAL_binsmid
+  dims <- dims[!grepl("M_at_length", names(dims))]  # ignore M_at_length
   dims <- dims[!grepl("maxage", names(dims))]  # ignore maxage
-  dims <- dims[!grepl("binWidth", names(dims))]  # ignore maxage
+  dims <- dims[!grepl("binWidth", names(dims))]  # ignore binWidth
   dims <- dims[!grepl("plusgroup", names(dims))]  # ignore plusgroup
+  dims <- dims[!grepl("AddIunits", names(dims))]  # ignore AddIunits
   
   if (length(dims) > 0) {
     if(length(unique(dims))!=1){

@@ -4,9 +4,36 @@
 \alias{optQ}
 \title{Optimize q for a single simulation}
 \usage{
-optQ(logQ, depc, SSB0c, nareas, maxage, Ncurr, pyears, M_age, Asize_c,
-  MatAge, WtAge, Vuln, Retc, Prec, movc, SRrelc, Effind, Spat_targc, hc,
-  R0c, SSBpRc, aRc, bRc, maxF, MPA, plusgroup)
+optQ(
+  logQ,
+  depc,
+  SSB0c,
+  nareas,
+  maxage,
+  Ncurr,
+  pyears,
+  M_age,
+  Asize_c,
+  MatAge,
+  WtAge,
+  Vuln,
+  Retc,
+  Prec,
+  movc,
+  SRrelc,
+  Effind,
+  Spat_targc,
+  hc,
+  R0c,
+  SSBpRc,
+  aRc,
+  bRc,
+  maxF,
+  MPA,
+  plusgroup,
+  VB0c,
+  optVB
+)
 }
 \arguments{
 \item{logQ}{log q}
@@ -60,6 +87,10 @@ optQ(logQ, depc, SSB0c, nareas, maxage, Ncurr, pyears, M_age, Asize_c,
 \item{MPA}{A matrix of spatial closures by year}
 
 \item{plusgroup}{Integer. Default = 0 = no plus-group. Use 1 to include a plus-group}
+
+\item{VB0c}{Unfished vulnerable biomass}
+
+\item{optVB}{Logical. Optimize for vulnerable biomass?}
 }
 \description{
 Optimize q for a single simulation

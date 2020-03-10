@@ -293,7 +293,7 @@ CC1 <- function(x, Data, reps = 100, plot=FALSE, yrsmth = 5, xx = 0) {
   yrfirst <- yrlast - yrsmth + 1
   # C_dat <- Data@Cat[x, (length(Data@Year) - (yrsmth - 1)):length(Data@Year)]
   C_dat <- Data@Cat[x, yrfirst:yrlast]
-  TAC <- (1 - xx) * trlnorm(reps, mean(C_dat, na.rm=TRUE), Data@CV_Cat/(yrsmth^0.5))  # mean catches over the interval
+  TAC <- (1 - xx) * trlnorm(reps, mean(C_dat, na.rm=TRUE), Data@CV_Cat[x,1]/(yrsmth^0.5))  # mean catches over the interval
   Rec <- new("Rec")
   Rec@TAC <- TACfilter(TAC)
   if (plot) {
@@ -1232,6 +1232,7 @@ class(DBSRA4010) <- "MP"
 #' @export
 #' @keywords internal
 DD_ <- function(x, Data, reps = 100, hcr=NULL) {
+  
   Winf <- Data@wla[x] * Data@vbLinf[x]^Data@wlb[x]
   age <- 1:Data@MaxAge
   la <- Data@vbLinf[x] * (1 - exp(-Data@vbK[x] * ((age - Data@vbt0[x]))))
@@ -1269,7 +1270,13 @@ DD_ <- function(x, Data, reps = 100, hcr=NULL) {
                C_hist = C_hist, UMSYprior = UMSYprior, method = "BFGS", hessian = TRUE)
   
   if (reps > 1) {
-    samps <- mvtnorm::rmvnorm(reps,opt$par,solve(opt$hessian)) # assuming log  
+    if (requireNamespace("mvtnorm", quietly = TRUE)) {
+      samps <- mvtnorm::rmvnorm(reps,opt$par,solve(opt$hessian)) # assuming log  
+    } else {
+      warning('package `mvtnorm` needs to be installed for reps>1. Using MLE estimates')
+      samps <- matrix(c(opt$par[1], opt$par[2], opt$par[3]), nrow = reps)
+    }
+    
   } else {
     samps <- matrix(c(opt$par[1], opt$par[2], opt$par[3]), nrow = 1)
   }
@@ -1743,6 +1750,7 @@ demographic2 <- function(log.r, M, amat, sigma, K, Linf, to, hR, maxage, a, b) {
   logNormDensity[1] = 0
   sumlogNormDen = sum(logNormDensity)
   NormalisedMaturity = logNormDensity/sumlogNormDen
+  proportionMat <- vector()
   proportionMat[1] = NormalisedMaturity[1]
   for (i in 2:maxage) proportionMat[i] = proportionMat[i - 1] + NormalisedMaturity[i]
   TL = Linf * (1 - exp(-K * ((1:maxage) - to)))  #length at age
@@ -3863,7 +3871,7 @@ class(Rcontrol2) <- "MP"
 SBT1 <- function(x, Data, reps = 100, plot=FALSE, yrsmth = 10, k1 = 1.5, k2 = 3, gamma = 1) {
   dependencies = "Data@Cat, Data@Year, Data@Ind"
   Cr <- length(Data@Cat[x, ])
-  cct <- trlnorm(reps, Data@Cat[x, Cr], Data@CV_Cat)
+  cct <- trlnorm(reps, Data@Cat[x, Cr], Data@CV_Cat[x,1])
   ind <- (length(Data@Year) - (yrsmth - 1)):length(Data@Year)
   I_hist <- Data@Ind[x, ind]
   test <- summary(lm(I_hist ~ ind))$coefficients[2, 1:2]

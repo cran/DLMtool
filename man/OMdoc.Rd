@@ -4,10 +4,19 @@
 \alias{OMdoc}
 \title{Generate OM Documentation Report}
 \usage{
-OMdoc(OM = NULL, rmd.source = NULL, overwrite = FALSE,
-  out.file = NULL, inc.plot = TRUE, render = TRUE,
-  output = "html_document", openFile = TRUE, quiet = FALSE,
-  dir = NULL, ...)
+OMdoc(
+  OM = NULL,
+  rmd.source = NULL,
+  overwrite = FALSE,
+  out.file = NULL,
+  inc.plot = TRUE,
+  render = TRUE,
+  output = "html_document",
+  openFile = TRUE,
+  quiet = FALSE,
+  dir = NULL,
+  ...
+)
 }
 \arguments{
 \item{OM}{An object of class 'OM' or the name of an OM xlsx file}
@@ -46,8 +55,8 @@ See relevant section of the \href{https://dlmtool.github.io/DLMtool/userguide/cr
 }
 \examples{
 \dontrun{
-OMinit('myOM', templates=list(Stock='Herring', Fleet='Generic_Fleet', Obs='Generic_Obs',
-Imp='Perfect_Imp'), overwrite=TRUE)
+OMinit('myOM', Stock='Herring', Fleet='Generic_Fleet', Obs='Generic_Obs',
+Imp='Perfect_Imp', overwrite=TRUE)
 myOM <- XL2OM('myOM.xlsx')
 OMdoc(myOM)
 }

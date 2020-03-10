@@ -19,7 +19,7 @@
 #' Additional or alternative performance metrics objects can be supplied. Advanced users can develop their own performance metrics.
 #'  
 #' @param MSEobj An MSE object of class \code{'MSE'}
-#' @param PMs A list of PM objects
+#' @param PMs A character vector of names of the PM methods or a list of the PM methods
 #' @param maxMP Maximum number of MPs to include in a single plot
 #' @param thresh The convergence threshold. Maximum root mean square deviation over the last `ref.it` iterations
 #' @param ref.it The number of iterations to calculate the convergence statistics. For example,
@@ -28,11 +28,13 @@
 #' @param all.its Logical. Plot all iterations? Otherwise only (nsim-ref.it):nsim
 #' @param nrow Numeric. Optional. Number of rows
 #' @param ncol Numeric. Optional. Number of columns
+#' @param silent Hide the messages printed in console?
 #' 
 #' @templateVar url checking-convergence
 #' @templateVar ref NULL
 #' @template userguide_link
 #' 
+#' @return A table of convergence results for each MP
 #' @examples 
 #' \dontrun{
 #' MSE <- runMSE()
@@ -42,16 +44,29 @@
 #' @author A. Hordyk
 #' @export 
 #' 
-Converge <- function(MSEobj, PMs=list(Yield, P10, AAVY), maxMP=15, thresh=0.5, ref.it=20,
-                     inc.leg=FALSE, all.its=FALSE, nrow=NULL, ncol=NULL) {
+Converge <- function(MSEobj, PMs=c('Yield', 'P10', 'AAVY'), maxMP=15, thresh=0.5, ref.it=20,
+                     inc.leg=FALSE, all.its=FALSE, nrow=NULL, ncol=NULL, silent=FALSE) {
   
   
   if(class(MSEobj) != "MSE") stop("MSEobj must be object of class 'MSE'", call.=FALSE)
   if(MSEobj@nMPs <2) stop("Converge requires more than 1 MP in the MSE object", call.=FALSE)
   
+  if (!requireNamespace("ggrepel", quietly = TRUE)) {
+    stop("Package \"ggrepel\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  
   nPMs <- length(PMs)
+  
+  if (mode(PMs) == 'character') {
+    PMnames <- PMs
+    PMs <- lapply(PMs, get)
+  } else if (mode(PMs) == 'list') {
+    PMnames <- 1:length(PMs)
+  } 
+  
   if (is.null(ncol)) ncol <- floor(sqrt(nPMs))
-  if (is.null(nrow)) nrow <- ceiling(nPMs)/ncol
+  if (is.null(nrow)) nrow <- ceiling(nPMs/ncol)
   if (ncol * nrow < nPMs) stop("ncol x nrow must be > length(PMs)")
  
   if (MSEobj@nMPs > maxMP) {
@@ -63,12 +78,12 @@ Converge <- function(MSEobj, PMs=list(Yield, P10, AAVY), maxMP=15, thresh=0.5, r
   nsim <- MSEobj@nsim
   if (nsim-ref.it < 1) {
     ref.it.new <- nsim - 1
-    message("nsim (", nsim, ") - ref.it (", ref.it,") < 1. Setting ref.it to ", ref.it.new, "\n")
+    if (!silent) message("nsim (", nsim, ") - ref.it (", ref.it,") < 1. Setting ref.it to ", ref.it.new, "\n")
     ref.it <- ref.it.new 
   }
   
-  message("Checking if order of MPs is changing in last ", ref.it, " iterations\n")
-  message("Checking average difference in PM over last ", ref.it, " iterations is > ", thresh, "\n")
+  if (!silent) message ("Checking if order of MPs is changing in last ", ref.it, " iterations\n")
+  if (!silent) message("Checking average difference in PM over last ", ref.it, " iterations is > ", thresh, "\n")
 
   SwitchOrd <- vector(mode = "list", length = nPMs)
   NonCon <- vector(mode = "list", length = nPMs)
@@ -76,14 +91,13 @@ Converge <- function(MSEobj, PMs=list(Yield, P10, AAVY), maxMP=15, thresh=0.5, r
   
   getPalette <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan",
                                    "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
-  
   st <- 1 
   end <- min(maxMP, MSEobj@nMPs)
   it <- MP <- NULL # cran check hacks 
   
   for (nplot in 1:nplots) {
     
-    message('Plotting MPs ', st, ' - ', end)
+    if (!silent) message('Plotting MPs ', st, ' - ', end)
     subMSE <- Sub(MSEobj, MPs=MSEobj@MPs[st:end])
     
     nMPs <-  subMSE@nMPs
@@ -143,28 +157,44 @@ Converge <- function(MSEobj, PMs=list(Yield, P10, AAVY), maxMP=15, thresh=0.5, r
     }
     
     if (inc.leg) join_plots(plist, nrow=nrow, ncol=ncol, position="right")
-    if (!inc.leg) gridExtra::grid.arrange(grobs=plist, nrow=nrow, ncol=ncol) 
-    
+    if (!inc.leg) {
+      if (!requireNamespace("gridExtra", quietly = TRUE)) {
+        stop("Package \"gridExtra\" needed for this function to work. Please install it.",
+             call. = FALSE)
+      }
+      gridExtra::grid.arrange(grobs=plist, nrow=nrow, ncol=ncol) 
+    }
     st <- st + maxMP 
     end <- min(end + maxMP, MSEobj@nMPs)
   
   }
   
   ## Report Performance 
+  resultsTab <- matrix(NA,nrow=2,ncol=nPMs)
+  rownames(resultsTab) <- c("MPs Not Converging", "Unstable MPs")
+  colnames(resultsTab) <- PMnames
+  
   for (x in 1:nPMs) {
     SwitchOrds <- SwitchOrd[[x]]
     NonCons <- NonCon[[x]]
-    if (length(SwitchOrds)>0  | length(NonCons)>0) {
-      message("\n", PMName[x], "\n")
-      if (length(SwitchOrds)>0) {
-        message("Order over last ", ref.it, ' iterations is not consistent for:\n ', paste(SwitchOrds, ""), ' \n')
+    # save results in table
+    resultsTab[1,x] <- length(NonCons)
+    resultsTab[2,x] <- length(SwitchOrds)
+    
+    if (!silent) {
+      if (length(SwitchOrds)>0  | length(NonCons)>0) {
+        message("\n", PMName[x], "\n")
+        if (length(SwitchOrds)>0) {
+          message("Order over last ", ref.it, ' iterations is not consistent for:\n ', paste(SwitchOrds, ""), ' \n')
+        }
+        if (length(NonCons)>0) {
+          message("Mean difference over last ", ref.it, " iterations is > ", thresh, " for:\n",
+                  paste(NonCons, ""), '\n')
+        }
       }
-      if (length(NonCons)>0) {
-        message("Mean difference over last ", ref.it, " iterations is > ", thresh, " for:\n",
-                paste(NonCons, ""), '\n')
-      }
-    } 
+    }
   }
+  return(resultsTab)
 }
 
 
@@ -547,6 +577,36 @@ Sub <- function(MSEobj, MPs = NULL, sims = NULL, years = NULL) {
   
   CALbins <- MSEobj@CALbins 
   
+  # Subset Misc 
+  mpind <- match(newMPs, MSEobj@MPs)
+  MSEobj@Misc$Unfished$Refs <- MSEobj@Misc$Unfished$Refs[,SubIts]
+  for (i in 1:length(MSEobj@Misc$Unfished$ByYear)) {
+    MSEobj@Misc$Unfished$ByYear[[i]] <- MSEobj@Misc$Unfished$ByYear[[i]][SubIts,Years]
+  }
+  MSEobj@Misc$MSYRefs$Refs <- MSEobj@Misc$MSYRefs$Refs[SubIts, ]
+  for (i in 1:length(MSEobj@Misc$MSYRefs$ByYear)) {
+    MSEobj@Misc$MSYRefs$ByYear[[i]] <- MSEobj@Misc$MSYRefs$ByYear[[i]][SubIts, mpind, Years]
+  }
+  MSEobj@Misc$TryMP <- MSEobj@Misc$TryMP[mpind]
+  
+  
+  MSEobj@Misc$LatEffort <- MSEobj@Misc$LatEffort[SubIts, mpind,]
+  MSEobj@Misc$Revenue <- MSEobj@Misc$Revenue[SubIts, mpind,]
+  MSEobj@Misc$Cost <- MSEobj@Misc$Cost[SubIts, mpind,]
+  MSEobj@Misc$TAE <- MSEobj@Misc$TAE[SubIts, mpind,]
+  
+  MSEobj@Misc$ErrList$Cbiasa <- MSEobj@Misc$ErrList$Cbiasa[SubIts, Years]
+  MSEobj@Misc$ErrList$Cerr <- MSEobj@Misc$ErrList$Cerr[SubIts, Years]
+  MSEobj@Misc$ErrList$Ierr <- MSEobj@Misc$ErrList$Ierr[SubIts, Years]
+  MSEobj@Misc$ErrList$SpIerr <- MSEobj@Misc$ErrList$SpIerr[SubIts, Years]
+  MSEobj@Misc$ErrList$VIerr <- MSEobj@Misc$ErrList$VIerr[SubIts, Years]
+  MSEobj@Misc$ErrList$Recerr <- MSEobj@Misc$ErrList$Recerr[SubIts, Years]
+  
+  if ('Data' %in% names(MSEobj@Misc)) {
+    # Subset Data by MP
+    MSEobj@Misc$Data <- MSEobj@Misc$Data[match(newMPs, MSEobj@MPs)]
+  }
+  
   SubResults <- new("MSE", Name = MSEobj@Name, nyears = MSEobj@nyears, 
                     proyears = MSEobj@proyears, nMPs = length(SubMPs), MPs = newMPs, 
                     nsim = length(SubIts), OM = OutOM, Obs = MSEobj@Obs[SubIts, , drop = FALSE],
@@ -721,7 +781,8 @@ joinMSE <- function(MSEobjs = NULL) {
     if (!is.null(MSEobjs[[1]]@Misc$Data)) {
       Misc$Data <- list()
       # Posterior predicted data joining
-      for(i in 1:length(MSEobjs[[1]]@Misc$Data)) Misc$Data[[i]]<-joinData(lapply(MSEobjs,function(x)slot(x,"Misc")$Data[[i]]))
+      for(i in 1:length(MSEobjs[[1]]@Misc$Data)) 
+        Misc$Data[[i]]<-joinData(lapply(MSEobjs,function(x)slot(x,"Misc")$Data[[i]]))
     }
     
     if (!is.null(MSEobjs[[1]]@Misc$RInd.stats)) {
@@ -769,8 +830,12 @@ joinMSE <- function(MSEobjs = NULL) {
       }
       Misc$MSYRefs$Refs <- do.call('rbind', temp1)
       for (nm in names(temp2[[1]])) {
-        tt = lapply(temp2, "[[", nm)
-        tt <- do.call('rbind',tt)
+        tt <- lapply(temp2, "[[", nm)
+        if (length(dim(tt[[1]])) == 3) {
+          tt <- abind::abind(tt, along=1)
+        } else {
+          tt <- do.call('rbind',tt)  
+        }
         Misc$MSYRefs$ByYear[[nm]] <- tt
       }
     }

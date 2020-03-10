@@ -91,6 +91,11 @@ DataInit <- function(name="Data", ext=c("xlsx", "csv"), overwrite=FALSE, dir=NUL
 #' MyData <- XL2Data("MyData.xlsx")
 #' }
 XL2Data <- function(name, dec=c(".", ","), sheet=1, silent=TRUE) {
+  if (!requireNamespace("readxl", quietly = TRUE)) {
+    stop("Package \"readxl\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  
   dec <- match.arg(dec)
   dir <- dirname(name)
   if (dir ==".") {
@@ -125,8 +130,18 @@ XL2Data <- function(name, dec=c(".", ","), sheet=1, silent=TRUE) {
   } else {
     stop("File extension must be .csv, .xls, or .xlsx")
   }
-  colnames(datasheet) <- c("Name", "Data", colnames(datasheet)[3:length(colnames(datasheet))])
   
+  if (datasheet[1,1] == "Common Name") { # no header in data file
+    datasheet <- readxl::read_excel(file.path(dir,name), sheet = sheet, 
+                                    col_names = FALSE, .name_repair = "minimal")
+  }
+  
+  if (ncol(datasheet) == 1)  stop("Data file has no data") # no data in data file 
+  if (all(is.na(datasheet[,2]))) stop("Data file has no data in column B") # no data in data file 
+  
+  # Add column names
+  colnames(datasheet) <- c("Name", "Data")
+
   # check names in Column 1 
   input <- file.path(system.file(package = 'DLMtool'), "Data.csv")
   valnames <- read.csv(input, header=FALSE, stringsAsFactors = FALSE)
@@ -193,7 +208,6 @@ XL2Data <- function(name, dec=c(".", ","), sheet=1, silent=TRUE) {
   Data@MPeff <- datasheet$Data[which(datasheet$Name=="Previous TAE")]  %>% as.numeric()
   Data@nareas <- datasheet$Data[which(datasheet$Name=="nareas")] %>% as.numeric()
   
-  
   # ---- Biology ----
   Data@MaxAge <- datasheet$Data[which(datasheet$Name=="Maximum age")] %>% as.numeric()
   Data@Mort <- datasheet$Data[which(datasheet$Name=="M")] %>% as.numeric()
@@ -236,8 +250,8 @@ XL2Data <- function(name, dec=c(".", ","), sheet=1, silent=TRUE) {
   Data@Year <- Year   
   Nyears <- length(Year)
   # Catch time-series
-  Data@Cat <- datasheet[which(datasheet$Name=="Catch"), 2:(Nyears+1)] %>% 
-    as.numeric() %>% matrix(., nrow=1)
+  Data@Cat <- suppressWarnings(datasheet[which(datasheet$Name=="Catch"), 2:(Nyears+1)] %>% 
+    as.numeric() %>% matrix(., nrow=1))
   CV_Cat <- datasheet[which(datasheet$Name=="CV Catch"), 2:(Nyears+1)]
   if (!is.na(CV_Cat[1]) & all(is.na(CV_Cat[2:length(CV_Cat)])))
     CV_Cat <- rep(CV_Cat[1], Nyears)
@@ -250,10 +264,11 @@ XL2Data <- function(name, dec=c(".", ","), sheet=1, silent=TRUE) {
   if (nrow(CV_Effort)>0) {
     if (!is.na(CV_Effort[1]) & all(is.na(CV_Effort[2:length(CV_Effort)])))
       CV_Effort <- rep(CV_Effort[1], Nyears)
-    Data@CV_Effort <- CV_Effort %>% as.numeric %>% matrix(., nrow=1)
+    CV_Effort <- suppressWarnings(as.numeric(CV_Effort))
+    Data@CV_Effort <-  matrix(CV_Effort, nrow=1)
   }
   
-  # Vulnerable abundance index - fishery dependant
+  # Total abundance index - fishery dependant
   Data@Ind <- suppressWarnings(datasheet[which(datasheet$Name=="Abundance index"), 2:(Nyears+1)] %>%
                                  as.numeric() %>% matrix(., nrow=1) )
   CV_Ind <- datasheet[which(datasheet$Name=="CV Abundance index"), 2:(Nyears+1)]
@@ -261,6 +276,35 @@ XL2Data <- function(name, dec=c(".", ","), sheet=1, silent=TRUE) {
     CV_Ind <- rep(CV_Ind[1], Nyears)
   Data@CV_Ind <- CV_Ind %>% as.numeric %>% matrix(., nrow=1)
   
+  # Spawning abundance index - fishery dependant
+  Data@SpInd <- matrix(NA, nrow=1, ncol=length(Year))
+  if ('Spawning Abundance index' %in% datasheet$Name) {
+    Data@SpInd <- suppressWarnings(datasheet[which(datasheet$Name=="Spawning Abundance index"), 2:(Nyears+1)] %>%
+                                     as.numeric() %>% matrix(., nrow=1) )  
+  }
+
+  CV_Ind <- datasheet[which(datasheet$Name=="CV Spawning Abundance index"), 2:(Nyears+1)]
+  if (dim(CV_Ind)[1] >0) {
+    if (!is.na(CV_Ind[1]) & all(is.na(CV_Ind[2:length(CV_Ind)])))
+      CV_Ind <- rep(CV_Ind[1], Nyears)
+    Data@CV_SpInd <- CV_Ind %>% as.numeric %>% matrix(., nrow=1)
+  }
+ 
+  
+  # Vulnerable abundance index - fishery dependant
+  Data@VInd <- matrix(NA, nrow=1, ncol=length(Year))
+  if ('Vulnerable Abundance index' %in% datasheet$Name) {
+    Data@VInd <- suppressWarnings(datasheet[which(datasheet$Name=="Vulnerable Abundance index"), 2:(Nyears+1)] %>%
+                                    as.numeric() %>% matrix(., nrow=1) )
+  }
+
+  CV_Ind <- datasheet[which(datasheet$Name=="CV Vulnerable Abundance index"), 2:(Nyears+1)]
+  if (dim(CV_Ind)[1] >0) {
+    if (!is.na(CV_Ind[1]) & all(is.na(CV_Ind[2:length(CV_Ind)])))
+      CV_Ind <- rep(CV_Ind[1], Nyears)
+    Data@CV_VInd <- CV_Ind %>% as.numeric %>% matrix(., nrow=1)
+  }
+
   # # Spawning abundance index - subject to hyper-stability beta
   # Data@SpInd <- suppressWarnings(datasheet[which(datasheet$Name=="SpAbun index"), 2:(Nyears+1)] %>%
   #                                  as.numeric() %>% matrix(., nrow=1) )
@@ -397,6 +441,7 @@ XL2Data <- function(name, dec=c(".", ","), sheet=1, silent=TRUE) {
     CAL_Yrs <- numeric(0)
   } 
   if (length(ind)>0) {
+  
     # CAL data exists
     if (length(CAL_bins)<1 & length(CAL_mids) < 1)
       stop("Require either CAL_mids or CAL_bins", call. = FALSE)
@@ -415,9 +460,13 @@ XL2Data <- function(name, dec=c(".", ","), sheet=1, silent=TRUE) {
       if(!all(diff(CAL_mids) == mean(diff(CAL_mids)))) 
         stop("Inconsistent bin width in CAL_mids", call. = FALSE)
     }
-    if (length(CAL_bins)>1 & length(CAL_mids)<1) {
+    if (length(CAL_bins)>1 & length(CAL_mids)<=1) {
       by <- CAL_bins[2] - CAL_bins[1]
       CAL_mids <- seq(CAL_bins[1]+0.5*by, by=by, length.out = length(CAL_bins)-1)
+    }
+    if (length(CAL_mids)>1 & length(CAL_bins)<=1) {
+      by <- CAL_mids[2] - CAL_mids[1]
+      CAL_bins <- seq(CAL_mids[1]-0.5*by, by=by, length.out = length(CAL_mids)+1)
     }
     
     CAL_Yrs <- sapply(strsplit(datasheet$Name[ind], " "), function(x) unlist(strsplit(x[2], " ")))
@@ -726,6 +775,7 @@ runMP <- function(Data, MPs = NA, reps = 100, perc=0.5, chkMPs=TRUE, silent=FALS
   
   MPrecs <- applyMP(Data, MPs, reps, nsims=1, silent=silent)
   
+  if (is.na(Data@nareas)) Data@nareas <- 2
   names <- c("TAC", "Effort", "LR5", "LFR", "HS", "Rmaxlen",
              "L5", "LFS", 'Vmaxlen', 'Spatial')
   mat <- matrix(0, nrow=length(MPs), ncol=length(names)+Data@nareas-1)
@@ -975,8 +1025,9 @@ DLMdiag <- function(Data, command = c("available", "not available", "needed"), r
     if(!chk_needed[y]) {
       setTimeLimit(timelimit * 1.5)
       time1 <- Sys.time()
-      test[[y]] <- tryCatch(do.call(funcs1[y], list(x = 1, Data = Data, reps = reps)), 
+      test[[y]] <- tryCatch(do.call(funcs1[y], list(x = 1, Data = Data, reps = reps)),
                             error = function(e) as.character(e))
+  
       time2 <- Sys.time()
       setTimeLimit(Inf)
       timey[[y]] <- time2 - time1
@@ -1422,15 +1473,19 @@ joinData<-function(DataList){
 
   for (sn in 1:nslots){
     templist<-lapply(DataList,getslot,name=slots[sn])
-     
-    if (inherits(sclass[sn],"numeric")| inherits(sclass[sn],"integer")) {
+    tempval <- templist[[1]]
+  
+    if (inherits(tempval,"numeric")| inherits(tempval,"integer")) {
       if (slots[sn] == "CAL_bins") {
+        nbin <- vapply(templist, length, numeric(1))
+        attr(Data, slots[sn]) <- templist[[which.max(nbin)]]
+      } else if (slots[sn] == "CAL_mids") {
         nbin <- vapply(templist, length, numeric(1))
         attr(Data, slots[sn]) <- templist[[which.max(nbin)]]
       } else {
         attr(Data, slots[sn]) <- unlist(templist)
       }
-    } else if (inherits(sclass[sn],"matrix")| inherits(sclass[sn],"array")) {
+    } else if (inherits(tempval,"matrix")| inherits(tempval,"array")) {
       
       if(slots[sn] == "CAL") {
         nbin <- vapply(templist, function(x) dim(x)[3], numeric(1))
@@ -1441,18 +1496,18 @@ joinData<-function(DataList){
         }
         if (all(diff(do.call("rbind", lapply(templist2, dim))[,2]) == 0)) {
           # arrays may be different dimensions if MPs fail
-          attr(Data, slots[sn]) <- abind(templist2, along=1)
+          attr(Data, slots[sn]) <- abind::abind(templist2, along=1)
         }
       } else {
         if (all(diff(do.call("rbind", lapply(templist, dim))[,2]) == 0)) {
           # arrays may be different dimensions if MPs fail
-          attr(Data, slots[sn]) <- abind(templist, along=1)
+          attr(Data, slots[sn]) <- abind::abind(templist, along=1)
         }
       }
       
-    } else if (inherits(sclass[sn],"list")) {
+    } else if (inherits(tempval,"list")) {
       attr(Data, slots[sn]) <- do.call(c, templist)
-    } else if (inherits(sclass[sn],"data.frame")) {
+    } else if (inherits(tempval,"data.frame")) {
       attr(Data, slots[sn]) <- do.call(rbind, templist)
     }
   }
@@ -1654,6 +1709,15 @@ Report <- function(Data=NULL, md=NULL, name="Data-Report",
   
   if (class(Data) == "character") {
     Data <- XL2Data(Data)
+  }
+  
+  if (!requireNamespace("knitr", quietly = TRUE)) {
+    stop("Package \"knitr\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  if (!requireNamespace("rmarkdown", quietly = TRUE)) {
+    stop("Package \"rmarkdown\" needed for this function to work. Please install it.",
+         call. = FALSE)
   }
   
   # Load md documentation
@@ -2196,6 +2260,10 @@ makeDF <- function(Data, slot, i ) {
 }
 
 ts_plots <- function(Data, i=1, fignum=1) {
+  if (!requireNamespace("tidyr", quietly = TRUE)) {
+    stop("Package \"tidyr\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
   Year <- y <- dw <- up <- X <- Ind <- value <- key <- NA
   DF <- makeDF(Data, "Cat", i)
   DF <- rbind(DF, makeDF(Data, "Ind", i))
