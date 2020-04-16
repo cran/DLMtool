@@ -1,5 +1,30 @@
 The current version of the DLMtool package is available for download from [CRAN](https://CRAN.R-project.org/package=DLMtool).
 
+## DLMtool 5.4.3 
+
+### Minor changes
+- Added spatial sampling for some data. Set the fraction of sampling within each area 
+as a named list in `OM@cpars$control$Sample_Area`; e.g., `OM@cpars$control$Sample_Area$Catch`
+The following names are accepted:
+   - `Catch` (includes average catch);
+   - `BInd` total biomass index
+   - `SBInd` spawning biomass index
+   - `VInd` vulnerable biomass index
+   - `RecInd` recruitment index
+   - `CAA` - catch-at-age
+   - `CAL` - catch-at-length (also applies to mean length, length-at-first capture, etc)
+   Each must be an array with dimensions `c(nsim, nyears+proyears, nareas)`.
+
+### Fixes
+- fix bug when optimizing for vulnerable depletion in parallel mode
+- fix issue where latest version of `DT` package broke `PMObj` and `PMLimit` tables
+- fix catch bias for projections when conditioning on real data
+- fix retention-at-age when retention-at-length passed in `OM@cpars`
+- fix bug in `LBSPR_MLL` MP 
+- correction for auto-correlation in index when real data is used to condition model.
+
+
+
 ## DLMtool 5.4.2 
 
 ## Minor changes

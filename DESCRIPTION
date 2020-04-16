@@ -1,8 +1,8 @@
 Package: DLMtool
 Type: Package
 Title: Data-Limited Methods Toolkit
-Version: 5.4.2
-Date: 2020-03-06
+Version: 5.4.3
+Date: 2020-04-16
 Authors@R: c(
     person("Tom", "Carruthers",, "t.carruthers@fisheries.ubc.ca", role=c("aut", "cre")),
     person("Adrian", "Hordyk", , "a.hordyk@oceans.ubc.ca", "aut"),
@@ -27,11 +27,11 @@ Suggests: boot, broom, crayon, devtools, DT, fmsb, ggrepel, gridExtra,
         kableExtra, knitr, MASS, mvtnorm, openxlsx, purrr, readxl,
         rfishbase, rmarkdown, shiny, testthat, tidyr
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
 URL: http://www.datalimitedtoolkit.org/
 BugReports: https://github.com/DLMtool/DLMtool/issues
 NeedsCompilation: yes
-Packaged: 2020-03-09 21:54:41 UTC; Adrian
+Packaged: 2020-04-16 19:03:29 UTC; Adrian
 Author: Tom Carruthers [aut, cre],
   Adrian Hordyk [aut],
   M. Bryan [ctb],
@@ -41,4 +41,4 @@ Author: Tom Carruthers [aut, cre],
   Q. Huynh [ctb],
   C. Walters [ctb]
 Repository: CRAN
-Date/Publication: 2020-03-10 20:10:05 UTC
+Date/Publication: 2020-04-16 21:20:10 UTC

@@ -383,7 +383,8 @@ run_parallel <- function(i, itsim, OM, MPs, CheckMPs, timelimit, Hist, ntrials, 
       } else {
         ind <- 1:itsim[i]
       }
-      fixed_size_cpars <- c("CAL_bins", "CAL_binsmid", "binWidth", "M_at_length", "plusgroup", "Data", "AddIunits")
+      fixed_size_cpars <- c("CAL_bins", "CAL_binsmid", "binWidth", "M_at_length", "plusgroup", "Data", "AddIunits",
+                            'control')
       for (x in 1:length(cpars)) {
         if (!names(cpars)[x] %in% fixed_size_cpars) {
           dd <- dim(cpars[[x]])
@@ -415,6 +416,10 @@ run_parallel <- function(i, itsim, OM, MPs, CheckMPs, timelimit, Hist, ntrials, 
                     HZN, Bfrac, AnnualMSY, silent, PPD=PPD, control=control, parallel=parallel)
   return(mse)
 }
+
+
+
+
 
 assign_DLMenv <- function() {
   DLMenv_list <- snowfall::sfClusterEval(mget(ls(DLMenv), envir = DLMenv)) # Grab objects from cores' DLMenv
@@ -570,16 +575,16 @@ userguide_link <- function(url, ref=NULL) {
 #' @return CAA array 
 simCAA <- function(nsim, yrs, maxage, Cret, CAA_ESS, CAA_nsamp) {
   # generate CAA from retained catch-at-age 
-
+  
   CAA <- array(NA, dim = c(nsim, yrs, maxage))  # Catch  at age array
   
   # a multinomial observation model for catch-at-age data
   for (i in 1:nsim) {
     for (j in 1:yrs) {
-      if (!sum(Cret[i, j,])) {
+      if (!sum(Cret[i, ,j])) {
         CAA[i, j, ] <- 0 
       } else {
-        CAA[i, j, ] <- ceiling(-0.5 + rmultinom(1, CAA_ESS[i], Cret[i, j,]) * CAA_nsamp[i]/CAA_ESS[i])   
+        CAA[i, j, ] <- ceiling(-0.5 + rmultinom(1, CAA_ESS[i], Cret[i, ,j]) * CAA_nsamp[i]/CAA_ESS[i])   
       }
     }
   }
@@ -758,7 +763,7 @@ generateRes <- function(df, nsim, proyears, lst.err) {
   sd <- df$sd 
   ac <- df$AC
   if (all(is.na(sd))) return(rep(NA, nsim))
-  mu <- 0.5 * (sd)^2
+  mu <- -0.5 * (sd)^2 * (1 - ac)/sqrt(1 - ac^2)
   Res <- matrix(rnorm(proyears*nsim, mu, sd), nrow=proyears, ncol=nsim, byrow=TRUE) 
   # apply a pseudo AR1 autocorrelation 
   Res <- sapply(1:nsim, applyAC, res=Res, ac=ac, max.years=proyears, lst.err=lst.err) # log-space
@@ -772,7 +777,6 @@ applyAC <- function(x, res, ac, max.years, lst.err) {
     } else {
       res[y,x] <- ac[x] * res[y-1,x] + res[y,x] * (1-ac[x] * ac[x])^0.5  
     }
-    
   }
   res[,x]
 }
@@ -793,7 +797,7 @@ addRealData <- function(Data, SampCpars, ErrList, Biomass, VBiomass, N, SSB, CBr
       
       simcatch <- apply(CBret, c(1,3), sum)
       
-      Cbias <- matrix(apply(simcatch, 1, mean) / apply(Data@Cat, 1, mean),
+      Cbias <- matrix(apply(Data@Cat, 1, mean)/apply(simcatch, 1, mean),
                       nrow=nsim, ncol=nyears+proyears)
       
       Cerr <- Data@Cat/(simcatch/Cbias[,1:nyears])
