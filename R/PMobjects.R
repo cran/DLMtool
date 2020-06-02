@@ -200,7 +200,7 @@ LTY <- function(MSEobj=NULL, Ref=0.5, Yrs=-10) {
   RefYd <- array(MSEobj@OM$RefY, dim=dim(MSEobj@C[,,Yrs[1]:Yrs[2]]))
   
   PMobj@Stat <- MSEobj@C[,,Yrs[1]:Yrs[2]]/RefYd
-  PMobj@Ref <- 0.5
+  PMobj@Ref <- Ref
   PMobj@Prob <- calcProb(PMobj@Stat > PMobj@Ref, MSEobj)  
   
   PMobj@Mean <- calcMean(PMobj@Prob) # calculate mean probability by MP
@@ -323,7 +323,7 @@ calcProb <- function(PM, MSEobj) {
 #' @keywords internal
 #'
 calcMean <- function(Prob) {
-  if (class(Prob) == 'matrix') return(apply(Prob , 2, mean, na.rm=TRUE))
-  if (class(Prob) == 'numeric') return(mean(Prob, na.rm=TRUE))
+  if ('matrix' %in% class(Prob)) return(apply(Prob , 2, mean, na.rm=TRUE))
+  if ('numeric' %in% class(Prob)) return(mean(Prob, na.rm=TRUE))
 }
 
