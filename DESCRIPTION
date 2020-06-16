@@ -1,8 +1,8 @@
 Package: DLMtool
 Type: Package
 Title: Data-Limited Methods Toolkit
-Version: 5.4.4
-Date: 2020-06-01
+Version: 5.4.5
+Date: 2020-06-15
 Authors@R: c(
     person("Tom", "Carruthers",, "t.carruthers@fisheries.ubc.ca", role=c("aut", "cre")),
     person("Adrian", "Hordyk", , "a.hordyk@oceans.ubc.ca", "aut"),
@@ -31,7 +31,7 @@ RoxygenNote: 7.1.0
 URL: http://www.datalimitedtoolkit.org/
 BugReports: https://github.com/DLMtool/DLMtool/issues
 NeedsCompilation: yes
-Packaged: 2020-06-01 21:39:07 UTC; Adrian
+Packaged: 2020-06-15 19:27:15 UTC; Adrian
 Author: Tom Carruthers [aut, cre],
   Adrian Hordyk [aut],
   M. Bryan [ctb],
@@ -41,4 +41,4 @@ Author: Tom Carruthers [aut, cre],
   Q. Huynh [ctb],
   C. Walters [ctb]
 Repository: CRAN
-Date/Publication: 2020-06-02 07:10:12 UTC
+Date/Publication: 2020-06-16 14:10:28 UTC
