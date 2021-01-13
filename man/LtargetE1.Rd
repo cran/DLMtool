@@ -24,7 +24,7 @@ LtargetE4(x, Data, reps = 100, plot = FALSE, yrsmth = 5, xL = 1.15)
 catches relative to average length in catches.}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the TAE slot(s) populated
+An object of class \code{\link[MSEtool]{Rec-class}} with the TAE slot(s) populated
 }
 \description{
 A management procedure that incrementally adjusts the TAE to reach
@@ -56,7 +56,7 @@ where \eqn{\textrm{TAE}^*} is the effort in the previous year,
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{LtargetE1}: LHYear, ML, MPeff, Year
@@ -64,12 +64,12 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/LtargetE1.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/LtargetE1.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
-LtargetE1(1, Data=DLMtool::SimulatedData, plot=TRUE)
-LtargetE4(1, Data=DLMtool::SimulatedData, plot=TRUE)
+LtargetE1(1, Data=MSEtool::SimulatedData, plot=TRUE)
+LtargetE4(1, Data=MSEtool::SimulatedData, plot=TRUE)
 }
 \references{
 Carruthers et al. 2015. Performance evaluation of simple

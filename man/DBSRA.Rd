@@ -22,7 +22,7 @@ DBSRA4010(x, Data, reps = 100, plot = FALSE)
 \item{plot}{Logical. Show the plot?}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 Depletion-Based Stock Reduction Analysis (DB-SRA) is a method designed for
@@ -69,7 +69,7 @@ previously been applied by Dick and MacCall (2011).
 }
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{DBSRA}: BMSY_B0, Cat, Dep, FMSY_M, L50, vbK, vbLinf, vbt0
@@ -83,7 +83,7 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/DBSRA.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/DBSRA.html}{Online Documentation} for correctly rendered equations
 
 
 
@@ -91,10 +91,10 @@ See \href{https://dlmtool.github.io/DLMtool/reference/DBSRA.html}{Online Documen
 }
 
 \examples{
-DBSRA(1, DLMtool::ourReefFish, plot=TRUE)
+DBSRA(1, MSEtool::ourReefFish, plot=TRUE)
 
-DBSRA_40(1, DLMtool::ourReefFish, plot=TRUE)
-DBSRA4010(1, DLMtool::ourReefFish, plot=TRUE)
+DBSRA_40(1, MSEtool::ourReefFish, plot=TRUE)
+DBSRA4010(1, MSEtool::ourReefFish, plot=TRUE)
 }
 \references{
 Dick, E.J., MacCall, A.D., 2010. Estimates of sustainable yield for 50 data-poor

@@ -18,7 +18,7 @@ GB_target(x, Data, reps = 100, plot = FALSE, w = 0.5)
 \item{w}{A gain parameter}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 An MP similar to SBT2 that modifies a time-series of catch recommendations
@@ -52,7 +52,7 @@ The TAC is subject to the following conditions:
 }
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{GB_target}: Cref, Ind, Iref
@@ -60,11 +60,11 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/GB_target.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/GB_target.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
- GB_target(1, DLMtool::SimulatedData, plot=TRUE)
+ GB_target(1, MSEtool::SimulatedData, plot=TRUE)
 }
 \references{
 Geromont, H.F. and Butterworth, D.S. 2014. Complex assessment or

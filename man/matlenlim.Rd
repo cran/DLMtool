@@ -28,7 +28,7 @@ slotlim(x, Data, reps, plot = FALSE)
 length of fish caught: minlen=Lopt*(0.7+buffer).}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the SL slot(s) populated
+An object of class \code{\link[MSEtool]{Rec-class}} with the Retention slot(s) populated
 }
 \description{
 A set of size-selectivity MPs that adjust the retention curve of the fishery.
@@ -70,7 +70,7 @@ to demonstrate an upper harvest slot limit.
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{matlenlim}: L50
@@ -87,7 +87,7 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/matlenlim.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/matlenlim.html}{Online Documentation} for correctly rendered equations
 
 
 
@@ -97,10 +97,10 @@ See \href{https://dlmtool.github.io/DLMtool/reference/matlenlim.html}{Online Doc
 }
 
 \examples{
-matlenlim(1, DLMtool::Atlantic_mackerel, plot=TRUE)
-matlenlim2(1, DLMtool::Atlantic_mackerel, plot=TRUE)
-minlenLopt1(1, DLMtool::Atlantic_mackerel, plot=TRUE)
-slotlim(1, DLMtool::Atlantic_mackerel, plot=TRUE)
+matlenlim(1, MSEtool::Atlantic_mackerel, plot=TRUE)
+matlenlim2(1, MSEtool::Atlantic_mackerel, plot=TRUE)
+minlenLopt1(1, MSEtool::Atlantic_mackerel, plot=TRUE)
+slotlim(1, MSEtool::Atlantic_mackerel, plot=TRUE)
 }
 \references{
 Hordyk, A., Ono, K., Sainsbury, K., Loneragan, N., and J.

@@ -20,7 +20,7 @@ SPmod(x, Data, reps = 100, plot = FALSE, alp = c(0.8, 1.2), bet = c(0.8, 1.2))
 \item{bet}{Limits for how much the TAC can change among years}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 
 A numeric vector of TAC recommendations
 }
@@ -34,11 +34,11 @@ Note that this isn't exactly what Mark has previously suggested and is
 stochastic in this implementation.
 
 The TAC is calculated as:
-\deqn{\textrm{TAC}_y = 
-             \left\{\begin{array}{ll} 
-              C_{y-1} \textrm{bet}_1 & \textrm{if } r < \alpha_1 \\ 
+\deqn{\textrm{TAC}_y =
+             \left\{\begin{array}{ll}
+              C_{y-1} \textrm{bet}_1 & \textrm{if } r < \alpha_1 \\
               C_{y-1} & \textrm{if } \alpha_1 < r < \alpha_2 \\
-              \textrm{bet}_2 (b_2 - b_1 + C_{y-2} )  & \textrm{if } r > \alpha_2 \\  
+              \textrm{bet}_2 (b_2 - b_1 + C_{y-2} )  & \textrm{if } r > \alpha_2 \\
              \end{array}\right.
            }{}
 where \eqn{\textrm{bet}_1} and \eqn{\textrm{bet}_2} are elements in \code{bet},
@@ -50,7 +50,7 @@ and \eqn{\alpha_1}, \eqn{\alpha_2}, and \eqn{\alpha_3} are specified in argument
 }
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{SPmod}: Cat, Ind
@@ -58,11 +58,11 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/SPmod.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/SPmod.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
-SPmod(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
+SPmod(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
 }
 \references{
 http://www.iattc.org/Meetings/Meetings2014/MAYSAC/PDFs/SAC-05-10b-Management-Strategy-Evaluation.pdf

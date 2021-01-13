@@ -32,7 +32,7 @@ abundance)}
 \item{bet}{Limits for how much the Data can change among years}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 A management procedure that makes incremental adjustments to TAC
@@ -44,11 +44,11 @@ Note that this isn't exactly what Mark has previously suggested and is
 stochastic in this implementation.
 
 The TAC is calculated as:
-\deqn{\textrm{TAC}_y = 
-             \left\{\begin{array}{ll} 
-              M \bar{C}  & \textrm{if } r < \alpha_1 \\ 
+\deqn{\textrm{TAC}_y =
+             \left\{\begin{array}{ll}
+              M \bar{C}  & \textrm{if } r < \alpha_1 \\
               \bar{C} & \textrm{if } \alpha_1 < r < \alpha_2 \\
-              \textrm{bet}_2 \textrm{SP}  & \textrm{if } r > \alpha_2 \\  
+              \textrm{bet}_2 \textrm{SP}  & \textrm{if } r > \alpha_2 \\
              \end{array}\right.
            }{}
 where \eqn{r} is the ratio of predicted biomass in next year to biomass in
@@ -62,7 +62,7 @@ is the predicted biomass in the next year.
 }
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{SPslope}: Abun, Cat, Ind, Year
@@ -70,11 +70,11 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/SPslope.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/SPslope.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
-SPslope(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
+SPslope(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
 }
 \references{
 http://www.iattc.org/Meetings/Meetings2014/MAYSAC/PDFs/SAC-05-10b-Management-Strategy-Evaluation.pdf

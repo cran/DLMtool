@@ -19,7 +19,7 @@ DD4010(x, Data, reps = 100, plot = FALSE)
 \item{plot}{Logical. Show the plot?}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 A simple delay-difference assessment with UMSY and MSY as leading parameters
@@ -50,7 +50,7 @@ and Walters (1992).
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{DD}: Cat, Ind, L50, MaxAge, Mort, vbK, vbLinf, vbt0, wla, wlb
@@ -61,14 +61,14 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/DD.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/DD.html}{Online Documentation} for correctly rendered equations
 
 
 }
 
 \examples{
-DD(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
-DD4010(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
+DD(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
+DD4010(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
 }
 \references{
 Carruthers, T, Walters, C.J,, and McAllister, M.K. 2012. Evaluating methods that classify

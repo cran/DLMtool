@@ -71,7 +71,7 @@ first year}
 conditions for increasing, maintaining or reducing the TAC or effort.}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 A management procedure that incrementally adjusts the TAC according to the
@@ -79,10 +79,10 @@ mean length of recent catches.
 }
 \details{
 The TAC is calculated as:
-\deqn{\textrm{TAC} = 
-             \left\{\begin{array}{ll} 
-             \textrm{TAC}^* - 2 S\textrm{TAC}^* & \textrm{if } r < 0.96  \\ 
-             \textrm{TAC}^* - S \textrm{TAC}^* & \textrm{if } r < 0.98 \\ 
+\deqn{\textrm{TAC} =
+             \left\{\begin{array}{ll}
+             \textrm{TAC}^* - 2 S\textrm{TAC}^* & \textrm{if } r < 0.96  \\
+             \textrm{TAC}^* - S \textrm{TAC}^* & \textrm{if } r < 0.98 \\
              \textrm{TAC}^* & \textrm{if } > 1.058 \\
              \end{array}\right.
            }{}
@@ -107,7 +107,7 @@ The conditions are specified in the \code{llim} argument to the function.
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{LstepCC1}: Cat, LHYear, ML, Year
@@ -124,7 +124,7 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/LstepCC1.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/LstepCC1.html}{Online Documentation} for correctly rendered equations
 
 
 
@@ -134,11 +134,11 @@ See \href{https://dlmtool.github.io/DLMtool/reference/LstepCC1.html}{Online Docu
 }
 
 \examples{
-LstepCC1(1, Data=DLMtool::SimulatedData, plot=TRUE)
+LstepCC1(1, Data=MSEtool::SimulatedData, plot=TRUE)
 
-LstepCC2(1, Data=DLMtool::SimulatedData, plot=TRUE)
-LstepCC3(1, Data=DLMtool::SimulatedData, plot=TRUE)
-LstepCC4(1, Data=DLMtool::SimulatedData, plot=TRUE)
+LstepCC2(1, Data=MSEtool::SimulatedData, plot=TRUE)
+LstepCC3(1, Data=MSEtool::SimulatedData, plot=TRUE)
+LstepCC4(1, Data=MSEtool::SimulatedData, plot=TRUE)
 }
 \references{
 Carruthers et al. 2015. Performance evaluation of simple

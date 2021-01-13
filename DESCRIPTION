@@ -1,39 +1,35 @@
 Package: DLMtool
 Type: Package
 Title: Data-Limited Methods Toolkit
-Version: 5.4.5
-Date: 2020-06-15
+Version: 6.0.0
 Authors@R: c(
-    person("Tom", "Carruthers",, "t.carruthers@fisheries.ubc.ca", role=c("aut", "cre")),
-    person("Adrian", "Hordyk", , "a.hordyk@oceans.ubc.ca", "aut"),
+    person("Tom", "Carruthers",, "tom@bluematterscience.com", role="aut"),
+    person("Quang", "Huynh", email = "quang@bluematterscience.com", role = "aut"),
+    person("Adrian", "Hordyk", , "adrian@bluematterscience.com", c("aut", "cre")),
     person("M.", "Bryan", , , "ctb"),
     person("HF.", "Geremont", , , "ctb"),
     person("C.", "Grandin", , , "ctb"),
     person("W.", "Harford", , , "ctb"),
     person("Q.", "Huynh", , , "ctb"),
     person("C.", "Walters", , , "ctb"))
-Maintainer: Tom Carruthers <t.carruthers@fisheries.ubc.ca>
-Description: Development, simulation testing, and implementation of management
-    procedures for data-limited fisheries 
-    (see Carruthers & Hordyk (2018) <doi:10.1111/2041-210X.13081>).
-License: GPL-2
-Depends: R (>= 3.5.0), snowfall
-Imports: abind, dplyr, methods, grDevices, ggplot2, parallel, Rcpp,
-        stats, utils
+Maintainer: Adrian Hordyk <adrian@bluematterscience.com>
+Description: A collection of data-limited management procedures that can be evaluated 
+    with management strategy evaluation with the MSEtool package, or applied to 
+    fishery data to provide management recommendations.
+License: GPL-3
+Depends: R (>= 3.5.0), MSEtool
+Imports: dplyr, ggplot2, graphics, methods, Rcpp, stats
+Suggests: gridExtra, mvtnorm, testthat
 LazyData: yes
 LazyLoad: yes
 Encoding: UTF-8
-Suggests: boot, broom, crayon, devtools, DT, fmsb, ggrepel, gridExtra,
-        kableExtra, knitr, MASS, mvtnorm, openxlsx, purrr, readxl,
-        rfishbase, rmarkdown, shiny, testthat, tidyr
-LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 7.1.0
-URL: http://www.datalimitedtoolkit.org/
-BugReports: https://github.com/DLMtool/DLMtool/issues
+RoxygenNote: 7.1.1
+LinkingTo: Rcpp
 NeedsCompilation: yes
-Packaged: 2020-06-15 19:27:15 UTC; Adrian
-Author: Tom Carruthers [aut, cre],
-  Adrian Hordyk [aut],
+Packaged: 2021-01-12 04:47:20 UTC; Adrian
+Author: Tom Carruthers [aut],
+  Quang Huynh [aut],
+  Adrian Hordyk [aut, cre],
   M. Bryan [ctb],
   HF. Geremont [ctb],
   C. Grandin [ctb],
@@ -41,4 +37,4 @@ Author: Tom Carruthers [aut, cre],
   Q. Huynh [ctb],
   C. Walters [ctb]
 Repository: CRAN
-Date/Publication: 2020-06-16 14:10:28 UTC
+Date/Publication: 2021-01-13 10:50:35 UTC

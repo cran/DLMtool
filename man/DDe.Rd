@@ -26,7 +26,7 @@ DDe75(x, Data, reps = 100, plot = FALSE)
 \item{UB}{The highest permitted factor of previous fishing effort}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the TAE slot(s) populated
+An object of class \code{\link[MSEtool]{Rec-class}} with the TAE slot(s) populated
 }
 \description{
 A simple delay-difference assessment with UMSY and MSY as leading parameters
@@ -60,7 +60,7 @@ and Walters (1992).
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{DDe}: Cat, Ind, L50, MPeff, MaxAge, Mort, vbK, vbLinf, vbt0, wla, wlb
@@ -68,13 +68,13 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/DDe.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/DDe.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
-DDe(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
-DDes(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
-DDe75(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
+DDe(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
+DDes(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
+DDe75(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
 }
 \seealso{
 Other Delay-Difference MPs: 

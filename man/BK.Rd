@@ -25,7 +25,7 @@ BK_ML(x, Data, reps = 100, plot = FALSE)
 catch-curve (interval censor).}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 Family of management procedures that sets the TAC by approximation of Fmax
@@ -62,14 +62,14 @@ Note that the Beddington-Kirkwood method is designed to estimate \eqn{F_\textrm{
 that is, the fishing mortality that produces the maximum yield \emph{assuming constant
 recruitment independent of spawning biomass}.
 
-Beddington and Kirkwood (2005)
-recommend estimating \emph{F} using other methods (e.g a catch curve) and comparing the
-estimated \emph{F} to the estimated \eqn{F_\textrm{max}} and adjusting exploitation accordingly.
+Beddington and Kirkwood (2005) recommend estimating \emph{F} using other methods
+(e.g., a catch curve) and comparing the estimated \emph{F} to the estimated
+\eqn{F_\textrm{max}} and adjusting exploitation accordingly.
 These MPs have not been implemented that way.
 }
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{BK}: Abun, LFC, vbK, vbLinf
@@ -83,7 +83,7 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/BK.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/BK.html}{Online Documentation} for correctly rendered equations
 
 
 
@@ -92,15 +92,15 @@ See \href{https://dlmtool.github.io/DLMtool/reference/BK.html}{Online Documentat
 
 \examples{
 \dontrun{
-BK(1, DLMtool::SimulatedData, reps=1000, plot=TRUE)
+BK(1, MSEtool::SimulatedData, reps=1000, plot=TRUE)
 }
 
 \dontrun{
-BK_CC(1, DLMtool::SimulatedData, reps=1000, plot=TRUE)
+BK_CC(1, MSEtool::SimulatedData, reps=1000, plot=TRUE)
 }
 
 \dontrun{
-BK_ML(1, DLMtool::SimulatedData, reps=100, plot=TRUE)
+BK_ML(1, MSEtool::SimulatedData, reps=100, plot=TRUE)
 }
 
 }

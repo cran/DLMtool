@@ -32,7 +32,7 @@ data}
 recommendations}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 A harvest control rule proposed by Carl Walters that uses trajectory in
@@ -51,7 +51,7 @@ the TAC to decrease by more than half or increase more than twice the last annua
 }
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{Gcontrol}: Abun, Cat, Ind, Year
@@ -59,11 +59,11 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/Gcontrol.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/Gcontrol.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
-Gcontrol(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
+Gcontrol(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
 }
 \references{
 Carruthers et al. 2015. Performance evaluation of simple

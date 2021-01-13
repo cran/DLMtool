@@ -32,7 +32,7 @@ Islope4(x, Data, reps = 100, plot = FALSE, yrsmth = 5, lambda = 0.2, xx = 0.4)
 first year}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 A management procedure that incrementally adjusts the TAC to maintain a
@@ -59,7 +59,7 @@ Reference TAC is 0.6 average catch and gain parameter is 0.2
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{Islope1}: Cat, Ind, LHYear, Year
@@ -67,14 +67,14 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/Islope1.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/Islope1.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
-Islope1(1, DLMtool::SimulatedData, plot=TRUE)
-Islope2(1, DLMtool::SimulatedData, plot=TRUE)
-Islope3(1, DLMtool::SimulatedData, plot=TRUE)
-Islope4(1, DLMtool::SimulatedData, plot=TRUE)
+Islope1(1, MSEtool::SimulatedData, plot=TRUE)
+Islope2(1, MSEtool::SimulatedData, plot=TRUE)
+Islope3(1, MSEtool::SimulatedData, plot=TRUE)
+Islope4(1, MSEtool::SimulatedData, plot=TRUE)
 }
 \references{
 Carruthers et al. 2015. Performance evaluation of simple

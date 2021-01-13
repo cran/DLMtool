@@ -42,7 +42,7 @@ LstepCE2(
 conditions for increasing, maintaining or reducing the effort.}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the TAE slot(s) populated
+An object of class \code{\link[MSEtool]{Rec-class}} with the TAE slot(s) populated
 }
 \description{
 A management procedure that incrementally adjusts the total allowable
@@ -74,7 +74,7 @@ The conditions are specified in the \code{llim} argument to the function.
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{LstepCE1}: LHYear, ML, MPeff, Year
@@ -82,12 +82,12 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/LstepCE1.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/LstepCE1.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
-LstepCE1(1, Data=DLMtool::SimulatedData, plot=TRUE)
-LstepCE2(1, Data=DLMtool::SimulatedData, plot=TRUE)
+LstepCE1(1, Data=MSEtool::SimulatedData, plot=TRUE)
+LstepCE2(1, Data=MSEtool::SimulatedData, plot=TRUE)
 }
 \references{
 Carruthers et al. 2015. Performance evaluation of simple

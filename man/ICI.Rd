@@ -19,7 +19,7 @@ ICI2(x, Data, reps = 100, plot = FALSE)
 \item{plot}{Logical. Show the plot?}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 The MP adjusts catch based on the value of the index in the current year relative to the
@@ -30,10 +30,10 @@ The TAC is calculated as:
 \deqn{\textrm{TAC}_y=C_{y-1} \alpha}
 where \eqn{C_{y-1}} is the catch from the previous year, and \eqn{\alpha} is
 defined as:
-\deqn{\alpha = 
-             \left\{\begin{array}{ll} 
-             d & \textrm{if } I < \textrm{CI}_L \\ 
-             u & \textrm{if } I > \textrm{CI}_H \\ 
+\deqn{\alpha =
+             \left\{\begin{array}{ll}
+             d & \textrm{if } I < \textrm{CI}_L \\
+             u & \textrm{if } I > \textrm{CI}_H \\
              1 & \textrm{if } \textrm{CI}_L \leq I \leq \textrm{CI}_H \\
              \end{array}\right.
            }{}
@@ -56,7 +56,7 @@ if the Z-score of the current year's index is greater than 1.96. Otherwise, the 
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{ICI}: Cat, Ind
@@ -67,15 +67,15 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/ICI.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/ICI.html}{Online Documentation} for correctly rendered equations
 
 
 }
 
 \examples{
-ICI(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
+ICI(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
 
-ICI2(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
+ICI2(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
 }
 \references{
 Ernesto Jardim, Manuela Azevedo, Nuno M. Brites, Harvest control rules for

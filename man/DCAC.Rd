@@ -34,7 +34,7 @@ HDAAC(x, Data, reps = 100, plot = FALSE)
 \item{plot}{Logical. Show the plot?}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 This group of MPs calculates a catch limit (\emph{dcac}; intended as an MSY proxy) based on
@@ -95,7 +95,7 @@ below BMSY, DCAC tends to chronically overfish.
 }
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{DCACs}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, Year, t
@@ -110,7 +110,7 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 \code{DCAC4010}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, Year, t
 
 
-\code{DCAC_ML}: AvC, CAL, Cat, LHYear, Lbar, Lc, Mort, Year, t, vbK, vbLinf
+\code{DCAC_ML}: Abun, AddInd, AddIndType, AddIndV, AddIunits, AvC, Bref, CAA, CAL, CAL_bins, CAL_mids, Cat, Cref, Dep, Dt, Effort, Ind, Iref, L50, L95, LFC, LFS, LHYear, Lbar, Lc, LenCV, ML, MPeff, MPrec, MaxAge, Mort, Rec, SpAbun, SpInd, VInd, Vmaxlen, Vuln_CAA, Vuln_CAL, Year, sigmaR, steep, t, vbK, vbLinf, vbt0, wla, wlb
 
 
 \code{DAAC}: AvC, BMSY_B0, Dt, FMSY_M, LHYear, Mort, Year, t
@@ -123,7 +123,7 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 
 
-See \href{https://dlmtool.github.io/DLMtool/reference/DCAC.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/DCAC.html}{Online Documentation} for correctly rendered equations
 
 
 
@@ -137,25 +137,25 @@ See \href{https://dlmtool.github.io/DLMtool/reference/DCAC.html}{Online Document
 }
 
 \examples{
-DCACs(1, DLMtool::Atlantic_mackerel, plot=TRUE) 
+DCACs(1, MSEtool::Atlantic_mackerel, plot=TRUE)
 
-DCAC(1, DLMtool::Atlantic_mackerel, plot=TRUE) 
+DCAC(1, MSEtool::Atlantic_mackerel, plot=TRUE)
 
-DCAC_40(1, DLMtool::Atlantic_mackerel, plot=TRUE) 
+DCAC_40(1, MSEtool::Atlantic_mackerel, plot=TRUE)
 
-Data <- DLMtool::Atlantic_mackerel
+Data <- MSEtool::Atlantic_mackerel
 Data@LHYear <- 2005
-DCAC4010(1, Data, plot=TRUE) 
+DCAC4010(1, Data, plot=TRUE)
 
-DCAC_ML(1, DLMtool::SimulatedData, plot=TRUE) 
+DCAC_ML(1, MSEtool::SimulatedData, plot=TRUE)
 
-Data <- DLMtool::Atlantic_mackerel
+Data <- MSEtool::Atlantic_mackerel
 Data@LHYear <- 2005
-DAAC(1, Data, plot=TRUE) 
+DAAC(1, Data, plot=TRUE)
 
-Data <- DLMtool::Atlantic_mackerel
+Data <- MSEtool::Atlantic_mackerel
 Data@LHYear <- 2005
-HDAAC(1, Data, plot=TRUE) 
+HDAAC(1, Data, plot=TRUE)
 
 }
 \references{

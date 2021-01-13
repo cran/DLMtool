@@ -36,7 +36,7 @@ first year}
 catches relative to average length in catches.}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 A management procedure that incrementally adjusts the TAC to reach
@@ -76,7 +76,7 @@ than an arbitrary multiplicative of the mean length
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{Ltarget1}: Cat, LHYear, ML, Year
@@ -96,7 +96,7 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/Ltarget1.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/Ltarget1.html}{Online Documentation} for correctly rendered equations
 
 
 
@@ -108,11 +108,11 @@ See \href{https://dlmtool.github.io/DLMtool/reference/Ltarget1.html}{Online Docu
 }
 
 \examples{
-Ltarget1(1, Data=DLMtool::SimulatedData, plot=TRUE)
-Ltarget2(1, Data=DLMtool::SimulatedData, plot=TRUE)
-Ltarget3(1, Data=DLMtool::SimulatedData, plot=TRUE)
-Ltarget4(1, Data=DLMtool::SimulatedData, plot=TRUE)
-L95target(1, Data=DLMtool::SimulatedData, plot=TRUE)
+Ltarget1(1, Data=MSEtool::SimulatedData, plot=TRUE)
+Ltarget2(1, Data=MSEtool::SimulatedData, plot=TRUE)
+Ltarget3(1, Data=MSEtool::SimulatedData, plot=TRUE)
+Ltarget4(1, Data=MSEtool::SimulatedData, plot=TRUE)
+L95target(1, Data=MSEtool::SimulatedData, plot=TRUE)
 }
 \references{
 Carruthers et al. 2015. Performance evaluation of simple

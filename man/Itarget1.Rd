@@ -33,17 +33,17 @@ first year}
 compared with recent levels.}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 A management procedure that incrementally adjusts the TAC (starting from
 reference level that is a fraction of mean recent catches)
 to reach a target CPUE / relative abundance index
-
-Four index/CPUE target MPs proposed by Geromont and Butterworth 2014.
-Tested by Carruthers et al. 2015.
 }
 \details{
+Four index/CPUE target MPs proposed by Geromont and Butterworth 2014.
+Tested by Carruthers et al. 2015.
+
 The TAC is calculated as:
 If  \eqn{I_\textrm{recent} \geq I_0}:
 \deqn{\textrm{TAC}= 0.5 \textrm{TAC}^* \left[1+\left(\frac{I_\textrm{recent} - I_0}{I_\textrm{target} - I_0}\right)\right]}
@@ -71,7 +71,7 @@ where \eqn{x} is argument \code{xx} and C is the average catch over the last 5 y
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{Itarget1}: Cat, Ind, LHYear, Year
@@ -79,14 +79,14 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/Itarget1.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/Itarget1.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
-Itarget1(1, DLMtool::Atlantic_mackerel, plot=TRUE)
-Itarget2(1, DLMtool::Atlantic_mackerel, plot=TRUE)
-Itarget3(1, DLMtool::Atlantic_mackerel, plot=TRUE)
-Itarget4(1, DLMtool::Atlantic_mackerel, plot=TRUE)
+Itarget1(1, MSEtool::Atlantic_mackerel, plot=TRUE)
+Itarget2(1, MSEtool::Atlantic_mackerel, plot=TRUE)
+Itarget3(1, MSEtool::Atlantic_mackerel, plot=TRUE)
+Itarget4(1, MSEtool::Atlantic_mackerel, plot=TRUE)
 }
 \references{
 Carruthers et al. 2015. Performance evaluation of simple

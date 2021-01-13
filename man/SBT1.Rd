@@ -41,7 +41,7 @@ indices}
 \item{tauR}{Control parameter}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 An MP that makes incremental adjustments to TAC recommendations based on the
@@ -51,10 +51,10 @@ and catch levels relative to target levels (MSY).
 }
 \details{
 For \code{SBT1} the TAC is calculated as:
-\deqn{\textrm{TAC}_y = 
-             \left\{\begin{array}{ll} 
-              C_{y-1} (1+K_2 \left| \lambda \right| ) & \textrm{if } \lambda \geq 0 \\ 
-              C_{y-1} (1-K_1 \left| \lambda \right| ^\gamma) & \textrm{if } \lambda < 0\\ 
+\deqn{\textrm{TAC}_y =
+             \left\{\begin{array}{ll}
+              C_{y-1} (1+K_2 \left| \lambda \right| ) & \textrm{if } \lambda \geq 0 \\
+              C_{y-1} (1-K_1 \left| \lambda \right| ^\gamma) & \textrm{if } \lambda < 0\\
              \end{array}\right.
            }{}
 where \eqn{\lambda} is the slope of index over the last \code{yrmsth} years, and
@@ -64,10 +64,10 @@ For \code{SBT2} the TAC is calculated as:
 \deqn{\textrm{TAC}_y = 0.5 (C_{y-1} + C_\textrm{targ}\delta)}
 where \eqn{C_{y-1}} is catch in the previous year, \eqn{C_{\textrm{targ}}}
 is a target catch (\code{Data@Cref}), and :
-\deqn{\delta= 
-             \left\{\begin{array}{ll} 
-             R^{1-\textrm{epsR}} & \textrm{if } R \geq 1 \\ 
-             R^{1+\textrm{epsR}} & \textrm{if } R < 1 \\ 
+\deqn{\delta=
+             \left\{\begin{array}{ll}
+             R^{1-\textrm{epsR}} & \textrm{if } R \geq 1 \\
+             R^{1+\textrm{epsR}} & \textrm{if } R < 1 \\
              \end{array}\right.
            }{}
 where \eqn{\textrm{epsR}} is a control parameter and:
@@ -90,7 +90,7 @@ this approach.
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{SBT1}: Cat, Ind, Year
@@ -101,14 +101,14 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/SBT1.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/SBT1.html}{Online Documentation} for correctly rendered equations
 
 
 }
 
 \examples{
-SBT1(1, Data=DLMtool::SimulatedData, plot=TRUE)
-SBT2(1, Data=DLMtool::SimulatedData, plot=TRUE)
+SBT1(1, Data=MSEtool::SimulatedData, plot=TRUE)
+SBT2(1, Data=MSEtool::SimulatedData, plot=TRUE)
 }
 \references{
 http://www.ccsbt.org/site/recent_assessment.php

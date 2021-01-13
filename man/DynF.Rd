@@ -22,7 +22,7 @@ and biomass data}
 surplus production with biomass}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
+An object of class \code{\link[MSEtool]{Rec-class}} with the \code{TAC} slot populated with a numeric vector of length \code{reps}
 }
 \description{
 The Fratio MP with a controller that changes the level of F according to the
@@ -56,7 +56,7 @@ and an estimate of abundance (\code{Data@Abun}) for the current year.
 }
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{DynF}: Abun, Cat, FMSY_M, Ind, Mort, Year
@@ -64,11 +64,11 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/DynF.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/DynF.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
-DynF(1, Data=DLMtool::Atlantic_mackerel, plot=TRUE)
+DynF(1, Data=MSEtool::Atlantic_mackerel, plot=TRUE)
 }
 \references{
 Made-up for this package.

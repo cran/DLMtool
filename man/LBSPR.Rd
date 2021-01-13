@@ -54,7 +54,7 @@ LBSPR_MLL(
 \item{R}{variance of sampling noise for smoother}
 }
 \value{
-An object of class \code{\link[=Rec-class]{Rec}} with the TAE slot populated
+An object of class \code{\link[MSEtool]{Rec-class}} with the TAE slot populated
 }
 \description{
 The spawning potential ratio (SPR) is estimated using the LBSPR method
@@ -72,7 +72,7 @@ higher than the maturity curve if SPR < 0.4
 
 \section{Required Data}{
 
-See \linkS4class{Data} for information on the \code{Data} object \cr
+See \code{\link[MSEtool]{Data-class}} for information on the \code{Data} object \cr
 
 
 \code{LBSPR}: CAL, CAL_bins, L50, L95, LHYear, Mort, Year, vbK, vbLinf, wlb
@@ -80,12 +80,12 @@ See \linkS4class{Data} for information on the \code{Data} object \cr
 
 \section{Rendered Equations}{
 
-See \href{https://dlmtool.github.io/DLMtool/reference/LBSPR.html}{Online Documentation} for correctly rendered equations
+See \href{https://blue-matter.github.io/DLMtool/reference/LBSPR.html}{Online Documentation} for correctly rendered equations
 }
 
 \examples{
-LBSPR(1, Data=DLMtool::SimulatedData, plot=TRUE)
-LBSPR_MLL(1, Data=DLMtool::SimulatedData, plot=FALSE)
+LBSPR(1, Data=MSEtool::SimulatedData, plot=TRUE)
+LBSPR_MLL(1, Data=MSEtool::SimulatedData, plot=FALSE)
 }
 \references{
 Hordyk, A., Ono, K., Valencia, S., Loneragan, N., and Prince J (2015a).
