@@ -1,14 +1,14 @@
-91495bb2e274ee24bc505b80949a24c0 *DESCRIPTION
+d25d757719734c0446128f570ede8d68 *DESCRIPTION
 9e757e8edc6d4bebe8399a1294f41efa *NAMESPACE
-6e04a0b852b76a874b4d3ac1299523f5 *NEWS.md
-8290965d6a2aabb1220f749cdf1f6b77 *R/MPs_Input.R
+6ff7cddc6f4dd3e857b957dc1539ea69 *NEWS.md
+97213371779d148f63fbbb68c539bd50 *R/MPs_Input.R
 0157b93eb4ae0f0369b013988eccc2b9 *R/MPs_Mixed.R
-98dc70278ae5951b40f02019e354ac66 *R/MPs_Output.R
+c8f2dff5d40fca9ac4d573b912376b49 *R/MPs_Output.R
 99dee680106ebba3766d8324613f4186 *R/MPs_SupportingFunctions.R
 ec2e85f77a8fbf978e9e2345d070b606 *R/Misc.R
 ef467d4f2840c58ec8283352a5bba2b3 *R/RcppExports.R
 f6cbbadcca492a8a99a3b1f6857269b5 *R/aaImportFrom.R
-2178d8fdfead9466179fca1c75bc4a2f *README.md
+6cf1cd7a67b0ec2025cc768908d7db8e *README.md
 7456ebddf633464ce02ef0c51d9b29bc *man/AvC.Rd
 6ac5625df3baddf766db08da006e4623 *man/AvC_MLL.Rd
 e3f539b254b84514d9b7ef0e430867f2 *man/BK.Rd
@@ -77,6 +77,6 @@ c840e0ea8352991203f881edee2101b6 *man/getr.Rd
 f5f606cb9149cb4557abffe77d35eacf *man/iVB.Rd
 88d8692f9e0659b6392691232472ef45 *man/matlenlim.Rd
 52ac1dbf71a0d5dd6e995f7130abec09 *src/LBSPR.cpp
-4e65c1d973b730f24bf9804f2d1adc3f *src/RcppExports.cpp
+f0d5e19280283fdb2f167df20c1a7988 *src/RcppExports.cpp
 ac3c2c2eb00647c5992d7673d7972694 *src/bhnoneq_Rcpp.cpp
 c36a52fda58414d05a87dcc17665c540 *tests/manual/test-Input-MPs.R
