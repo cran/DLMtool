@@ -1,7 +1,7 @@
 Package: DLMtool
 Type: Package
 Title: Data-Limited Methods Toolkit
-Version: 6.0.3
+Version: 6.0.4
 Authors@R: c(
     person("Tom", "Carruthers",, "tom@bluematterscience.com", role="aut"),
     person("Quang", "Huynh", email = "quang@bluematterscience.com", role = "aut"),
@@ -18,14 +18,15 @@ Description: A collection of data-limited management procedures that can be eval
     fishery data to provide management recommendations.
 License: GPL-3
 Depends: R (>= 3.5.0), MSEtool
-Imports: dplyr, ggplot2, graphics, methods, Rcpp, stats
+Imports: dplyr, ggplot2, graphics, methods, Rcpp, stats, TMB (>=
+        1.7.22)
+LinkingTo: TMB, RcppEigen, Rcpp
 Suggests: gridExtra, mvtnorm, testthat
 LazyLoad: yes
 Encoding: UTF-8
-RoxygenNote: 7.1.1
-LinkingTo: Rcpp
+RoxygenNote: 7.1.2
 NeedsCompilation: yes
-Packaged: 2021-08-11 18:20:40 UTC; User
+Packaged: 2022-04-27 21:41:07 UTC; User
 Author: Tom Carruthers [aut],
   Quang Huynh [aut],
   Adrian Hordyk [aut, cre],
@@ -36,4 +37,4 @@ Author: Tom Carruthers [aut],
   Q. Huynh [ctb],
   C. Walters [ctb]
 Repository: CRAN
-Date/Publication: 2021-08-12 15:20:02 UTC
+Date/Publication: 2022-04-27 22:10:18 UTC
