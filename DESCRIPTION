@@ -1,7 +1,7 @@
 Package: DLMtool
 Type: Package
 Title: Data-Limited Methods Toolkit
-Version: 6.0.4
+Version: 6.0.5
 Authors@R: c(
     person("Tom", "Carruthers",, "tom@bluematterscience.com", role="aut"),
     person("Quang", "Huynh", email = "quang@bluematterscience.com", role = "aut"),
@@ -26,7 +26,7 @@ LazyLoad: yes
 Encoding: UTF-8
 RoxygenNote: 7.1.2
 NeedsCompilation: yes
-Packaged: 2022-04-27 21:41:07 UTC; User
+Packaged: 2022-06-07 17:01:52 UTC; User
 Author: Tom Carruthers [aut],
   Quang Huynh [aut],
   Adrian Hordyk [aut, cre],
@@ -37,4 +37,4 @@ Author: Tom Carruthers [aut],
   Q. Huynh [ctb],
   C. Walters [ctb]
 Repository: CRAN
-Date/Publication: 2022-04-27 22:10:18 UTC
+Date/Publication: 2022-06-08 07:00:07 UTC

@@ -1,11 +1,11 @@
-13d21d0fb5dbfae50b02ed1ab6e71066 *DESCRIPTION
+cc85100505522a91540161100c47cf5d *DESCRIPTION
 8b1020a7a78cdd7ee92aff09c58e17ce *NAMESPACE
-02a17258740ed4539bcd4c273504cbcd *NEWS.md
+d03116a881ef37f87ca1ea19c04bebae *NEWS.md
 2ccffeec74df74dbba53f41091c4bebe *R/DLMtool-package.R
 a440458f81020a41aafbb4e62bb74e2f *R/MPs_Input.R
 0157b93eb4ae0f0369b013988eccc2b9 *R/MPs_Mixed.R
 c8f2dff5d40fca9ac4d573b912376b49 *R/MPs_Output.R
-41541b49ec1e3635d14efd21a1a7fa2a *R/MPs_SupportingFunctions.R
+6e1ff5cbb17e284efbd024ef3118efff *R/MPs_SupportingFunctions.R
 ec2e85f77a8fbf978e9e2345d070b606 *R/Misc.R
 55425698b6e11591274c9adfec1b6b09 *R/RcppExports.R
 dade31064dbd56319d397d2fb6c65af5 *R/aaImportFrom.R
@@ -13,7 +13,7 @@ dade31064dbd56319d397d2fb6c65af5 *R/aaImportFrom.R
 7456ebddf633464ce02ef0c51d9b29bc *man/AvC.Rd
 6ac5625df3baddf766db08da006e4623 *man/AvC_MLL.Rd
 e3f539b254b84514d9b7ef0e430867f2 *man/BK.Rd
-371567ec12c364b6a0ed67befadfca0b *man/CC.Rd
+4eb6c871dee1b07b672788933d1e7340 *man/CC.Rd
 be1de0690e3d5d86b5e571950854475f *man/CC1.Rd
 1fde9d89e53ba3864f7bedc067ef55d3 *man/CompSRA.Rd
 71783212993aa86589675ab10bc6157e *man/CompSRA_.Rd
@@ -29,7 +29,7 @@ e455a63ed8010e6d5651e000852045f7 *man/DDe.Rd
 6cfd295d97061a7aaf1f46a73b6f7514 *man/DLMtool-package.Rd
 e49c7507adc5228f651327770a7f1453 *man/DTe40.Rd
 150bc7fdf8ec669b808f2746dac25e0f *man/DynF.Rd
-6f0ef42c4190fef5b3507e7be5d27520 *man/EtargetLopt.Rd
+285f142154728b3f4dd35e9b98ab1265 *man/EtargetLopt.Rd
 87741477e7a7c212629f31fa0dcda655 *man/Fadapt.Rd
 b7b137bd598656ccdc01833f920ae548 *man/Fdem.Rd
 19615a17861a4c7577ea5717abfaa3f1 *man/Fdem_.Rd
@@ -65,7 +65,7 @@ bd0d9ed695472c0fc676478f2c594163 *man/MCD.Rd
 597e2c82d65c4ad75eec26f2c64144ba *man/Rcontrol.Rd
 d5d4ec583a3bb46006e64ab64ae79a96 *man/SBT1.Rd
 5eacb88c81b17fb6c7725fb6493e4cdb *man/SPMSY.Rd
-d8e88f52d1c55e734df4522c36ff8334 *man/SPSRA.Rd
+f0b2489a585ea335e820214330d9db4d *man/SPSRA.Rd
 8496660a2be40ba9b2802da772604dad *man/SPSRA_.Rd
 305a84a1e194b4e78ffab27336839923 *man/SPmod.Rd
 9f8c39009eca4d3391512ec8121e6d60 *man/SPslope.Rd
